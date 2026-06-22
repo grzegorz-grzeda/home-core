@@ -1,0 +1,45 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 25,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "qemu-lm3s6965evb",
+            "displayName": "QEMU LM3S6965EVB",
+            "description": "Build HomeCore for QEMU Stellaris LM3S6965EVB Cortex-M3",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/qemu-lm3s6965evb",
+            "toolchainFile": "${sourceDir}/cmake/toolchains/arm-none-eabi.cmake",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "HOMECORE_BOARD": "qemu_lm3s6965evb"
+            }
+        },
+        {
+            "name": "qemu-lm3s6965evb-release",
+            "displayName": "QEMU LM3S6965EVB Release",
+            "description": "Release build for QEMU Stellaris LM3S6965EVB Cortex-M3",
+            "inherits": "qemu-lm3s6965evb",
+            "binaryDir": "${sourceDir}/build/qemu-lm3s6965evb-release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "HOMECORE_BOARD": "qemu_lm3s6965evb"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "qemu-lm3s6965evb",
+            "displayName": "Build QEMU LM3S6965EVB",
+            "configurePreset": "qemu-lm3s6965evb"
+        },
+        {
+            "name": "qemu-lm3s6965evb-release",
+            "displayName": "Build QEMU LM3S6965EVB Release",
+            "configurePreset": "qemu-lm3s6965evb-release"
+        }
+    ]
+}
