@@ -48,6 +48,7 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 target_link_options(${PROJECT_NAME} PRIVATE
     -T${CMAKE_SOURCE_DIR}/src/board/${HOMECORE_BOARD}/linker.ld
     -nostartfiles
+    -specs=nano.specs
     -Wl,--gc-sections
     -Wl,-Map=${CMAKE_BINARY_DIR}/${PROJECT_NAME}.map
 )

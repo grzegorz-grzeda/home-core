@@ -1,31 +1,47 @@
+/**
+ * MIT License
+ *
+ * Copyright (c) 2026 Grzegorz Grzęda
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+/*---------------------------------------------------------------------------*/
 #include "board/board.h"
-
-static void puts_uart(const char *s)
-{
-    while (*s) {
-        if (*s == '\n') {
-            board_uart_putc('\r');
-        }
-
-        board_uart_putc(*s++);
-    }
-}
-
+#include <stdlib.h>
+#include <stdio.h>
+/*---------------------------------------------------------------------------*/
 int main(void)
 {
-    board_init();
+    char *c=malloc(sizeof(char));
 
-    puts_uart("\nHomeCore Monitor\n");
-    puts_uart("target: qemu_lm3s6965evb\n");
-    puts_uart("> ");
+    printf("\nHomeCore Monitor\n");
+    printf("target: qemu_lm3s6965evb\n");
+    printf("> ");
 
     while (1) {
-        int c = board_uart_getc();
+        *c = getchar();
 
-        board_uart_putc((char)c);
+        putchar(*c);
 
-        if (c == '\r' || c == '\n') {
-            puts_uart("\n> ");
+        if (*c == '\r' || *c == '\n') {
+            printf("\n> ");
         }
     }
 }
+/*---------------------------------------------------------------------------*/

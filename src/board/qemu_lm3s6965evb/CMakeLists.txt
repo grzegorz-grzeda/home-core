@@ -23,6 +23,7 @@
 target_sources(${PROJECT_NAME} 
     PRIVATE boot.c
     PRIVATE board.c
+    PUBLIC syscalls.c
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE
