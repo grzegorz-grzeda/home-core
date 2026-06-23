@@ -36,8 +36,7 @@ extern uint8_t _heap_end;
 /*---------------------------------------------------------------------------*/
 static uint8_t *heap_current = &_heap_start;
 /*---------------------------------------------------------------------------*/
-void *_sbrk(ptrdiff_t incr)
-{
+void *_sbrk(ptrdiff_t incr) {
     (void)incr;
     uint8_t *prev_heap = heap_current;
     uint8_t *next_heap = heap_current + incr;
@@ -51,8 +50,7 @@ void *_sbrk(ptrdiff_t incr)
     return prev_heap;
 }
 /*---------------------------------------------------------------------------*/
-int _write(int fd, const char *buf, int len)
-{
+int _write(int fd, const char *buf, int len) {
     (void)fd;
 
     for (int i = 0; i < len; i++) {
@@ -66,8 +64,7 @@ int _write(int fd, const char *buf, int len)
     return len;
 }
 /*---------------------------------------------------------------------------*/
-int _read(int fd, char *buf, int len)
-{
+int _read(int fd, char *buf, int len) {
     (void)fd;
 
     for (int i = 0; i < len; i++) {
@@ -88,28 +85,24 @@ int _read(int fd, char *buf, int len)
     return len;
 }
 /*---------------------------------------------------------------------------*/
-int _close(int fd)
-{
+int _close(int fd) {
     (void)fd;
     return -1;
 }
 /*---------------------------------------------------------------------------*/
-int _fstat(int fd, struct stat *st)
-{
+int _fstat(int fd, struct stat *st) {
     (void)fd;
 
     st->st_mode = S_IFCHR;
     return 0;
 }
 /*---------------------------------------------------------------------------*/
-int _isatty(int fd)
-{
+int _isatty(int fd) {
     (void)fd;
     return 1;
 }
 /*---------------------------------------------------------------------------*/
-int _lseek(int fd, int ptr, int dir)
-{
+int _lseek(int fd, int ptr, int dir) {
     (void)fd;
     (void)ptr;
     (void)dir;
@@ -117,8 +110,7 @@ int _lseek(int fd, int ptr, int dir)
     return 0;
 }
 /*---------------------------------------------------------------------------*/
-int _kill(int pid, int sig)
-{
+int _kill(int pid, int sig) {
     (void)pid;
     (void)sig;
 
@@ -126,7 +118,6 @@ int _kill(int pid, int sig)
     return -1;
 }
 /*---------------------------------------------------------------------------*/
-int _getpid(void)
-{
+int _getpid(void) {
     return 1;
 }

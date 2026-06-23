@@ -48,7 +48,7 @@ void DebugMon_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void PendSV_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void SysTick_Handler(void) __attribute__((weak, alias("Default_Handler")));
 /*---------------------------------------------------------------------------*/
-__attribute__((section(".isr_vector"))) const void* vector_table[] = {
+__attribute__((section(".isr_vector"))) const void *vector_table[] = {
     &_estack,
     Reset_Handler,
     NMI_Handler,
@@ -68,28 +68,28 @@ __attribute__((section(".isr_vector"))) const void* vector_table[] = {
 };
 /*---------------------------------------------------------------------------*/
 void Reset_Handler(void) {
-  uint32_t* src = &_sidata;
-  uint32_t* dst = &_sdata;
+    uint32_t *src = &_sidata;
+    uint32_t *dst = &_sdata;
 
-  while (dst < &_edata) {
-    *dst++ = *src++;
-  } 
+    while (dst < &_edata) {
+        *dst++ = *src++;
+    }
 
-  dst = &_sbss; 
-  while (dst < &_ebss) {
-    *dst++ = 0;
-  }
+    dst = &_sbss;
+    while (dst < &_ebss) {
+        *dst++ = 0;
+    }
 
-  board_init();
+    board_init();
 
-  main();
+    main();
 
-  while (1) { 
-  }
+    while (1) {
+    }
 }
 /*---------------------------------------------------------------------------*/
 void Default_Handler(void) {
-  while (1) {
-  }
+    while (1) {
+    }
 }
 /*---------------------------------------------------------------------------*/

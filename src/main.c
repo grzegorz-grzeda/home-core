@@ -26,9 +26,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 /*---------------------------------------------------------------------------*/
-int main(void)
-{
-    char *c=malloc(sizeof(char));
+int main(void) {
+    char *c = malloc(sizeof(char));
 
     printf("\nHomeCore Monitor\n");
     printf("target: qemu_lm3s6965evb\n");
