@@ -36,3 +36,5 @@ set(CMAKE_C_FLAGS_INIT "${COMMON_FLAGS}")
 set(CMAKE_ASM_FLAGS_INIT "${COMMON_FLAGS}")
 
 set(CMAKE_EXE_LINKER_FLAGS_INIT "-nostartfiles -Wl,--gc-sections")
+
+set(CMAKE_EXECUTABLE_SUFFIX ".elf")

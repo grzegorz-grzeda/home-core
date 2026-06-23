@@ -70,6 +70,7 @@ add_executable(${PROJECT_NAME})
 include(${HOMECORE_ROOT}/cmake/board.cmake)
 include(${HOMECORE_ROOT}/cmake/soc.cmake)
 include(${HOMECORE_ROOT}/cmake/arch.cmake)
+include(${HOMECORE_ROOT}/cmake/linker.cmake)
 
 add_dependencies(${PROJECT_NAME} homecore_config)
 target_include_directories(${PROJECT_NAME} PRIVATE
@@ -88,7 +89,6 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 )
 
 target_link_options(${PROJECT_NAME} PRIVATE
-    -T${CMAKE_SOURCE_DIR}/src/board/${HOMECORE_BOARD}/board.ld
     -nostartfiles
     -specs=nano.specs
     -Wl,--gc-sections

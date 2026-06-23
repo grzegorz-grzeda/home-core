@@ -1,0 +1,26 @@
+/* Generated linker script */
+
+ENTRY(Reset_Handler)
+
+MEMORY
+{
+@HOMECORE_BOARD_MEMORY@
+}
+
+__stack_size = DEFINED(__stack_size) ? __stack_size : 4K;
+_estack = ORIGIN(RAM) + LENGTH(RAM);
+
+SECTIONS
+{
+    INCLUDE "@HOMECORE_ARCH_LINKER_SCRIPT@"
+    INCLUDE "@HOMECORE_SOC_LINKER_SCRIPT@"
+    INCLUDE "@HOMECORE_BOARD_LINKER_SCRIPT@"
+
+    /DISCARD/ :
+    {
+        *(.note*)
+        *(.comment*)
+        *(.ARM.exidx*)
+        *(.ARM.extab*)
+    }
+}

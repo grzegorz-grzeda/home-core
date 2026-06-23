@@ -1,0 +1,1 @@
+/* no SoC-specific linker script */

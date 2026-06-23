@@ -32,7 +32,7 @@ extern "C" {
 #include <stdint.h>
 /*---------------------------------------------------------------------------*/
 #define BOARD_STRINGIFY(x) #x
-#define BOARD              BOARD_STRINGIFY(HOMECORE_BOARD)
+#define BOARD              BOARD_STRINGIFY(HOMECORE_BOARD_NAME)
 /*---------------------------------------------------------------------------*/
 void board_init(void);
 /*---------------------------------------------------------------------------*/

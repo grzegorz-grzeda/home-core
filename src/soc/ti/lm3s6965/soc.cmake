@@ -22,4 +22,9 @@
 #
 set(HOMECORE_SOC_ID LM3S6965)
 
+
+set(HOMECORE_SOC_LINKER_SCRIPT
+    ${CMAKE_CURRENT_LIST_DIR}/soc.ld
+)
+
 set(HOMECORE_ARCH arm/cortex-m3)
