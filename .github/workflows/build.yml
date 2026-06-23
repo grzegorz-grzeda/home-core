@@ -52,3 +52,17 @@ jobs:
       - name: Build
         run: |
           cmake --build build-${{ matrix.build_type }}-${{ matrix.board }} --verbose
+
+      - name: Firmware size
+        run: |
+          find build-${{ matrix.build_type }} -type f \( -name "*.elf" -o -name "homecore" \) -exec arm-none-eabi-size {} \;
+
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: homecore-${{ matrix.build_type }}
+          path: |
+            build-${{ matrix.build_type }}/*.elf
+            build-${{ matrix.build_type }}/*.bin
+            build-${{ matrix.build_type }}/*.hex
+            build-${{ matrix.build_type }}/*.map
