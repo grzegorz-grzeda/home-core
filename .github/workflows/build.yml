@@ -28,10 +28,21 @@ jobs:
             cmake \
             ninja-build \
             gcc-arm-none-eabi \
-            binutils-arm-none-eabi
+            binutils-arm-none-eabi \
+            python3 \
+            python3-venv \
+            python3-pip
 
+      - name: Setup Python venv
+        run: |
+          python3 -m venv .venv
+          . .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install kconfiglib
+      
       - name: Configure
         run: |
+          . .venv/bin/activate
           cmake -S . -B build-${{ matrix.build_type }}-${{ matrix.board }} \
             -G Ninja \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
