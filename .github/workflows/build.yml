@@ -38,7 +38,7 @@ jobs:
           python3 -m venv .venv
           . .venv/bin/activate
           python -m pip install --upgrade pip
-          pip install kconfiglib
+          pip install -r requirements.txt
       
       - name: Configure
         run: |
@@ -47,6 +47,7 @@ jobs:
             -G Ninja \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DHOMECORE_BOARD=${{ matrix.board }} \
+            -DPython3_EXECUTABLE=${{ github.workspace }}/.venv/bin/python \
             -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/arm-none-eabi.cmake \
 
       - name: Build
