@@ -21,17 +21,9 @@
 # SOFTWARE.
 #
 target_sources(${PROJECT_NAME} 
-    PRIVATE boot.c
-    PRIVATE board.c
+    PRIVATE shell.c
 )
 
-target_compile_options(${PROJECT_NAME} PRIVATE
-    -ffreestanding
-    -fno-builtin
-    -mcpu=cortex-m3
-    -mthumb
-)
-
-target_compile_definitions(${PROJECT_NAME} PUBLIC
-    HOMECORE_BOARD=QEMU_LM3S6965EVB
+target_include_directories(${PROJECT_NAME} 
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )

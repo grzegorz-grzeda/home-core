@@ -10,8 +10,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -22,31 +22,42 @@
  * SOFTWARE.
  */
 /*---------------------------------------------------------------------------*/
-#ifndef HOME_CORE_BOARD_H
-#define HOME_CORE_BOARD_H
-/*---------------------------------------------------------------------------*/
-#if defined(__cplusplus)
-extern "C" {
-#endif
-/*---------------------------------------------------------------------------*/
 #include <stdint.h>
+#include <stddef.h>
+#include "shell.h"
 /*---------------------------------------------------------------------------*/
-#define BOARD_STRINGIFY(x) #x
-#define BOARD              BOARD_STRINGIFY(HOMECORE_BOARD)
+typedef struct shell_command shell_command_t;
 /*---------------------------------------------------------------------------*/
-void board_init(void);
 /*---------------------------------------------------------------------------*/
-void board_uart_putc(char c);
+typedef struct shell_command {
+    const char *name;
+    const char *help;
+    shell_command_handler_t handler;
+    shell_command_t *next;
+} shell_command_t;
 /*---------------------------------------------------------------------------*/
-int board_uart_getc(void);
+static shell_command_t *shell_commands = NULL;
+static shell_send_char_t shell_send_char = NULL;
 /*---------------------------------------------------------------------------*/
-int board_uart_has_data(void);
-/*---------------------------------------------------------------------------*/
-void board_panic(const char *msg);
-/*---------------------------------------------------------------------------*/
-#if defined(__cplusplus)
+void shell_init(shell_send_char_t send_char) {
+    shell_send_char = send_char;
 }
-#endif
 /*---------------------------------------------------------------------------*/
-#endif // HOME_CORE_BOARD_H
+void shell_register_command(const char *name, const char *help, shell_command_handler_t handler) {
+    if (!name || !help || !handler) {
+        return;
+    }
+    shell_command_t *command = (shell_command_t *)calloc(1, sizeof(shell_command_t));
+    if (!command) {
+        return;
+    }
+    command->name = name;
+    command->help = help;
+    command->handler = handler;
+    command->next = shell_commands;
+    shell_commands = command;
+}
+/*---------------------------------------------------------------------------*/
+void shell_process_char(char c) {
+}
 /*---------------------------------------------------------------------------*/

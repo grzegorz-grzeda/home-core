@@ -21,6 +21,7 @@
 # SOFTWARE.
 #
 add_subdirectory(board)
+add_subdirectory(kernel)
 
 target_sources(${PROJECT_NAME} 
     PRIVATE main.c

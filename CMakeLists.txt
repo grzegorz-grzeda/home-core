@@ -23,13 +23,49 @@
 cmake_minimum_required(VERSION 3.25)
 project(homecore VERSION 0.0.1 LANGUAGES C ASM)
 
-
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 
-add_executable(${PROJECT_NAME})
+set(HOMECORE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+set(HOMECORE_BINARY_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
 
+set(HOMECORE_DEFCONFIG
+    ${HOMECORE_ROOT}/configs/homecore_defconfig
+    CACHE FILEPATH "HomeCore defconfig file"
+)
+
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_custom_command(
+    OUTPUT
+        ${CMAKE_CURRENT_BINARY_DIR}/.config
+        ${HOMECORE_BINARY_INCLUDE_DIR}/homecore/autoconf.h
+    COMMAND
+        ${Python3_EXECUTABLE}
+        ${HOMECORE_ROOT}/scripts/kconfig_generate.py
+        --kconfig ${HOMECORE_ROOT}/Kconfig
+        --defconfig ${HOMECORE_DEFCONFIG}
+        --config-out ${CMAKE_CURRENT_BINARY_DIR}/.config
+        --header-out ${HOMECORE_BINARY_INCLUDE_DIR}/homecore/autoconf.h
+    DEPENDS
+        ${HOMECORE_ROOT}/Kconfig
+        ${HOMECORE_DEFCONFIG}
+        ${HOMECORE_ROOT}/scripts/kconfig_generate.py
+    WORKING_DIRECTORY ${HOMECORE_ROOT}
+    COMMENT "Generating HomeCore Kconfig configuration"
+)
+
+add_custom_target(homecore_config
+    DEPENDS
+        ${CMAKE_CURRENT_BINARY_DIR}/.config
+        ${HOMECORE_BINARY_INCLUDE_DIR}/homecore/autoconf.h
+)
+
+add_executable(${PROJECT_NAME})
+add_dependencies(${PROJECT_NAME} homecore_config)
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${HOMECORE_BINARY_INCLUDE_DIR}
+)
 add_subdirectory(src)
 
 target_link_libraries(${PROJECT_NAME} 

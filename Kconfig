@@ -1,0 +1,5 @@
+menu "Home Core Configuration"
+
+rsource "src/Kconfig"
+
+endmenu

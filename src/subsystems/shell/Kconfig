@@ -1,0 +1,19 @@
+menu "Shell"
+
+config HOMECORE_SHELL
+    bool "Enable shell subsystem"
+    default y
+
+if HOMECORE_SHELL
+
+config HOMECORE_SHELL_PROMPT
+    string "Shell prompt"
+    default "$ "
+
+config HOMECORE_SHELL_MAX_INPUT_LENGTH
+    int "Maximum shell input length"
+    default 128 
+
+endif
+
+endmenu

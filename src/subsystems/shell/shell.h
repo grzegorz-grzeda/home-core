@@ -22,8 +22,8 @@
  * SOFTWARE.
  */
 /*---------------------------------------------------------------------------*/
-#ifndef HOME_CORE_BOARD_H
-#define HOME_CORE_BOARD_H
+#ifndef HOME_CORE_SHELL_H
+#define HOME_CORE_SHELL_H
 /*---------------------------------------------------------------------------*/
 #if defined(__cplusplus)
 extern "C" {
@@ -31,22 +31,19 @@ extern "C" {
 /*---------------------------------------------------------------------------*/
 #include <stdint.h>
 /*---------------------------------------------------------------------------*/
-#define BOARD_STRINGIFY(x) #x
-#define BOARD              BOARD_STRINGIFY(HOMECORE_BOARD)
 /*---------------------------------------------------------------------------*/
-void board_init(void);
+typedef void (*shell_send_char_t)(char c);
+typedef int (*shell_command_handler_t)(int argc, char **argv);
 /*---------------------------------------------------------------------------*/
-void board_uart_putc(char c);
+void shell_init(shell_send_char_t send_char);
 /*---------------------------------------------------------------------------*/
-int board_uart_getc(void);
+void shell_register_command(const char *name, const char *help, shell_command_handler_t handler);
 /*---------------------------------------------------------------------------*/
-int board_uart_has_data(void);
-/*---------------------------------------------------------------------------*/
-void board_panic(const char *msg);
+void shell_process_char(char c);
 /*---------------------------------------------------------------------------*/
 #if defined(__cplusplus)
 }
 #endif
 /*---------------------------------------------------------------------------*/
-#endif // HOME_CORE_BOARD_H
+#endif // HOME_CORE_SHELL_H
 /*---------------------------------------------------------------------------*/

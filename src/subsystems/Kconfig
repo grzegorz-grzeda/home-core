@@ -1,0 +1,5 @@
+menu "Subsystems"
+
+rsource "shell/Kconfig"
+
+endmenu

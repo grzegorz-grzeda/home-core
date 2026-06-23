@@ -30,7 +30,7 @@ int main(void) {
     char *c = malloc(sizeof(char));
 
     printf("\nHomeCore Monitor\n");
-    printf("target: qemu_lm3s6965evb\n");
+    printf("target: %s\n", BOARD);
     printf("> ");
 
     while (1) {
