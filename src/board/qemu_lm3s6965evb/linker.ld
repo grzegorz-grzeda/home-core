@@ -6,6 +6,7 @@ MEMORY
     RAM   (rwx) : ORIGIN = 0x20000000, LENGTH = 64K
 }
 
+__stack_size = DEFINED(__stack_size) ? __stack_size : 4K;
 _estack = ORIGIN(RAM) + LENGTH(RAM);
 
 SECTIONS
