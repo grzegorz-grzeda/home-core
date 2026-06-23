@@ -29,6 +29,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 set(HOMECORE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 set(HOMECORE_BINARY_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
+set(HOMECORE_KCONFIG_CMAKE ${CMAKE_CURRENT_BINARY_DIR}/kconfig.cmake)
 
 set(HOMECORE_DEFCONFIG
     ${HOMECORE_ROOT}/configs/homecore_defconfig
@@ -36,10 +37,7 @@ set(HOMECORE_DEFCONFIG
 )
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
-add_custom_command(
-    OUTPUT
-        ${CMAKE_CURRENT_BINARY_DIR}/.config
-        ${HOMECORE_BINARY_INCLUDE_DIR}/homecore/autoconf.h
+execute_process(
     COMMAND
         ${Python3_EXECUTABLE}
         ${HOMECORE_ROOT}/scripts/kconfig_generate.py
@@ -47,13 +45,15 @@ add_custom_command(
         --defconfig ${HOMECORE_DEFCONFIG}
         --config-out ${CMAKE_CURRENT_BINARY_DIR}/.config
         --header-out ${HOMECORE_BINARY_INCLUDE_DIR}/homecore/autoconf.h
-    DEPENDS
-        ${HOMECORE_ROOT}/Kconfig
-        ${HOMECORE_DEFCONFIG}
-        ${HOMECORE_ROOT}/scripts/kconfig_generate.py
+        --cmake-out ${HOMECORE_KCONFIG_CMAKE}
     WORKING_DIRECTORY ${HOMECORE_ROOT}
-    COMMENT "Generating HomeCore Kconfig configuration"
+    RESULT_VARIABLE HOMECORE_KCONFIG_RESULT
 )
+
+if(NOT HOMECORE_KCONFIG_RESULT EQUAL 0)
+    message(FATAL_ERROR "Failed to generate HomeCore Kconfig files")
+endif()
+include(${HOMECORE_KCONFIG_CMAKE})
 
 add_custom_target(homecore_config
     DEPENDS
@@ -87,6 +87,7 @@ target_link_options(${PROJECT_NAME} PRIVATE
     -specs=nano.specs
     -Wl,--gc-sections
     -Wl,-Map=${CMAKE_BINARY_DIR}/${PROJECT_NAME}.map
+    -Wl,--defsym=__stack_size=${CONFIG_HOMECORE_KERNEL_MAIN_STACK_SIZE}
 )
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD

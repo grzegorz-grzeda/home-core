@@ -1,6 +1,6 @@
 menu "Kernel Configuration"
 
-config HOMECORE_STACK_SIZE
+config HOMECORE_KERNEL_MAIN_STACK_SIZE
     int "Kernel stack size"
     default 1024
     range 256 8192

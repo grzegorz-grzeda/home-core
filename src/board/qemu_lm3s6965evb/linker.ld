@@ -6,7 +6,6 @@ MEMORY
     RAM   (rwx) : ORIGIN = 0x20000000, LENGTH = 64K
 }
 
-STACK_SIZE = 4K;
 _estack = ORIGIN(RAM) + LENGTH(RAM);
 
 SECTIONS
@@ -48,9 +47,9 @@ SECTIONS
 
     .stack_dummy :
     {
-        . = . + STACK_SIZE;
+        . = . + __stack_size;
     } > RAM
     . = ALIGN(8);
 
-    _heap_end = ORIGIN(RAM) + LENGTH(RAM) - STACK_SIZE;
+    _heap_end = ORIGIN(RAM) + LENGTH(RAM) - __stack_size;
 }
