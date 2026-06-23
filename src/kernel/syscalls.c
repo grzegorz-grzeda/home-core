@@ -29,7 +29,7 @@
 #include <unistd.h>
 #include <stddef.h>
 /*---------------------------------------------------------------------------*/
-#include "board/board.h"
+#include "homecore/board/board.h"
 /*---------------------------------------------------------------------------*/
 extern uint8_t _heap_start;
 extern uint8_t _heap_end;

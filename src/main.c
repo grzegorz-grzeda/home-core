@@ -22,11 +22,15 @@
  * SOFTWARE.
  */
 /*---------------------------------------------------------------------------*/
-#include "board/board.h"
+#include "homecore/arch/arch.h"
+#include "homecore/board/board.h"
 #include <stdlib.h>
 #include <stdio.h>
 /*---------------------------------------------------------------------------*/
 int main(void) {
+    arch_init();
+    board_init();
+
     char *c = malloc(sizeof(char));
 
     printf("\nHomeCore Monitor\n");

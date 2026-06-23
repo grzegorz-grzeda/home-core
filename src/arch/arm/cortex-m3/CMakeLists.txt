@@ -21,16 +21,10 @@
 # SOFTWARE.
 #
 target_sources(${PROJECT_NAME} 
-    PRIVATE board.c
-)
-
-target_compile_options(${PROJECT_NAME} PRIVATE
-    -ffreestanding
-    -fno-builtin
-    -mcpu=cortex-m3
-    -mthumb
+    PRIVATE arch.c
+    PRIVATE boot.c
 )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
-    HOMECORE_BOARD=LM3S6965EVB
+    HOMECORE_ARCH=ARM_CORTEX_M3
 )

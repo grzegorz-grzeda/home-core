@@ -73,8 +73,9 @@ include(${HOMECORE_ROOT}/cmake/arch.cmake)
 include(${HOMECORE_ROOT}/cmake/linker.cmake)
 
 add_dependencies(${PROJECT_NAME} homecore_config)
-target_include_directories(${PROJECT_NAME} PRIVATE
-    ${HOMECORE_BINARY_INCLUDE_DIR}
+target_include_directories(${PROJECT_NAME} 
+    PRIVATE ${HOMECORE_BINARY_INCLUDE_DIR}
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 add_subdirectory(src)

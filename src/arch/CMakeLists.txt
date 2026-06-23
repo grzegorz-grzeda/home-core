@@ -20,17 +20,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-target_sources(${PROJECT_NAME} 
-    PRIVATE board.c
-)
-
-target_compile_options(${PROJECT_NAME} PRIVATE
-    -ffreestanding
-    -fno-builtin
-    -mcpu=cortex-m3
-    -mthumb
-)
-
-target_compile_definitions(${PROJECT_NAME} PUBLIC
-    HOMECORE_BOARD=LM3S6965EVB
-)
+add_subdirectory(${HOMECORE_ARCH})

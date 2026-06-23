@@ -3,7 +3,6 @@
     . = ALIGN(4);
     __isr_vector_start = .;
 
-    KEEP(*(.isr_vector))
     KEEP(*(.isr_vector.arch))
     KEEP(*(.isr_vector.soc))
 
