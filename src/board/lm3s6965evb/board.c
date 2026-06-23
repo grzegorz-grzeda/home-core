@@ -25,11 +25,7 @@
 #include <stdint.h>
 /*---------------------------------------------------------------------------*/
 #include "homecore/board/board.h"
-/*---------------------------------------------------------------------------*/
-#define UART0_BASE 0x4000C000u
-/*---------------------------------------------------------------------------*/
-#define UART_DR (*(volatile uint32_t *)(UART0_BASE + 0x000))
-#define UART_FR (*(volatile uint32_t *)(UART0_BASE + 0x018))
+#include "soc_cmsis.h"
 /*---------------------------------------------------------------------------*/
 #define UART_FR_TXFF (1u << 5)
 #define UART_FR_RXFE (1u << 4)
@@ -38,21 +34,21 @@ void board_init(void) {
 }
 /*---------------------------------------------------------------------------*/
 void board_uart_putc(char c) {
-    while (UART_FR & UART_FR_TXFF) {
+    while (UART0->FR & UART_FR_TXFF) {
     }
 
-    UART_DR = (uint32_t)c;
+    UART0->DR = (uint32_t)c;
 }
 /*---------------------------------------------------------------------------*/
 int board_uart_has_data(void) {
-    return (UART_FR & UART_FR_RXFE) == 0;
+    return (UART0->FR & UART_FR_RXFE) == 0;
 }
 /*---------------------------------------------------------------------------*/
 int board_uart_getc(void) {
     while (!board_uart_has_data()) {
     }
 
-    return (int)(UART_DR & 0xff);
+    return (int)(UART0->DR & 0xff);
 }
 /*---------------------------------------------------------------------------*/
 void board_panic(const char *msg) {

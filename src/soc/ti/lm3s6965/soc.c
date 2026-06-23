@@ -22,31 +22,8 @@
  * SOFTWARE.
  */
 /*---------------------------------------------------------------------------*/
-#include "homecore/arch/arch.h"
 #include "homecore/soc/soc.h"
-#include "homecore/board/board.h"
-#include <stdlib.h>
-#include <stdio.h>
 /*---------------------------------------------------------------------------*/
-int main(void) {
-    arch_init();
-    soc_init();
-    board_init();
-
-    char *c = malloc(sizeof(char));
-
-    printf("\nHomeCore Monitor\n");
-    printf("target: %s\n", BOARD);
-    printf("> ");
-
-    while (1) {
-        *c = getchar();
-
-        putchar(*c);
-
-        if (*c == '\r' || *c == '\n') {
-            printf("\n> ");
-        }
-    }
+void soc_init(void) {
 }
 /*---------------------------------------------------------------------------*/

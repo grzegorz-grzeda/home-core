@@ -20,26 +20,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-add_library(cmsis_core INTERFACE)
-target_include_directories(cmsis_core INTERFACE
-    ${HOMECORE_ROOT}/external/cmsis/CMSIS/Core/Include
-)
-
-if(NOT EXISTS ${HOMECORE_ROOT}/external/cmsis/CMSIS/Core/Include/core_cm3.h)
-    message(FATAL_ERROR
-        "CMSIS-Core not found. Run: git submodule update --init --recursive"
-    )
-endif()
-
-target_link_libraries(${PROJECT_NAME} 
-    PRIVATE cmsis_core
-)
-
-target_sources(${PROJECT_NAME} 
-    PRIVATE arch.c
-    PRIVATE boot.c
-)
-
-target_compile_definitions(${PROJECT_NAME} PUBLIC
-    HOMECORE_ARCH=ARM_CORTEX_M3
-)
+add_subdirectory(${HOMECORE_SOC})

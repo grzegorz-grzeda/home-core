@@ -10,8 +10,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -22,31 +22,22 @@
  * SOFTWARE.
  */
 /*---------------------------------------------------------------------------*/
-#include "homecore/arch/arch.h"
-#include "homecore/soc/soc.h"
-#include "homecore/board/board.h"
-#include <stdlib.h>
-#include <stdio.h>
+#ifndef HOME_CORE_SOC_H
+#define HOME_CORE_SOC_H
 /*---------------------------------------------------------------------------*/
-int main(void) {
-    arch_init();
-    soc_init();
-    board_init();
-
-    char *c = malloc(sizeof(char));
-
-    printf("\nHomeCore Monitor\n");
-    printf("target: %s\n", BOARD);
-    printf("> ");
-
-    while (1) {
-        *c = getchar();
-
-        putchar(*c);
-
-        if (*c == '\r' || *c == '\n') {
-            printf("\n> ");
-        }
-    }
+#if defined(__cplusplus)
+extern "C" {
+#endif
+/*---------------------------------------------------------------------------*/
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
+/*---------------------------------------------------------------------------*/
+void soc_init(void);
+/*---------------------------------------------------------------------------*/
+#if defined(__cplusplus)
 }
+#endif
+/*---------------------------------------------------------------------------*/
+#endif // HOME_CORE_SOC_H
 /*---------------------------------------------------------------------------*/
