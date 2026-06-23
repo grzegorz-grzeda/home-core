@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         build_type: [Debug, Release]
-        board: [qemu_lm3s6965evb]
+        board: [lm3s6965evb]
 
     steps:
       - name: Checkout
