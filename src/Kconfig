@@ -1,1 +1,2 @@
+rsource "kernel/Kconfig"
 rsource "subsystems/Kconfig"
