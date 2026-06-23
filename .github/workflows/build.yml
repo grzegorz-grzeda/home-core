@@ -1,0 +1,43 @@
+name: Build HomeCore
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Build firmware
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+        board: [qemu_lm3s6965evb]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            ninja-build \
+            gcc-arm-none-eabi \
+            binutils-arm-none-eabi
+
+      - name: Configure
+        run: |
+          cmake -S . -B build-${{ matrix.build_type }}-${{ matrix.board }} \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DHOMECORE_BOARD=${{ matrix.board }} \
+            -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/arm-none-eabi.cmake \
+
+      - name: Build
+        run: |
+          cmake --build build-${{ matrix.build_type }}-${{ matrix.board }} --verbose
