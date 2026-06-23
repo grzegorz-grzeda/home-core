@@ -20,8 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-add_subdirectory(${HOMECORE_BOARD})
+set(HOMECORE_ARCH_DIR ${HOMECORE_ROOT}/src/arch/${HOMECORE_ARCH})
 
-target_include_directories(${PROJECT_NAME} 
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
+if(NOT EXISTS ${HOMECORE_ARCH_DIR}/arch.cmake)
+    message(FATAL_ERROR "Unknown ARCH: ${HOMECORE_ARCH}. Missing: ${HOMECORE_ARCH_DIR}/arch.cmake")
+endif()
+
+include(${HOMECORE_ARCH_DIR}/arch.cmake)
+
+if(NOT DEFINED HOMECORE_ARCH)
+    message(FATAL_ERROR "ARCH ${HOMECORE_ARCH} did not set ARCH")
+endif()

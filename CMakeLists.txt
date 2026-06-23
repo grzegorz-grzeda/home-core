@@ -26,10 +26,14 @@ project(homecore VERSION 0.0.1 LANGUAGES C ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-
 set(HOMECORE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 set(HOMECORE_BINARY_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
 set(HOMECORE_KCONFIG_CMAKE ${CMAKE_CURRENT_BINARY_DIR}/kconfig.cmake)
+set(HOMECORE_BOARD "" CACHE STRING "Target board")
+
+if(NOT HOMECORE_BOARD)
+    message(FATAL_ERROR "Use: cmake -B build -DHOMECORE_BOARD=bluepill")
+endif()
 
 set(HOMECORE_DEFCONFIG
     ${HOMECORE_ROOT}/configs/homecore_defconfig
@@ -62,15 +66,17 @@ add_custom_target(homecore_config
 )
 
 add_executable(${PROJECT_NAME})
+
+include(${HOMECORE_ROOT}/cmake/board.cmake)
+include(${HOMECORE_ROOT}/cmake/soc.cmake)
+include(${HOMECORE_ROOT}/cmake/arch.cmake)
+
 add_dependencies(${PROJECT_NAME} homecore_config)
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${HOMECORE_BINARY_INCLUDE_DIR}
 )
-add_subdirectory(src)
 
-target_link_libraries(${PROJECT_NAME} 
-    PRIVATE homecore_board
-)
+add_subdirectory(src)
 
 target_compile_options(${PROJECT_NAME} PRIVATE
     -Wall
@@ -82,7 +88,7 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 )
 
 target_link_options(${PROJECT_NAME} PRIVATE
-    -T${CMAKE_SOURCE_DIR}/src/board/${HOMECORE_BOARD}/linker.ld
+    -T${CMAKE_SOURCE_DIR}/src/board/${HOMECORE_BOARD}/board.ld
     -nostartfiles
     -specs=nano.specs
     -Wl,--gc-sections

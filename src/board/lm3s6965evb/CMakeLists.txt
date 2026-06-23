@@ -33,5 +33,5 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
-    HOMECORE_BOARD=QEMU_LM3S6965EVB
+    HOMECORE_BOARD=LM3S6965EVB
 )

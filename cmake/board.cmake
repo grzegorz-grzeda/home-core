@@ -20,8 +20,26 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-add_subdirectory(${HOMECORE_BOARD})
+set(HOMECORE_BOARD_DIR ${HOMECORE_ROOT}/src/board/${HOMECORE_BOARD})
 
-target_include_directories(${PROJECT_NAME} 
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
+if(NOT EXISTS ${HOMECORE_BOARD_DIR}/board.cmake)
+    message(STATUS "------------------------------------------------")
+    message(STATUS "Unknown board: ${HOMECORE_BOARD}. Missing: ${HOMECORE_BOARD_DIR}/board.cmake")
+
+    file(GLOB BOARD_DIRS RELATIVE ${HOMECORE_ROOT}/src/board ${HOMECORE_ROOT}/src/board/*)
+
+    message(STATUS "Available boards:")
+    foreach(board_dir ${BOARD_DIRS})
+        if(EXISTS ${HOMECORE_ROOT}/src/board/${board_dir}/board.cmake)
+            message(STATUS "  ${board_dir}")
+        endif()
+    endforeach()
+    message(STATUS "------------------------------------------------")
+    message(FATAL_ERROR "Terminating due to error.  Please select a valid board using -DHOMECORE_BOARD=<board_name>")
+endif()
+
+include(${HOMECORE_BOARD_DIR}/board.cmake)
+
+if(NOT DEFINED HOMECORE_SOC)
+    message(FATAL_ERROR "Board ${HOMECORE_BOARD} did not set SOC")
+endif()
