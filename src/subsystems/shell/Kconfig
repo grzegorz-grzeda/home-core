@@ -14,6 +14,11 @@ config HOMECORE_SHELL_MAX_INPUT_LENGTH
     int "Maximum shell input length"
     default 128 
 
+config HOMECORE_SHELL_MAX_ARGS
+    int "Maximum number of arguments for shell commands"
+    default 10
+    range 1 20
+
 endif
 
 endmenu

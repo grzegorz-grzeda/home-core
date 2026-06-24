@@ -32,14 +32,13 @@ extern "C" {
 #include <stdint.h>
 /*---------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
-typedef void (*shell_send_char_t)(char c);
 typedef int (*shell_command_handler_t)(int argc, char **argv);
 /*---------------------------------------------------------------------------*/
-void shell_init(shell_send_char_t send_char);
+void shell_init(void);
 /*---------------------------------------------------------------------------*/
 void shell_register_command(const char *name, const char *help, shell_command_handler_t handler);
 /*---------------------------------------------------------------------------*/
-void shell_process_char(char c);
+void shell_run(void);
 /*---------------------------------------------------------------------------*/
 #if defined(__cplusplus)
 }
