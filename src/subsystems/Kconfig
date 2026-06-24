@@ -1,5 +1,6 @@
 menu "Subsystems"
 
 rsource "shell/Kconfig"
+rsource "vfs/Kconfig"
 
 endmenu

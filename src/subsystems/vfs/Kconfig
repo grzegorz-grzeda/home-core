@@ -1,0 +1,20 @@
+menu "Virtual File System"
+
+config HOMECORE_VFS
+    bool "Enable Virtual File System"
+    default y
+    help
+        Enable the virtual file system (VFS) subsystem.
+
+if HOMECORE_VFS
+
+config HOMECORE_VFS_MAX_OPEN_FILES
+    int "Maximum number of open files"
+    default 16
+    range 4 64
+    help
+        Set the maximum number of files that can be opened simultaneously.
+
+endif
+
+endmenu

@@ -21,3 +21,4 @@
 # SOFTWARE.
 #
 add_subdirectory(shell)
+add_subdirectory(vfs)

@@ -25,6 +25,7 @@
 #include "homecore/arch/arch.h"
 #include "homecore/soc/soc.h"
 #include "homecore/board/board.h"
+#include "homecore/vfs/vfs.h"
 #include <stdlib.h>
 #include <stdio.h>
 /*---------------------------------------------------------------------------*/
@@ -33,6 +34,9 @@ int main(void) {
     soc_init();
     board_init();
 
+    vfs_open("/dev/uart0", 0); // stdin
+    vfs_open("/dev/uart0", 0); // stdout
+    vfs_open("/dev/uart0", 0); // stderr
     char *c = malloc(sizeof(char));
 
     printf("\nHomeCore Monitor\n");
