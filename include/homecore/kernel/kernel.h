@@ -10,8 +10,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -22,26 +22,21 @@
  * SOFTWARE.
  */
 /*---------------------------------------------------------------------------*/
-#include "homecore/arch/arch.h"
-#include "homecore/soc/soc.h"
-#include "homecore/board/board.h"
-#include "homecore/vfs/vfs.h"
-#include "homecore/kernel/kernel.h"
-#include "homecore/shell/shell.h"
+#ifndef HOME_CORE_KERNEL_H
+#define HOME_CORE_KERNEL_H
 /*---------------------------------------------------------------------------*/
-#include <stdlib.h>
-#include <stdio.h>
+#if defined(__cplusplus)
+extern "C" {
+#endif
 /*---------------------------------------------------------------------------*/
-int main(void) {
-    arch_init();
-    soc_init();
-    board_init();
-    k_init();
-
-    printf("\nHomeCore Monitor\n");
-
-    shell_init();
-    shell_run();
-    return 0;
+#include <stdint.h>
+/*---------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------*/
+void k_init(void);
+/*---------------------------------------------------------------------------*/
+#if defined(__cplusplus)
 }
+#endif
+/*---------------------------------------------------------------------------*/
+#endif // HOME_CORE_KERNEL_H
 /*---------------------------------------------------------------------------*/

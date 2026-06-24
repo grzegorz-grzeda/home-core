@@ -94,3 +94,10 @@ int _kill(int pid, int sig) {
 int _getpid(void) {
     return 1;
 }
+/*---------------------------------------------------------------------------*/
+void _exit(int status) {
+    (void)status;
+    while (1) {
+        // Infinite loop to halt the program
+    }
+}

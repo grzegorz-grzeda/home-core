@@ -22,26 +22,13 @@
  * SOFTWARE.
  */
 /*---------------------------------------------------------------------------*/
-#include "homecore/arch/arch.h"
-#include "homecore/soc/soc.h"
-#include "homecore/board/board.h"
-#include "homecore/vfs/vfs.h"
 #include "homecore/kernel/kernel.h"
-#include "homecore/shell/shell.h"
+#include "homecore/vfs/vfs.h"
 /*---------------------------------------------------------------------------*/
-#include <stdlib.h>
-#include <stdio.h>
 /*---------------------------------------------------------------------------*/
-int main(void) {
-    arch_init();
-    soc_init();
-    board_init();
-    k_init();
-
-    printf("\nHomeCore Monitor\n");
-
-    shell_init();
-    shell_run();
-    return 0;
+void k_init(void) {
+    vfs_open("/dev/uart0", 0); // stdin
+    vfs_open("/dev/uart0", 0); // stdout
+    vfs_open("/dev/uart0", 0); // stderr
 }
 /*---------------------------------------------------------------------------*/

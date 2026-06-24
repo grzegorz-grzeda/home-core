@@ -28,9 +28,15 @@
 /*---------------------------------------------------------------------------*/
 #include "homecore/vfs/vfs.h"
 /*---------------------------------------------------------------------------*/
+typedef struct vfs_file_descriptor {
+    vfs_node_t *node;
+    int flags;
+    bool is_open;
+} vfs_file_descriptor_t;
+/*---------------------------------------------------------------------------*/
 static vfs_node_t *vfs_root = NULL;
 /*---------------------------------------------------------------------------*/
-static vfs_node_t *vfs_fd_table[CONFIG_HOMECORE_VFS_MAX_OPEN_FILES] = {0};
+static vfs_file_descriptor_t vfs_fd_table[CONFIG_HOMECORE_VFS_MAX_OPEN_FILES] = {0};
 /*---------------------------------------------------------------------------*/
 void vfs_init(void) {
 }
@@ -64,8 +70,10 @@ int vfs_open(const char *name, int flags) {
 
     int fd = -1;
     for (int i = 0; i < CONFIG_HOMECORE_VFS_MAX_OPEN_FILES; ++i) {
-        if (!vfs_fd_table[i]) {
-            vfs_fd_table[i] = node;
+        if (!vfs_fd_table[i].is_open) {
+            vfs_fd_table[i].is_open = true;
+            vfs_fd_table[i].node = node;
+            vfs_fd_table[i].flags = flags;
             fd = i;
             break;
         }
@@ -78,7 +86,7 @@ int vfs_open(const char *name, int flags) {
     if (node->ops.open) {
         int result = node->ops.open(node, flags);
         if (result < 0) {
-            vfs_fd_table[fd] = NULL;
+            vfs_fd_table[fd].is_open = false;
             return result; // Return the error code from the open operation
         }
     }
@@ -91,16 +99,17 @@ int vfs_close(int fd) {
         return -1;
     }
 
-    if (vfs_fd_table[fd] == NULL) {
+    if (!vfs_fd_table[fd].is_open || vfs_fd_table[fd].node == NULL) {
         return -2; // File descriptor not open
     }
 
     int result = 0;
-    if (vfs_fd_table[fd]->ops.close) {
-        result = vfs_fd_table[fd]->ops.close(vfs_fd_table[fd]);
+    if (vfs_fd_table[fd].node->ops.close) {
+        result = vfs_fd_table[fd].node->ops.close(vfs_fd_table[fd].node);
     }
 
-    vfs_fd_table[fd] = NULL;
+    vfs_fd_table[fd].is_open = false;
+    vfs_fd_table[fd].node = NULL;
     return result;
 }
 /*---------------------------------------------------------------------------*/
@@ -109,12 +118,12 @@ int vfs_read(int fd, void *buf, unsigned len) {
         return -1;
     }
 
-    if (vfs_fd_table[fd] == NULL) {
+    if (!vfs_fd_table[fd].is_open || vfs_fd_table[fd].node == NULL) {
         return -2; // File descriptor not open
     }
 
-    if (vfs_fd_table[fd]->ops.read) {
-        return vfs_fd_table[fd]->ops.read(vfs_fd_table[fd], buf, len);
+    if (vfs_fd_table[fd].node->ops.read) {
+        return vfs_fd_table[fd].node->ops.read(vfs_fd_table[fd].node, buf, len);
     }
 
     return -1;
@@ -125,12 +134,12 @@ int vfs_write(int fd, const void *buf, unsigned len) {
         return -1;
     }
 
-    if (vfs_fd_table[fd] == NULL) {
+    if (!vfs_fd_table[fd].is_open || vfs_fd_table[fd].node == NULL) {
         return -2; // File descriptor not open
     }
 
-    if (vfs_fd_table[fd]->ops.write) {
-        return vfs_fd_table[fd]->ops.write(vfs_fd_table[fd], buf, len);
+    if (vfs_fd_table[fd].node->ops.write) {
+        return vfs_fd_table[fd].node->ops.write(vfs_fd_table[fd].node, buf, len);
     }
 
     return -1;
@@ -141,12 +150,12 @@ int vfs_ioctl(int fd, unsigned request, void *arg) {
         return -1;
     }
 
-    if (vfs_fd_table[fd] == NULL) {
+    if (!vfs_fd_table[fd].is_open || vfs_fd_table[fd].node == NULL) {
         return -2; // File descriptor not open
     }
 
-    if (vfs_fd_table[fd]->ops.ioctl) {
-        return vfs_fd_table[fd]->ops.ioctl(vfs_fd_table[fd], request, arg);
+    if (vfs_fd_table[fd].node->ops.ioctl) {
+        return vfs_fd_table[fd].node->ops.ioctl(vfs_fd_table[fd].node, request, arg);
     }
 
     return -1;
@@ -157,12 +166,12 @@ int vfs_lseek(int fd, int offset, int whence) {
         return -1;
     }
 
-    if (vfs_fd_table[fd] == NULL) {
+    if (!vfs_fd_table[fd].is_open || vfs_fd_table[fd].node == NULL) {
         return -2; // File descriptor not open
     }
 
-    if (vfs_fd_table[fd]->ops.lseek) {
-        return vfs_fd_table[fd]->ops.lseek(vfs_fd_table[fd], offset, whence);
+    if (vfs_fd_table[fd].node->ops.lseek) {
+        return vfs_fd_table[fd].node->ops.lseek(vfs_fd_table[fd].node, offset, whence);
     }
 
     return -1;
