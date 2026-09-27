@@ -1,3 +1,6 @@
 [submodule "external/cmsis"]
 	path = external/cmsis
 	url = https://github.com/ARM-software/CMSIS_6
+[submodule "external/g2basic"]
+	path = external/g2basic
+	url = https://github.com/grzegorz-grzeda/g2basic.git
