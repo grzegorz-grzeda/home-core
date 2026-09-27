@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "homecore/shell/shell.h"
+#include "builtin_basic.h"
 #include "homecore/autoconf.h"
 /*---------------------------------------------------------------------------*/
 #define SHELL_TERMINATOR '\n'
@@ -59,6 +60,7 @@ static int shell_print_help(int argc, char **argv) {
 /*---------------------------------------------------------------------------*/
 void shell_init(void) {
     shell_register_command("help", "Display this help message", shell_print_help);
+    shell_register_command("basic", "BASIC language interpreter", shell_builtin_basic);
 }
 /*---------------------------------------------------------------------------*/
 void shell_register_command(const char *name, const char *help, shell_command_handler_t handler) {
@@ -76,18 +78,27 @@ void shell_register_command(const char *name, const char *help, shell_command_ha
     shell_commands = command;
 }
 /*---------------------------------------------------------------------------*/
-static int shell_read_line(char *buffer, size_t max_length) {
+int shell_read_line(char *buffer, size_t max_length) {
+    static int skip_lf = 0;
     size_t len = 0;
 
     if (buffer == NULL || max_length == 0) {
         return -1;
     }
 
+    buffer[0] = '\0';
+    fflush(stdout);
     while (1) {
         int ch = getchar();
 
-        if (ch < 0) {
-            continue;
+        if (ch == EOF) {
+            return -1;
+        }
+        if (skip_lf) {
+            skip_lf = 0;
+            if (ch == '\n') {
+                continue;
+            }
         }
 
         /*
@@ -97,6 +108,7 @@ static int shell_read_line(char *buffer, size_t max_length) {
          * "\r\n"   CRLF
          */
         if (ch == '\r' || ch == '\n') {
+            skip_lf = (ch == '\r');
             putchar('\r');
             putchar('\n');
 
@@ -113,16 +125,17 @@ static int shell_read_line(char *buffer, size_t max_length) {
             if (len > 0) {
                 len--;
                 printf("\b \b");
+                fflush(stdout);
             }
 
             continue;
         }
 
         /*
-         * Ctrl+C
+         * Ctrl+C / Ctrl+D / Ctrl+Z
          */
-        if (ch == 0x03) {
-            printf("^C\r\n");
+        if (ch == 0x03 || ch == 0x04 || ch == 0x1A) {
+            printf("^%c\r\n", ch + '@');
             buffer[0] = '\0';
             return -2;
         }
@@ -139,6 +152,7 @@ static int shell_read_line(char *buffer, size_t max_length) {
             if (len < max_length - 1) {
                 buffer[len++] = (char)ch;
                 putchar((char)ch); // echo
+                fflush(stdout);
             } else {
                 putchar('\a');
             }
@@ -181,8 +195,10 @@ static void shell_execute(const char *line, size_t len) {
 void shell_run(void) {
     while (1) {
         printf("%s", CONFIG_HOMECORE_SHELL_PROMPT);
-        size_t len = shell_read_line(shell_input_buffer, sizeof(shell_input_buffer));
-        shell_execute(shell_input_buffer, len);
+        int len = shell_read_line(shell_input_buffer, sizeof(shell_input_buffer));
+        if (len > 0) {
+            shell_execute(shell_input_buffer, (size_t)len);
+        }
     }
 }
 /*---------------------------------------------------------------------------*/

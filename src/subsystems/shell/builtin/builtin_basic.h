@@ -22,32 +22,10 @@
  * SOFTWARE.
  */
 /*---------------------------------------------------------------------------*/
-#ifndef HOME_CORE_SHELL_H
-#define HOME_CORE_SHELL_H
+#ifndef HOME_CORE_SHELL_BUILTIN_BASIC_H
+#define HOME_CORE_SHELL_BUILTIN_BASIC_H
 /*---------------------------------------------------------------------------*/
-#if defined(__cplusplus)
-extern "C" {
-#endif
+int shell_builtin_basic(int argc, char **argv);
 /*---------------------------------------------------------------------------*/
-#include <stddef.h>
-#include <stdint.h>
-/*---------------------------------------------------------------------------*/
-/*---------------------------------------------------------------------------*/
-typedef int (*shell_command_handler_t)(int argc, char **argv);
-/*---------------------------------------------------------------------------*/
-void shell_init(void);
-/*---------------------------------------------------------------------------*/
-void shell_register_command(const char *name, const char *help, shell_command_handler_t handler);
-/*---------------------------------------------------------------------------*/
-/* Read and echo a console line. Returns its length, or a negative value on
- * invalid arguments, EOF, or Ctrl-C/Ctrl-D/Ctrl-Z. CRLF is one line ending. */
-int shell_read_line(char *buffer, size_t max_length);
-/*---------------------------------------------------------------------------*/
-void shell_run(void);
-/*---------------------------------------------------------------------------*/
-#if defined(__cplusplus)
-}
-#endif
-/*---------------------------------------------------------------------------*/
-#endif // HOME_CORE_SHELL_H
+#endif // HOME_CORE_SHELL_BUILTIN_BASIC_H
 /*---------------------------------------------------------------------------*/

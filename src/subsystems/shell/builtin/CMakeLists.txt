@@ -21,11 +21,9 @@
 # SOFTWARE.
 #
 target_sources(${PROJECT_NAME} 
-    PRIVATE shell.c
+    PRIVATE builtin_basic.c
 )
 
 target_include_directories(${PROJECT_NAME} 
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 )
-
-add_subdirectory(builtin)

@@ -102,3 +102,6 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_OBJCOPY} -O binary ${PROJECT_NAME} ${PROJECT_NAME}.bin
     COMMAND ${CMAKE_SIZE} ${PROJECT_NAME}
 )
+
+add_subdirectory(external/g2basic)
+target_link_libraries(${PROJECT_NAME} PRIVATE g2basic)
