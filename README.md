@@ -28,17 +28,17 @@ Filesystems:
 
 ## Milestones
 1. Booting monitor
-   - [ ] boot on QEMU lm3s6965evb
-   - [ ] UART console
-   - [ ] printf
-   - [ ] malloc
-   - [ ] prompt >
-   - [ ] help, echo, mem, heap
+   - [x] boot on QEMU lm3s6965evb
+   - [x] UART console
+   - [x] printf
+   - [x] malloc
+   - [x] prompt >
+   - [x] help, echo, mem, heap
 
 2. Shell
-   - [ ] command parser
-   - [ ] argc/argv
-   - [ ] command registry
+   - [x] command parser
+   - [x] argc/argv
+   - [x] command registry
    - [ ] line editor
    - [ ] simple history
 
@@ -46,36 +46,36 @@ Filesystems:
    - [ ] /dev/console
    - [ ] /sys/heap
    - [ ] /tmp
-   - [ ] ls
-   - [ ] cat
+   - [x] ls
+   - [x] cat
    - [ ] write
-   - [ ] rm
+   - [x] rm
 
 4. BASIC
-   - [ ] basic command
-   - [ ] PRINT
-   - [ ] LET
-   - [ ] INPUT
-   - [ ] GOTO
-   - [ ] IF
-   - [ ] FOR/NEXT
+   - [x] basic command
+   - [x] PRINT
+   - [x] LET
+   - [x] INPUT
+   - [x] GOTO
+   - [x] IF
+   - [x] FOR/NEXT
    - [ ] SAVE/LOAD przez VFS
 
 5. Users
    - [ ] login
    - [ ] logout
-   - [ ] whoami
+   - [x] whoami
    - [ ] session
-   - [ ] home directory
+   - [x] home directory
    - [ ] simple permissions
 
 6. Threads
    - [ ] idle thread
    - [ ] shell thread
    - [ ] sleep
-   - [ ] yield
-   - [ ] SysTick
-   - [ ] PendSV context switch
+   - [x] yield
+   - [x] SysTick
+   - [x] PendSV context switch
    - [ ] mutex
 
 7. SVC/ABI
