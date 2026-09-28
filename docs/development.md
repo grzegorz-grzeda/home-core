@@ -4,6 +4,8 @@ Run all commands from the repository root. Board wiring and execution details
 are in the [QEMU](boards/lm3s6965evb.md) and
 [STM32](boards/stm32f4discovery.md) guides.
 
+Follow the [C coding standard](coding-standard.md) for new and changed first-party code.
+
 ## Setup
 
 Required: CMake 3.25+, Ninja, Arm GNU bare-metal GCC/binutils with newlib-nano,

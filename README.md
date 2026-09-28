@@ -44,6 +44,7 @@ RAM files and session state are lost on reset.
 ## Documentation
 
 - [Architecture](docs/architecture.md): layers, startup, memory, and runtime contracts.
+- [C coding standard](docs/coding-standard.md): language, style, memory, and interrupt rules.
 - [Development](docs/development.md): setup, builds, configuration, tests, and debugging.
 - [Porting](docs/porting.md): adding boards, SoCs, and architecture support.
 - [Shell and system services](docs/shell.md): commands, sessions, RAM files, and uptime.

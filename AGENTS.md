@@ -16,8 +16,9 @@ and the G2BASIC submodule. Start with [architecture](docs/architecture.md) and
 - Keep architecture mechanisms in `src/arch`, chip-specific code in `src/soc`,
   and board wiring/clock policy in `src/board`. Keep public interfaces in
   `include/homecore` and portable shell/VFS code in `src/subsystems`.
-- Follow `.clang-format` and neighboring code: four-space indentation, attached
-  braces, and a 100-column limit. Keep formatting changes scoped to edited code.
+- Follow the [C coding standard](docs/coding-standard.md) for new and changed
+  first-party code, including mandatory control-statement braces. Use
+  `.clang-format` for layout and keep formatting changes scoped to edited code.
 - Preserve license notices. Treat `external/cmsis` and `external/g2basic` as
   submodules; make dependency updates explicit. Preserve the source version and
   license when updating vendored `external/stm32f4` headers.
