@@ -20,9 +20,10 @@ commands and VFS device nodes follow [extending](docs/extending.md).
 - Follow the [C coding standard](docs/coding-standard.md) for new and changed
   first-party code, including mandatory control-statement braces. Use
   `.clang-format` for layout and keep formatting changes scoped to edited code.
-- Preserve license notices. Treat `external/cmsis` and `external/g2basic` as
-  submodules; make dependency updates explicit. Preserve the source version and
-  license when updating vendored `external/stm32f4` headers.
+- Preserve license notices. Treat `external/cmsis`, `external/g2basic`, and
+  `external/doxygen-awesome-css` as submodules; make dependency updates
+  explicit. Preserve the source version and license when updating vendored
+  `external/stm32f4` headers.
 - Edit Kconfig definitions or defconfig inputs, then rerun CMake configuration.
   Do not hand-edit generated headers, `.config`, linker scripts, or build output.
 - Keep CPU/ABI flags consistent across firmware, assembly, libraries, and linking.

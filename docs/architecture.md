@@ -20,7 +20,7 @@ the implementation before relying on them.
 | `include/homecore/` | Public C interfaces |
 | `cmake/`, `configs/`, `scripts/` | Target selection, linking, configuration, QEMU launcher |
 | `tests/` | Host regressions and QEMU command regression |
-| `external/` | CMSIS and G2BASIC submodules; pinned ST device headers |
+| `external/` | CMSIS, G2BASIC, and doxygen-awesome-css submodules; pinned ST device headers |
 
 ## Build selection
 

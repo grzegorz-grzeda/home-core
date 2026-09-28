@@ -41,8 +41,8 @@ doxygen Doxyfile                                                # API docs -> bu
   configure the LM3S preset before compiling them by hand.
 - Firmware changes are validated in QEMU (LM3S) only. Never report STM32
   behavior as verified from a build; say that hardware validation is pending.
-- `external/cmsis` and `external/g2basic` are submodules. Do not edit them in
-  place. Do not edit anything under `build/`.
+- `external/cmsis`, `external/g2basic`, and `external/doxygen-awesome-css` are
+  submodules. Do not edit them in place. Do not edit anything under `build/`.
 - Public headers carry Doxygen comments grouped by layer (`docs/doxygen/groups.dox`).
   When changing a public declaration, update its comment in the same change.
 - The QEMU shell is interactive (`bash scripts/run-qemu-lm3s6965evb.sh`, exit with

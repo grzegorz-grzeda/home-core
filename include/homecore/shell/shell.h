@@ -44,8 +44,8 @@ extern "C" {
  * @brief Interactive console shell and command registry.
  *
  * The shell runs in the foreground on the standard streams. Built-in commands
- * live in `src/subsystems/shell/builtin/`. See `docs/shell.md` for commands
- * and `docs/extending.md` for adding one.
+ * live in `src/subsystems/shell/builtin/`. The shell and extending guides
+ * listed under @ref mainpage_guides describe the commands and how to add one.
  * @{
  */
 /*---------------------------------------------------------------------------*/

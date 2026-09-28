@@ -4,8 +4,18 @@
 HomeCore is single-threaded C11 bare-metal firmware. It provides a serial shell,
 a VFS with RAM files, user sessions, a 1 kHz uptime clock, and the G2BASIC
 interpreter. This reference covers the public headers under `include/homecore`.
-Guides for architecture, development, porting, and extension are under `docs/`
-in the repository.
+The source is on [GitHub](https://github.com/grzegorz-grzeda/home-core).
+
+@section mainpage_guides Guides
+
+| Guide | Contents |
+| --- | --- |
+| [Architecture](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/architecture.md) | Layers, startup, memory, and runtime contracts |
+| [Development](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/development.md) | Setup, builds, configuration, tests, and debugging |
+| [C coding standard](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/coding-standard.md) | Language, style, memory, and interrupt rules |
+| [Shell and system services](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/shell.md) | Commands, sessions, RAM files, and uptime |
+| [Extending](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/extending.md) | Adding shell commands and VFS device nodes |
+| [Porting](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/porting.md) | Adding boards, SoCs, and architecture support |
 
 @section mainpage_layers Layers
 

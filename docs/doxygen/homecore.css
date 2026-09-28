@@ -1,0 +1,19 @@
+/* HomeCore colours for doxygen-awesome-css (external/doxygen-awesome-css).
+ * Loaded after doxygen-awesome.css. Only the teal primary palette changes. The
+ * dark-mode toggle extension is installed, so dark overrides go on html.dark-mode;
+ * the toggle applies that class on its own when the system prefers dark. */
+
+html {
+    --primary-color: #0e7c8a;
+    --primary-dark-color: #0a5a64;
+    --primary-light-color: #5ab4c0;
+}
+
+/* Contrast (WCAG): links 4.9:1 on white and 5.6:1 on the dark page; text on
+ * the primary colour 4.9:1 (light, white text) and 6.2:1 (dark, dark text). */
+html.dark-mode {
+    --primary-color: #1fa3b3;
+    --primary-dark-color: #7ad3de;
+    --primary-light-color: #2b7f89;
+    --on-primary-color: #0b1416;
+}

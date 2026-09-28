@@ -19,7 +19,8 @@ python3 -m venv .venv
 ```
 
 The Python dependency list is maintained in `requirements.txt`. CMSIS and G2BASIC
-are submodules; ST's device headers are vendored with their license and version.
+are submodules, as is the doxygen-awesome-css documentation theme. ST's device
+headers are vendored with their license and version.
 
 ## Builds
 
@@ -192,8 +193,10 @@ LM3S jobs also run QEMU against their own freshly built ELF. Jobs run independen
 so a quality failure does not hide build results. CI build output is under
 `build/ci/<board>/<configuration>`.
 
-The `API documentation` job installs Doxygen and Graphviz and runs
-`doxygen Doxyfile`, failing on any documentation warning. It uploads the HTML
+The `API documentation` job fetches only the theme submodule, installs
+Doxygen and Graphviz, and runs `doxygen Doxyfile` with the `project()` version
+and short commit as `HOMECORE_DOCS_VERSION`. It fails on any documentation
+warning. It uploads the HTML
 as a `github-pages` artifact, which pull-request runs keep as a downloadable
 preview. On pushes to the default branch, `Publish API documentation` deploys
 that artifact to GitHub Pages at <https://grzegorz-grzeda.github.io/home-core/>.
@@ -254,15 +257,19 @@ defines one module group, and each module belongs to a layer group:
 
 The layer groups and the main page are defined in `docs/doxygen/groups.dox`.
 The configuration is the repository [`Doxyfile`](../Doxyfile). It requires
-Doxygen 1.9.8 or later and Graphviz `dot`. On Ubuntu, install them with
-`sudo apt-get install doxygen graphviz`. Generate the HTML from the repository
-root:
+Doxygen 1.9.8 or later, Graphviz `dot`, and the theme submodule. On Ubuntu,
+install the tools with `sudo apt-get install doxygen graphviz`. The full
+`git submodule update --init --recursive` from [Setup](#setup) includes the
+theme; to fetch only the theme, run the first command below. Generate the HTML
+from the repository root:
 
 ```bash
+git submodule update --init external/doxygen-awesome-css
 doxygen Doxyfile
 ```
 
-Open `build/docs/index.html`. The output includes include-dependency
+Open `build/docs/index.html`. Set `HOMECORE_DOCS_VERSION` to show a version
+in the page header, for example `HOMECORE_DOCS_VERSION=0.0.2 doxygen Doxyfile`. The output includes include-dependency
 graphs for each header, collaboration graphs for structures, and a group
 hierarchy graph for each module.
 
@@ -274,8 +281,28 @@ also has a `docs` target. It writes to `<build dir>/docs` and stamps the
 cmake --build --preset lm3s6965evb --target docs
 ```
 
-Without Doxygen or `dot`, configuration reports that the target is disabled
-and firmware builds are unaffected. Rerun configuration after installing them.
+Without Doxygen, `dot`, or the theme submodule, configuration reports that the
+target is disabled and firmware builds are unaffected. Rerun configuration after
+installing them.
+
+### Theme
+
+The site uses [doxygen-awesome-css](https://github.com/jothepro/doxygen-awesome-css)
+v2.5.0, pinned as the `external/doxygen-awesome-css` submodule (MIT license).
+It supports Doxygen 1.9.6 to 1.18.0 and requires `HTML_COLORSTYLE = LIGHT`. It
+provides the responsive layout, a light/dark toggle next to the search box, and
+inverted Graphviz graphs in dark mode. The toggle follows the system theme
+until a reader chooses one.
+
+- `docs/doxygen/homecore.css` sets the teal palette for both modes. Keep link
+  text and text on the primary colour at a WCAG contrast of at least 4.5:1;
+  the file records the current ratios.
+- `docs/doxygen/header.html` is Doxygen 1.9.8's default header, generated with
+  `doxygen -w html header.html footer.html style.css`, plus the toggle script.
+  It also renders correctly with Doxygen 1.12. When CI's Doxygen version
+  changes, regenerate it the same way and re-add the two script tags.
+- To update the theme, check out a newer release tag in the submodule, then
+  check both modes and the phone layout before committing.
 
 CI publishes the documentation for the default branch to
 [GitHub Pages](https://grzegorz-grzeda.github.io/home-core/); see

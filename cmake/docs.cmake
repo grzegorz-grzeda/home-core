@@ -31,6 +31,12 @@ if(NOT TARGET Doxygen::doxygen OR NOT TARGET Doxygen::dot)
     return()
 endif()
 
+if(NOT EXISTS ${HOMECORE_ROOT}/external/doxygen-awesome-css/doxygen-awesome.css)
+    message(STATUS "Documentation theme submodule missing; 'docs' target disabled. "
+                   "Run: git submodule update --init external/doxygen-awesome-css")
+    return()
+endif()
+
 cmake_path(GET DOXYGEN_DOT_EXECUTABLE PARENT_PATH HOMECORE_DOT_DIR)
 set(HOMECORE_DOCS_DIR ${CMAKE_CURRENT_BINARY_DIR}/docs)
 # The Doxyfile places HTML in the docs/ subdirectory of OUTPUT_DIRECTORY.

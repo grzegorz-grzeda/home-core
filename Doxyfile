@@ -5,15 +5,18 @@
 #
 # Only settings that differ from Doxygen's defaults are listed, so the file works
 # with Doxygen 1.9.8 (Ubuntu 24.04) and later without upgrade warnings. Graph
-# output requires Graphviz `dot` on PATH. See docs/development.md#api-documentation.
+# output requires Graphviz `dot` on PATH. The theme requires the submodule:
+#   git submodule update --init external/doxygen-awesome-css
+# See docs/development.md#api-documentation.
 
 #---------------------------------------------------------------------------
 # Project
 #---------------------------------------------------------------------------
 PROJECT_NAME           = HomeCore
 PROJECT_BRIEF          = "Bare-metal personal computer firmware for Cortex-M"
-# The CMake docs target overrides this with the project() version.
-PROJECT_NUMBER         =
+# Set HOMECORE_DOCS_VERSION to show a version; CI passes the project() version
+# and commit, and the CMake docs target passes the project() version.
+PROJECT_NUMBER         = $(HOMECORE_DOCS_VERSION)
 # Doxygen creates only the last directory level of each path, so the output
 # location is split in two: it creates build/ on a fresh clone, then docs/.
 OUTPUT_DIRECTORY       = build
@@ -73,7 +76,20 @@ PREDEFINED             = "__attribute__(x)="
 #---------------------------------------------------------------------------
 GENERATE_HTML          = YES
 GENERATE_TREEVIEW      = YES
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
 GENERATE_LATEX         = NO
+
+#---------------------------------------------------------------------------
+# Theme: doxygen-awesome-css (submodule, pinned) with a dark-mode toggle and
+# HomeCore's teal palette. The theme requires HTML_COLORSTYLE = LIGHT; it
+# provides dark mode itself and inverts Graphviz graphs to match.
+#---------------------------------------------------------------------------
+HTML_COLORSTYLE        = LIGHT
+HTML_HEADER            = docs/doxygen/header.html
+HTML_EXTRA_STYLESHEET  = external/doxygen-awesome-css/doxygen-awesome.css \
+                         docs/doxygen/homecore.css
+HTML_EXTRA_FILES       = external/doxygen-awesome-css/doxygen-awesome-darkmode-toggle.js
 
 #---------------------------------------------------------------------------
 # Graphviz diagrams
