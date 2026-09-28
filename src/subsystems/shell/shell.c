@@ -22,12 +22,12 @@
  * SOFTWARE.
  */
 /*---------------------------------------------------------------------------*/
+#include "homecore/shell/shell.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "homecore/shell/shell.h"
 #include "builtin_basic.h"
 #include "builtin_files.h"
 #include "builtin_session.h"
@@ -63,12 +63,15 @@ static int shell_print_help(shell_context_t *context, int argc, char **argv) {
 }
 /*---------------------------------------------------------------------------*/
 void shell_init(void) {
-    if (shell_commands) return;
+    if (shell_commands) {
+        return;
+    }
     shell_register_command("mem", "Show heap usage", shell_builtin_mem);
     shell_register_command("uptime", "Show elapsed time since startup", shell_builtin_uptime);
     shell_register_command("clear", "Clear terminal", shell_builtin_clear);
     shell_register_command("reboot", "Reset the board", shell_builtin_reboot);
-    shell_register_command("rmdir", "Remove empty RAM directories: rmdir path...", shell_builtin_rmdir);
+    shell_register_command(
+        "rmdir", "Remove empty RAM directories: rmdir path...", shell_builtin_rmdir);
     shell_register_command("touch", "Create empty RAM files: touch path...", shell_builtin_touch);
     shell_register_command("rm", "Remove RAM files: rm path...", shell_builtin_rm);
     shell_register_command("cd", "Change working directory: cd [path]", shell_builtin_cd);
@@ -182,7 +185,9 @@ int shell_read_line(char *buffer, size_t max_length) {
 }
 /*---------------------------------------------------------------------------*/
 int shell_execute_line(shell_context_t *context, char *line) {
-    if (!context || !context->user || !line) return -1;
+    if (!context || !context->user || !line) {
+        return -1;
+    }
     char *args[CONFIG_HOMECORE_SHELL_MAX_ARGS + 1];
     size_t argc = 0;
     char *save = NULL;
@@ -197,7 +202,9 @@ int shell_execute_line(shell_context_t *context, char *line) {
         token = strtok_r(NULL, " \t", &save);
     }
     args[argc] = NULL;
-    if (!argc) return context->last_status;
+    if (!argc) {
+        return context->last_status;
+    }
 
     for (shell_command_t *command = shell_commands; command; command = command->next) {
         if (strcmp(command->name, args[0]) == 0) {

@@ -24,12 +24,26 @@
 /*---------------------------------------------------------------------------*/
 #include "homecore/kernel/kernel.h"
 #include "homecore/vfs/vfs.h"
+#include "homecore/board/board.h"
+#include <fcntl.h>
 /*---------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
 void k_init(void) {
     k_uptime_init();
-    vfs_open("/dev/uart0", 0); // stdin
-    vfs_open("/dev/uart0", 0); // stdout
-    vfs_open("/dev/uart0", 0); // stderr
+    const int modes[] = {O_RDONLY, O_WRONLY, O_WRONLY};
+    for (int expected = 0; expected < 3; ++expected) {
+        int fd = vfs_open("/dev/uart0", modes[expected]);
+        if (fd != expected) {
+            /* Best-effort cleanup before a fatal halt; preserve unrelated fds. */
+            if (fd >= 0) {
+                (void)vfs_close(fd);
+            }
+            for (int opened = 0; opened < expected; ++opened) {
+                (void)vfs_close(opened);
+            }
+            board_panic("Cannot initialize standard console descriptors");
+            return;
+        }
+    }
 }
 /*---------------------------------------------------------------------------*/

@@ -13,9 +13,13 @@ int session_chdir(session_t *session, const char *path) {
         return -1;
     }
     char resolved[VFS_PATH_CAPACITY];
-    if (vfs_resolve_path(session->cwd, path, resolved) < 0) return -1;
+    if (vfs_resolve_path(session->cwd, path, resolved) < 0) {
+        return -1;
+    }
     vfs_node_t *node = vfs_find_node(resolved);
-    if (!node) return -1;
+    if (!node) {
+        return -1;
+    }
     if (!node->is_directory) {
         errno = ENOTDIR;
         return -1;
@@ -30,7 +34,9 @@ int session_init(session_t *session, const user_t *user) {
         return -1;
     }
     session_t initialized = {.user = user, .cwd = "/", .last_status = 0};
-    if (session_chdir(&initialized, user->home) < 0) return -1;
+    if (session_chdir(&initialized, user->home) < 0) {
+        return -1;
+    }
     *session = initialized;
     return 0;
 }

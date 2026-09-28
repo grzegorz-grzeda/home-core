@@ -24,6 +24,8 @@
 /*---------------------------------------------------------------------------*/
 #include "homecore/soc/soc.h"
 #include "homecore/vfs/vfs.h"
+#include <errno.h>
+#include <limits.h>
 #include "soc_cmsis.h"
 /*---------------------------------------------------------------------------*/
 #define UART_FR_TXFF (1u << 5)
@@ -32,13 +34,17 @@
 /*---------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
 static int soc_uart_read(vfs_node_t *node, void *buf, unsigned len) {
-    (void)len;
+    if (len == 0) {
+        return 0;
+    }
 
     if (!buf) {
+        errno = EFAULT;
         return -1;
     }
     UART0_Type *uart = (UART0_Type *)node->driver_data;
     while (uart->FR & UART_FR_RXFE) {
+        /* Blocking console read: wait for a received byte. */
     }
     char *c = (char *)buf;
 
@@ -48,22 +54,32 @@ static int soc_uart_read(vfs_node_t *node, void *buf, unsigned len) {
 }
 /*---------------------------------------------------------------------------*/
 static int soc_uart_write(vfs_node_t *node, const void *buf, unsigned len) {
+    if (len == 0) {
+        return 0;
+    }
+    if (len > INT_MAX) {
+        errno = EOVERFLOW;
+        return -1;
+    }
+
     if (!buf) {
+        errno = EFAULT;
         return -1;
     }
     UART0_Type *uart = (UART0_Type *)node->driver_data;
     const char *c = (const char *)buf;
 
-    int cnt = 0;
+    unsigned cnt = 0;
     while (len-- > 0) {
         while (uart->FR & UART_FR_TXFF) {
+            /* Poll until the transmit FIFO has space. */
         }
 
-        uart->DR = (uint32_t)(*c++);
+        uart->DR = (uint8_t)(*c++);
         cnt++;
     }
 
-    return cnt; // Return the number of bytes written
+    return (int)cnt;
 }
 /*---------------------------------------------------------------------------*/
 static vfs_node_t uart0_node = {.name = "/dev/uart0",

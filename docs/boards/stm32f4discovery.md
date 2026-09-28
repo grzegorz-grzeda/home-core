@@ -53,3 +53,7 @@ LM3S6965EVB QEMU command regression passes; STM32 hardware validation is still
 required. ST's pinned CMSIS device headers and license are in `external/stm32f4`.
 
 See [development](../development.md) for prerequisites and validation commands.
+
+Clock startup waits use a finite iteration budget because SysTick is not running
+yet. HSI readiness or clock-switch failure enters the fatal halt path before UART
+initialization; diagnose that silent failure with a debugger.

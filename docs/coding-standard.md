@@ -124,8 +124,9 @@ inline assembly are allowed in architecture, SoC, board, and runtime integration
 code. Document their assumptions and isolate them from portable logic. Keep CPU
 and floating-point ABI flags consistent across all linked code.
 
-Use `.clang-format` for layout and review semantic rules explicitly: formatting
-alone does not enforce braces, ownership, interrupt safety, or error handling.
+Use `.clang-format` for layout and brace insertion, and review semantic rules
+explicitly: formatting alone does not enforce ownership, interrupt safety, or
+error handling. Review brace insertion around preprocessor conditionals manually.
 Check the documented builds and relevant regressions before submitting code.
 Resolve warnings introduced by a change; do not suppress them broadly.
 
@@ -133,3 +134,18 @@ The firmware currently enables `-Wall -Wextra`; documented host-test commands
 also use `-Werror`. Add stricter warnings or static-analysis checks incrementally,
 reviewing their diagnostics before making them mandatory. Automated formatting
 and comprehensive coding-standard checks are not currently enforced by CI.
+
+## Required review gate
+
+The [mandatory review procedure in AGENTS.md](../AGENTS.md#mandatory-coding-standard-review)
+is part of this standard. Every first-party C/header change, including tests,
+requires a final-diff semantic review, formatting checks, and applicable build
+and regression validation. Review must cover affected contracts as well as
+changed lines. Re-review edits made after the review.
+
+Introduced or exposed violations in affected code paths must be fixed or have
+a justified low-level exception recorded with the rule, location, reason, and
+validation evidence. Report the result and any exceptions explicitly. Missing
+checks or unresolved findings mean the review is incomplete. Passing tests is
+not a substitute for review, and local review is required even where CI has no
+automated enforcement.

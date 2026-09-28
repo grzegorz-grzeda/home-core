@@ -22,6 +22,7 @@
  * SOFTWARE.
  */
 /*---------------------------------------------------------------------------*/
+#include "builtin_basic.h"
 #include "g2basic.h"
 #include "homecore/kernel/kernel.h"
 #include "homecore/shell/shell.h"

@@ -22,9 +22,9 @@
  * SOFTWARE.
  */
 /*---------------------------------------------------------------------------*/
+#include "homecore/board/board.h"
 #include <stdint.h>
 /*---------------------------------------------------------------------------*/
-#include "homecore/board/board.h"
 #include "soc_cmsis.h"
 /*---------------------------------------------------------------------------*/
 #define UART_FR_TXFF (1u << 5)
@@ -40,6 +40,7 @@ void board_init(void) {
 /*---------------------------------------------------------------------------*/
 void board_uart_putc(char c) {
     while (UART0->FR & UART_FR_TXFF) {
+        /* Poll until the transmit FIFO has space. */
     }
 
     UART0->DR = (uint32_t)c;
@@ -51,6 +52,7 @@ int board_uart_has_data(void) {
 /*---------------------------------------------------------------------------*/
 int board_uart_getc(void) {
     while (!board_uart_has_data()) {
+        /* Blocking console read: wait for a received byte. */
     }
 
     return (int)(UART0->DR & 0xff);
@@ -62,6 +64,7 @@ void board_panic(const char *msg) {
     }
 
     while (1) {
+        /* Permanent fatal halt. */
     }
 }
 /*---------------------------------------------------------------------------*/

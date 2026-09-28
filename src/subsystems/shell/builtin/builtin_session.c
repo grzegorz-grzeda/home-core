@@ -43,7 +43,9 @@ int shell_builtin_id(shell_context_t *context, int argc, char **argv) {
         puts("Usage: id");
         return 1;
     }
-    printf("uid=%lu(%s) gid=%lu\n", (unsigned long)context->user->uid,
-           context->user->name, (unsigned long)context->user->gid);
+    printf("uid=%lu(%s) gid=%lu\n",
+           (unsigned long)context->user->uid,
+           context->user->name,
+           (unsigned long)context->user->gid);
     return 0;
 }

@@ -3,7 +3,9 @@
 
 void Default_IRQHandler(void) {
     __disable_irq();
-    for (;;) __WFI();
+    for (;;) {
+        __WFI();
+    }
 }
 
 void WWDG_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
@@ -89,8 +91,7 @@ void HASH_RNG_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler"))
 void FPU_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
 
 /* IRQ slots 0..81, immediately after the 16 architectural vectors. */
-__attribute__((used, section(".isr_vector.soc"), aligned(4)))
-void (* const soc_vectors[])(void) = {
+__attribute__((used, section(".isr_vector.soc"), aligned(4))) void (*const soc_vectors[])(void) = {
     WWDG_IRQHandler,
     PVD_IRQHandler,
     TAMP_STAMP_IRQHandler,

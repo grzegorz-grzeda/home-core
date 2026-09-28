@@ -34,15 +34,22 @@ extern "C" {
 #define BOARD_STRINGIFY(x) #x
 #define BOARD              BOARD_STRINGIFY(HOMECORE_BOARD_NAME)
 /*---------------------------------------------------------------------------*/
+/* Initialize once before normal UART use. Called from foreground startup. */
 void board_init(void);
 uint32_t board_cpu_clock_hz(void);
 /*---------------------------------------------------------------------------*/
+/* Polling output; may block indefinitely. Foreground or fatal panic only. */
 void board_uart_putc(char c);
 /*---------------------------------------------------------------------------*/
+/* Blocking foreground read; returns one byte in 0..255. No EOF semantics. */
 int board_uart_getc(void);
 /*---------------------------------------------------------------------------*/
+/* Nonblocking status: nonzero if RX data is available. Requires board_init(). */
 int board_uart_has_data(void);
 /*---------------------------------------------------------------------------*/
+/* Fatal halt, including fault context. msg must be a valid NUL-terminated string.
+ * Does not retain msg or return on hardware. Output is best effort; early faults
+ * may halt silently if the console has not yet been initialized. */
 void board_panic(const char *msg);
 /*---------------------------------------------------------------------------*/
 #if defined(__cplusplus)

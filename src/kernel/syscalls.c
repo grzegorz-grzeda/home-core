@@ -22,6 +22,7 @@
  * SOFTWARE.
  */
 /*---------------------------------------------------------------------------*/
+#include "homecore/kernel/kernel.h"
 #include <errno.h>
 #include <stdint.h>
 #include <sys/stat.h>
@@ -30,7 +31,6 @@
 #include <stddef.h>
 #include <malloc.h>
 #include <string.h>
-#include "homecore/kernel/kernel.h"
 /*---------------------------------------------------------------------------*/
 #include "homecore/board/board.h"
 #include "homecore/vfs/vfs.h"
@@ -45,8 +45,7 @@ void *_sbrk(ptrdiff_t incr) {
     uintptr_t current = (uintptr_t)heap_current;
     uintptr_t start = (uintptr_t)&_heap_start, end = (uintptr_t)&_heap_end;
     size_t amount = incr < 0 ? (size_t)(-(incr + 1)) + 1 : (size_t)incr;
-    if ((incr < 0 && amount > current - start) ||
-        (incr >= 0 && amount > end - current)) {
+    if ((incr < 0 && amount > current - start) || (incr >= 0 && amount > end - current)) {
         errno = ENOMEM;
         return (void *)-1;
     }
@@ -64,16 +63,26 @@ void k_heap_stats(k_heap_stats_t *stats) {
 /*---------------------------------------------------------------------------*/
 int _open(const char *name, int flags, ...) {
     char path[VFS_PATH_CAPACITY];
-    if (vfs_resolve_path(session_current()->cwd, name, path) < 0) return -1;
+    if (vfs_resolve_path(session_current()->cwd, name, path) < 0) {
+        return -1;
+    }
     return vfs_open(path, flags);
 }
 /*---------------------------------------------------------------------------*/
 int _write(int fd, const char *buf, int len) {
-    return vfs_write(fd, buf, len);
+    if (len < 0) {
+        errno = EINVAL;
+        return -1;
+    }
+    return vfs_write(fd, buf, (unsigned)len);
 }
 /*---------------------------------------------------------------------------*/
 int _read(int fd, char *buf, int len) {
-    return vfs_read(fd, buf, len);
+    if (len < 0) {
+        errno = EINVAL;
+        return -1;
+    }
+    return vfs_read(fd, buf, (unsigned)len);
 }
 /*---------------------------------------------------------------------------*/
 int _close(int fd) {
@@ -82,8 +91,13 @@ int _close(int fd) {
 /*---------------------------------------------------------------------------*/
 int _fstat(int fd, struct stat *st) {
     vfs_node_t *node = vfs_fd_node(fd);
-    if (!node) return -1;
-    if (!st) { errno = EFAULT; return -1; }
+    if (!node) {
+        return -1;
+    }
+    if (!st) {
+        errno = EFAULT;
+        return -1;
+    }
     memset(st, 0, sizeof(*st));
     st->st_mode = node->is_regular ? S_IFREG : S_IFCHR;
     st->st_size = node->size;
@@ -92,8 +106,13 @@ int _fstat(int fd, struct stat *st) {
 /*---------------------------------------------------------------------------*/
 int _isatty(int fd) {
     vfs_node_t *node = vfs_fd_node(fd);
-    if (!node) return 0;
-    if (node->is_regular || node->ops.snapshot) { errno = ENOTTY; return 0; }
+    if (!node) {
+        return 0;
+    }
+    if (node->is_regular || node->ops.snapshot) {
+        errno = ENOTTY;
+        return 0;
+    }
     return 1;
 }
 /*---------------------------------------------------------------------------*/

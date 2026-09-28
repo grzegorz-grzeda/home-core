@@ -30,7 +30,9 @@ static int uptime_snapshot(vfs_node_t *node, char *buf, unsigned capacity) {
         value /= 10;
     } while (value);
     unsigned length = sizeof(digits) - start;
-    if (capacity < length) return -1;
+    if (capacity < length) {
+        return -1;
+    }
     memcpy(buf, digits + start, length);
     return (int)length;
 }

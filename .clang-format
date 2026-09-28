@@ -1,6 +1,8 @@
 BasedOnStyle: LLVM
 
-Language: C
+Language: Cpp
+# clang-format uses Cpp for both C and C++ in version 19.
+InsertBraces: true
 
 IndentWidth: 4
 TabWidth: 4

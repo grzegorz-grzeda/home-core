@@ -134,3 +134,38 @@ The existing workflow builds LM3S Debug and Release. It does not build STM32
 or run host/QEMU regressions. Its artifact glob includes `.elf`, while the
 actual ELF is named `homecore`, so the ELF is not currently included by that
 pattern. These are workflow gaps; local checks above remain necessary.
+
+## UART and console regression tests
+
+These host tests exercise actual UART callbacks with mocked hardware and board
+I/O, plus libc length validation and console startup failure cleanup:
+
+```bash
+cc -Wall -Wextra -Werror -Iinclude tests/uart_contract_test.c -o /tmp/hc-uart-lm3s
+timeout 5 /tmp/hc-uart-lm3s
+cc -Wall -Wextra -Werror -Iinclude -DTEST_STM32 tests/uart_contract_test.c -o /tmp/hc-uart-stm32
+timeout 5 /tmp/hc-uart-stm32
+cc -Wall -Wextra -Werror -Wno-deprecated-declarations -ffunction-sections -fdata-sections -Iinclude tests/console_io_test.c -Wl,--gc-sections -o /tmp/hc-console
+/tmp/hc-console
+```
+
+Section garbage collection omits unused newlib hooks from the host test link.
+The deprecation exception is local to this test: host libc marks `mallinfo()`
+deprecated, while the firmware uses newlib's API. The tests do not validate
+physical UART timing or STM32 clock behavior.
+
+## Formatting checks
+
+Use clang-format 19.1.7 for reproducible checks. It names its C/C++ configuration
+language `Cpp`; this does not change HomeCore's C11 compilation mode.
+
+```bash
+.venv/bin/pip install clang-format==19.1.7
+rg --files src -g '*.c' | xargs .venv/bin/clang-format --dry-run --Werror
+.venv/bin/clang-format --dry-run --Werror include/homecore/board/board.h tests/uart_contract_test.c tests/console_io_test.c
+```
+
+The source implementation files and the listed header/tests have been formatted.
+Other existing headers/tests have not undergone a complete style conversion.
+`InsertBraces` is enabled; review formatter edits before accepting them. These
+checks are local and are not yet part of CI.
