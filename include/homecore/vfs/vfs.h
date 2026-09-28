@@ -60,11 +60,16 @@ typedef struct vfs_node {
     void *driver_data;
     vfs_node_t *next;
     bool is_directory;
+    bool is_regular;
+    unsigned size;
 } vfs_node_t;
 /*---------------------------------------------------------------------------*/
 /* Names passed to the visitor are valid only for the duration of the call. */
 typedef int (*vfs_directory_visitor_t)(const char *name, bool is_directory, void *context);
 int vfs_mkdir(const char *path);
+int vfs_rmdir(const char *path);
+int vfs_unlink(const char *path);
+vfs_node_t *vfs_fd_node(int fd);
 int vfs_list(const char *path, vfs_directory_visitor_t visitor, void *context);
 /* Resolve relative paths against an explicit existing base directory.
  * Output is a canonical absolute path; its final component may not exist.

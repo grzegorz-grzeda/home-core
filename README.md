@@ -222,8 +222,7 @@ persistent file storage yet.
 
 `cat path...` copies existing readable VFS nodes to the console until EOF.
 Streaming devices such as UARTs can wait indefinitely because they do not
-provide file EOF. These commands do not add regular-file creation or shell
-redirection.
+provide file EOF. Shell redirection is not implemented.
 
 Run `python3 tests/qemu_files_test.py` after building to check these commands
 in QEMU. The host directory tests can be run with:
@@ -276,6 +275,55 @@ cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include \
   -Isrc/subsystems/shell/builtin tests/session_test.c src/kernel/session.c \
   src/subsystems/vfs/vfs.c src/subsystems/shell/shell.c \
   src/subsystems/shell/builtin/builtin_files.c \
-  src/subsystems/shell/builtin/builtin_session.c -o /tmp/session-test
+  src/subsystems/shell/builtin/builtin_session.c \
+  src/subsystems/shell/builtin/builtin_system.c -o /tmp/session-test
 /tmp/session-test
+```
+
+## System commands and RAM files
+
+| Command | Behavior |
+| --- | --- |
+| `mem` | Heap total, allocated bytes, reusable allocator space, unclaimed space, and available bytes |
+| `uptime` | Elapsed days and hours:minutes:seconds.milliseconds |
+| `clear` | Clear an ANSI terminal and move the cursor home |
+| `reboot` | Reset the board; RAM files, directories and session state are lost |
+| `rmdir path...` | Remove empty user-created directories and reclaim their slots |
+| `touch path...` | Create empty RAM files, preserving existing file contents |
+| `rm path...` | Remove closed RAM files and reclaim their storage and slots |
+
+`mem` reports the heap region, excluding static RAM and reserved stack space.
+Allocated bytes include allocator overhead; available bytes combine reusable
+allocator blocks and unclaimed heap space, not necessarily one contiguous block.
+
+`rmdir` rejects `/`, `/dev`, non-empty directories, and the calling shell's CWD.
+`rm` rejects directories, device nodes and files that still have open descriptors.
+There are no recursive-removal flags. `touch` does not maintain timestamps yet.
+
+RAM-file metadata uses a fixed pool; contents are allocated from the heap only
+when written. Defaults are 16 files (`CONFIG_HOMECORE_VFS_MAX_RAM_FILES`) and
+4096 bytes per file (`CONFIG_HOMECORE_VFS_MAX_FILE_SIZE`). Contents are available
+through VFS read/write/seek and libc `fopen`/`fread`/`fwrite`, including append and
+truncate modes. Seeking past EOF and then writing fills the gap with zero bytes.
+
+```text
+mkdir /tmp
+cd /tmp
+touch notes
+ls
+cat notes
+rm notes
+cd /
+rmdir /tmp
+mem
+uptime
+```
+
+The QEMU command regression test also checks system commands and reboot.
+Run the host RAM-file tests with:
+
+```bash
+cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include \
+  tests/vfs_ram_files_test.c src/subsystems/vfs/vfs.c -o /tmp/ram-files-test
+/tmp/ram-files-test
 ```

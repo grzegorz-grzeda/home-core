@@ -69,7 +69,44 @@ try:
     assert command("cd ../../..").endswith("root:/$ ")
     for text in ("cd / /dev", "pwd extra", "whoami extra", "id extra"):
         assert "Usage:" in command(text)
-    print("PASS: QEMU file commands, sessions, cwd, identity and relative paths")
+    command("mkdir /scratch")
+    command("cd /scratch")
+    command("touch one two")
+    listing = command("ls")
+    assert "one\n" in listing and "two\n" in listing, listing
+    assert command("cat one").endswith("root:/scratch$ ")
+    assert "Device or resource busy" in command("rmdir .")
+    command("cd /")
+    assert "Directory not empty" in command("rmdir /scratch")
+    protected = command("rm /dev/uptime")
+    assert "rm: /dev/uptime:" in protected, protected
+    assert "uptime\n" in command("ls /dev/uptime")
+    assert "Is a directory" in command("rm /scratch")
+    command("rm /scratch/one /scratch/two")
+    command("rmdir /scratch")
+    assert "No such file" in command("ls /scratch")
+    for _ in range(20):
+        command("mkdir /reused")
+        command("touch /reused/file")
+        command("rm /reused/file")
+        command("rmdir /reused")
+    memory = command("mem")
+    values = dict(re.findall(r"(Heap total|Allocated|Reusable|Unclaimed|Available): (\d+) bytes", memory))
+    assert len(values) == 5, memory
+    values = {key: int(value) for key, value in values.items()}
+    assert values["Heap total"] > 0 and values["Allocated"] > 0, memory
+    assert values["Available"] == values["Reusable"] + values["Unclaimed"], memory
+    assert values["Available"] <= values["Heap total"], memory
+    assert re.search(r"up \d+ days, \d{2}:\d{2}:\d{2}\.\d{3}", command("uptime"))
+    assert "\x1b[2J\x1b[H" in command("clear")
+    for text in ("mem extra", "uptime extra", "clear extra", "reboot extra", "touch", "rm", "rmdir"):
+        assert "Usage:" in command(text)
+    command("touch /volatile")
+    restarted = command("reboot")
+    assert "Rebooting..." in restarted and "HomeCore OS" in restarted, restarted
+    assert restarted.endswith("root:/$ "), restarted
+    assert "No such file" in command("ls /volatile")
+    print("PASS: QEMU system/file commands, sessions, slot reuse and reboot")
 finally:
     process.terminate()
     process.wait(timeout=3)

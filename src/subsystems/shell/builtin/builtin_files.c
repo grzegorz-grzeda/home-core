@@ -77,3 +77,61 @@ int shell_builtin_cat(shell_context_t *context, int argc, char **argv) {
     }
     return status;
 }
+
+int shell_builtin_rmdir(shell_context_t *context, int argc, char **argv) {
+    if (argc < 2) { puts("Usage: rmdir path..."); return 1; }
+    int status = 0;
+    for (int i = 1; i < argc; i++) {
+        char path[VFS_PATH_CAPACITY];
+        if (vfs_resolve_path(context->cwd, argv[i], path) < 0) {
+            status = file_error("rmdir", argv[i]);
+            continue;
+        }
+        if (strcmp(path, context->cwd) == 0) {
+            errno = EBUSY;
+            status = file_error("rmdir", argv[i]);
+        } else if (vfs_rmdir(path) < 0) status = file_error("rmdir", argv[i]);
+    }
+    return status;
+}
+
+int shell_builtin_touch(shell_context_t *context, int argc, char **argv) {
+    if (argc < 2) { puts("Usage: touch path..."); return 1; }
+    int status = 0;
+    for (int i = 1; i < argc; i++) {
+        char path[VFS_PATH_CAPACITY];
+        size_t length = strlen(argv[i]);
+        if (length && argv[i][length - 1] == '/') {
+            errno = EISDIR;
+            status = file_error("touch", argv[i]);
+            continue;
+        }
+        if (vfs_resolve_path(context->cwd, argv[i], path) < 0) {
+            status = file_error("touch", argv[i]);
+            continue;
+        }
+        vfs_node_t *node = vfs_find_node(path);
+        if (node) {
+            if (!node->is_regular) {
+                errno = node->is_directory ? EISDIR : EPERM;
+                status = file_error("touch", argv[i]);
+            }
+            continue; /* No timestamps yet; preserve existing contents. */
+        }
+        int fd = vfs_open(path, O_CREAT | O_WRONLY);
+        if (fd < 0) status = file_error("touch", argv[i]);
+        else if (vfs_close(fd) < 0) status = file_error("touch", argv[i]);
+    }
+    return status;
+}
+
+int shell_builtin_rm(shell_context_t *context, int argc, char **argv) {
+    if (argc < 2) { puts("Usage: rm path..."); return 1; }
+    int status = 0;
+    for (int i = 1; i < argc; i++) {
+        char path[VFS_PATH_CAPACITY];
+        if (vfs_resolve_path(context->cwd, argv[i], path) < 0 ||
+            vfs_unlink(path) < 0) status = file_error("rm", argv[i]);
+    }
+    return status;
+}

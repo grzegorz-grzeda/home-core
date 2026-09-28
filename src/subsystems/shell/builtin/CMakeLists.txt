@@ -24,6 +24,7 @@ target_sources(${PROJECT_NAME}
     PRIVATE builtin_basic.c
     PRIVATE builtin_files.c
     PRIVATE builtin_session.c
+    PRIVATE builtin_system.c
 )
 
 target_include_directories(${PROJECT_NAME} 

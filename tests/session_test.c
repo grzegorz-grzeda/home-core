@@ -1,9 +1,14 @@
 /* SPDX-License-Identifier: MIT */
 #include "homecore/shell/shell.h"
+#include "homecore/kernel/kernel.h"
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+
+void k_heap_stats(k_heap_stats_t *stats) { memset(stats, 0, sizeof(*stats)); }
+uint64_t k_uptime_ms(void) { return 0; }
+void arch_cpu_reset(void) { assert(0); }
 
 int shell_builtin_basic(shell_context_t *context, int argc, char **argv) {
     (void)context; (void)argc; (void)argv;
@@ -40,6 +45,10 @@ int main(void) {
     assert(strcmp(b.cwd, "/bob") == 0);
     assert(run(&a, "cd /missing") == 1 && a.last_status == 1);
     assert(strcmp(a.cwd, "/alice/child") == 0);
+    assert(run(&a, "rmdir .") == 1 && vfs_find_node("/alice/child"));
+    assert(run(&a, "touch file") == 0 && vfs_find_node("/alice/child/file"));
+    assert(run(&a, "touch file") == 0);
+    assert(run(&a, "rm file") == 0 && !vfs_find_node("/alice/child/file"));
     assert(run(&a, "cd ..") == 0 && strcmp(a.cwd, "/alice") == 0);
     assert(run(&a, "cd /") == 0 && strcmp(a.cwd, "/") == 0);
     assert(run(&a, "cd") == 0 && strcmp(a.cwd, "/alice") == 0);

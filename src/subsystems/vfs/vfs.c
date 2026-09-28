@@ -27,6 +27,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "homecore/autoconf.h"
 /*---------------------------------------------------------------------------*/
 #include "homecore/vfs/vfs.h"
@@ -50,7 +51,10 @@ static struct {
     vfs_node_t node;
     char path[VFS_PATH_CAPACITY];
 } directories[CONFIG_HOMECORE_VFS_MAX_DIRECTORIES];
-static unsigned directory_count;
+static struct {
+    vfs_node_t node;
+    char path[VFS_PATH_CAPACITY];
+} ram_files[CONFIG_HOMECORE_VFS_MAX_RAM_FILES];
 /*---------------------------------------------------------------------------*/
 static vfs_file_descriptor_t vfs_fd_table[CONFIG_HOMECORE_VFS_MAX_OPEN_FILES] = {0};
 /*---------------------------------------------------------------------------*/
@@ -181,16 +185,98 @@ int vfs_mkdir(const char *name) {
         errno = node ? ENOTDIR : ENOENT;
         return -1;
     }
-    if (directory_count == CONFIG_HOMECORE_VFS_MAX_DIRECTORIES) {
+    unsigned index = 0;
+    while (index < CONFIG_HOMECORE_VFS_MAX_DIRECTORIES && directories[index].node.name) index++;
+    if (index == CONFIG_HOMECORE_VFS_MAX_DIRECTORIES) {
         errno = ENOSPC;
         return -1;
     }
-    unsigned index = directory_count++;
     strcpy(directories[index].path, path);
     directories[index].node.name = directories[index].path;
     directories[index].node.is_directory = true;
     vfs_register_node(&directories[index].node);
     return 0;
+}
+
+static void detach_node(vfs_node_t *node) {
+    vfs_node_t **link = &vfs_root;
+    while (*link && *link != node) link = &(*link)->next;
+    if (*link) *link = node->next;
+    memset(node, 0, sizeof(*node));
+}
+
+int vfs_rmdir(const char *path) {
+    vfs_node_t *node = vfs_find_node(path);
+    if (!node) return -1;
+    if (!node->is_directory) { errno = ENOTDIR; return -1; }
+    if (node == &root_directory || node == &dev_directory) {
+        errno = EBUSY;
+        return -1;
+    }
+    size_t length = strlen(node->name);
+    for (vfs_node_t *child = vfs_root; child; child = child->next) {
+        if (strncmp(child->name, node->name, length) == 0 && child->name[length] == '/') {
+            errno = ENOTEMPTY;
+            return -1;
+        }
+    }
+    for (unsigned i = 0; i < CONFIG_HOMECORE_VFS_MAX_DIRECTORIES; i++) {
+        if (node == &directories[i].node) { detach_node(node); return 0; }
+    }
+    errno = EROFS;
+    return -1;
+}
+
+int vfs_unlink(const char *path) {
+    vfs_node_t *node = vfs_find_node(path);
+    if (!node) return -1;
+    if (node->is_directory) { errno = EISDIR; return -1; }
+    if (!node->is_regular) { errno = EPERM; return -1; }
+    for (unsigned i = 0; i < CONFIG_HOMECORE_VFS_MAX_OPEN_FILES; i++) {
+        if (vfs_fd_table[i].is_open && vfs_fd_table[i].node == node) {
+            errno = EBUSY;
+            return -1;
+        }
+    }
+    free(node->driver_data);
+    detach_node(node);
+    return 0;
+}
+
+static vfs_node_t *create_file(const char *name) {
+    char path[VFS_PATH_CAPACITY];
+    if (resolve_path(name, path) < 0) return NULL;
+    size_t length = strlen(name);
+    if (name[length - 1] == '/') { errno = EISDIR; return NULL; }
+    char parent[VFS_PATH_CAPACITY];
+    strcpy(parent, path);
+    char *slash = strrchr(parent, '/');
+    if (slash == parent) slash[1] = 0;
+    else *slash = 0;
+    vfs_node_t *directory = find_exact(parent);
+    if (!directory || !directory->is_directory) {
+        errno = directory ? ENOTDIR : ENOENT;
+        return NULL;
+    }
+    for (unsigned i = 0; i < CONFIG_HOMECORE_VFS_MAX_RAM_FILES; i++) {
+        if (ram_files[i].node.name) continue;
+        strcpy(ram_files[i].path, path);
+        vfs_node_t *node = &ram_files[i].node;
+        node->name = ram_files[i].path;
+        node->is_regular = true;
+        vfs_register_node(node);
+        return node;
+    }
+    errno = ENOSPC;
+    return NULL;
+}
+
+vfs_node_t *vfs_fd_node(int fd) {
+    if (fd < 0 || fd >= CONFIG_HOMECORE_VFS_MAX_OPEN_FILES || !vfs_fd_table[fd].is_open) {
+        errno = EBADF;
+        return NULL;
+    }
+    return vfs_fd_table[fd].node;
 }
 
 int vfs_list(const char *path, vfs_directory_visitor_t visitor, void *context) {
@@ -222,10 +308,19 @@ int vfs_list(const char *path, vfs_directory_visitor_t visitor, void *context) {
 }
 /*---------------------------------------------------------------------------*/
 int vfs_open(const char *name, int flags) {
-    vfs_node_t *node = vfs_find_node(name);
-    if (!node) {
+    int access = flags & O_ACCMODE;
+    if (access != O_RDONLY && access != O_WRONLY && access != O_RDWR) {
+        errno = EINVAL;
         return -1;
     }
+    if ((flags & O_TRUNC) && access == O_RDONLY) { errno = EACCES; return -1; }
+    int free_fd = 0;
+    while (free_fd < CONFIG_HOMECORE_VFS_MAX_OPEN_FILES && vfs_fd_table[free_fd].is_open) free_fd++;
+    if (free_fd == CONFIG_HOMECORE_VFS_MAX_OPEN_FILES) { errno = EMFILE; return -1; }
+    vfs_node_t *node = vfs_find_node(name);
+    if (node && (flags & O_CREAT) && (flags & O_EXCL)) { errno = EEXIST; return -1; }
+    if (!node && errno == ENOENT && (flags & O_CREAT)) node = create_file(name);
+    if (!node) return -1;
 
     if (node->is_directory) {
         errno = EISDIR;
@@ -238,21 +333,14 @@ int vfs_open(const char *name, int flags) {
         return -1;
     }
 
-    int fd = -1;
-    for (int i = 0; i < CONFIG_HOMECORE_VFS_MAX_OPEN_FILES; ++i) {
-        if (!vfs_fd_table[i].is_open) {
-            vfs_fd_table[i].is_open = true;
-            vfs_fd_table[i].node = node;
-            vfs_fd_table[i].flags = flags;
-            fd = i;
-            break;
-        }
+    if (node->is_regular && (flags & O_TRUNC)) {
+        if (access == O_RDONLY) { errno = EACCES; return -1; }
+        free(node->driver_data);
+        node->driver_data = NULL;
+        node->size = 0;
     }
-
-    if (fd < 0) {
-        errno = EMFILE;
-        return -1; // No available file descriptor
-    }
+    int fd = free_fd;
+    vfs_fd_table[fd] = (vfs_file_descriptor_t){.node = node, .flags = flags, .is_open = true};
 
     if (node->ops.open) {
         int result = node->ops.open(node, flags);
@@ -304,6 +392,18 @@ int vfs_read(int fd, void *buf, unsigned len) {
         return -2; // File descriptor not open
     }
 
+    if (vfs_fd_table[fd].node->is_regular) {
+        vfs_file_descriptor_t *file = &vfs_fd_table[fd];
+        if ((file->flags & O_ACCMODE) == O_WRONLY) { errno = EBADF; return -1; }
+        if (!len) return 0;
+        if (!buf) { errno = EFAULT; return -1; }
+        if (file->position >= file->node->size) return 0;
+        unsigned available = file->node->size - file->position;
+        if (len > available) len = available;
+        memcpy(buf, (char *)file->node->driver_data + file->position, len);
+        file->position += len;
+        return (int)len;
+    }
     if (vfs_fd_table[fd].node->ops.snapshot) {
         vfs_file_descriptor_t *file = &vfs_fd_table[fd];
         if (len == 0) return 0;
@@ -334,6 +434,26 @@ int vfs_write(int fd, const void *buf, unsigned len) {
         return -2; // File descriptor not open
     }
 
+    if (vfs_fd_table[fd].node->is_regular) {
+        vfs_file_descriptor_t *file = &vfs_fd_table[fd];
+        vfs_node_t *node = file->node;
+        if ((file->flags & O_ACCMODE) == O_RDONLY) { errno = EBADF; return -1; }
+        if (!len) return 0;
+        if (!buf) { errno = EFAULT; return -1; }
+        unsigned position = (file->flags & O_APPEND) ? node->size : file->position;
+        if (len > CONFIG_HOMECORE_VFS_MAX_FILE_SIZE - position) { errno = EFBIG; return -1; }
+        unsigned end = position + len;
+        if (end > node->size) {
+            void *data = realloc(node->driver_data, end);
+            if (!data) { errno = ENOMEM; return -1; }
+            node->driver_data = data;
+            if (position > node->size) memset((char *)data + node->size, 0, position - node->size);
+            node->size = end;
+        }
+        memcpy((char *)node->driver_data + position, buf, len);
+        file->position = end;
+        return (int)len;
+    }
     if (vfs_fd_table[fd].node->ops.snapshot) {
         errno = EBADF;
         return -1;
@@ -371,6 +491,16 @@ int vfs_lseek(int fd, int offset, int whence) {
         return -2; // File descriptor not open
     }
 
+    if (vfs_fd_table[fd].node->is_regular) {
+        vfs_file_descriptor_t *file = &vfs_fd_table[fd];
+        int64_t position = offset;
+        if (whence == SEEK_CUR) position += file->position;
+        else if (whence == SEEK_END) position += file->node->size;
+        else if (whence != SEEK_SET) position = -1;
+        if (position < 0 || position > CONFIG_HOMECORE_VFS_MAX_FILE_SIZE) { errno = EINVAL; return -1; }
+        file->position = (unsigned)position;
+        return (int)position;
+    }
     if (vfs_fd_table[fd].node->ops.snapshot) {
         vfs_file_descriptor_t *file = &vfs_fd_table[fd];
         int64_t position = offset;

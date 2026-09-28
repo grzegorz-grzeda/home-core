@@ -28,6 +28,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <stddef.h>
+#include <malloc.h>
+#include <string.h>
+#include "homecore/kernel/kernel.h"
 /*---------------------------------------------------------------------------*/
 #include "homecore/board/board.h"
 #include "homecore/vfs/vfs.h"
@@ -39,17 +42,24 @@ extern uint8_t _heap_end;
 static uint8_t *heap_current = &_heap_start;
 /*---------------------------------------------------------------------------*/
 void *_sbrk(ptrdiff_t incr) {
-    (void)incr;
-    uint8_t *prev_heap = heap_current;
-    uint8_t *next_heap = heap_current + incr;
-
-    if (next_heap > &_heap_end) {
+    uintptr_t current = (uintptr_t)heap_current;
+    uintptr_t start = (uintptr_t)&_heap_start, end = (uintptr_t)&_heap_end;
+    size_t amount = incr < 0 ? (size_t)(-(incr + 1)) + 1 : (size_t)incr;
+    if ((incr < 0 && amount > current - start) ||
+        (incr >= 0 && amount > end - current)) {
         errno = ENOMEM;
         return (void *)-1;
     }
+    heap_current = (uint8_t *)(incr < 0 ? current - amount : current + amount);
+    return (void *)current;
+}
 
-    heap_current = next_heap;
-    return prev_heap;
+void k_heap_stats(k_heap_stats_t *stats) {
+    struct mallinfo info = mallinfo();
+    stats->total = (uintptr_t)&_heap_end - (uintptr_t)&_heap_start;
+    stats->allocated = (size_t)info.uordblks;
+    stats->reusable = (size_t)info.fordblks;
+    stats->unclaimed = (uintptr_t)&_heap_end - (uintptr_t)heap_current;
 }
 /*---------------------------------------------------------------------------*/
 int _open(const char *name, int flags, ...) {
@@ -71,14 +81,19 @@ int _close(int fd) {
 }
 /*---------------------------------------------------------------------------*/
 int _fstat(int fd, struct stat *st) {
-    (void)fd;
-
-    st->st_mode = S_IFCHR;
+    vfs_node_t *node = vfs_fd_node(fd);
+    if (!node) return -1;
+    if (!st) { errno = EFAULT; return -1; }
+    memset(st, 0, sizeof(*st));
+    st->st_mode = node->is_regular ? S_IFREG : S_IFCHR;
+    st->st_size = node->size;
     return 0;
 }
 /*---------------------------------------------------------------------------*/
 int _isatty(int fd) {
-    (void)fd;
+    vfs_node_t *node = vfs_fd_node(fd);
+    if (!node) return 0;
+    if (node->is_regular || node->ops.snapshot) { errno = ENOTTY; return 0; }
     return 1;
 }
 /*---------------------------------------------------------------------------*/

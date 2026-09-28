@@ -31,6 +31,7 @@
 #include "builtin_basic.h"
 #include "builtin_files.h"
 #include "builtin_session.h"
+#include "builtin_system.h"
 #include "homecore/autoconf.h"
 /*---------------------------------------------------------------------------*/
 #define SHELL_TERMINATOR '\n'
@@ -63,6 +64,13 @@ static int shell_print_help(shell_context_t *context, int argc, char **argv) {
 /*---------------------------------------------------------------------------*/
 void shell_init(void) {
     if (shell_commands) return;
+    shell_register_command("mem", "Show heap usage", shell_builtin_mem);
+    shell_register_command("uptime", "Show elapsed time since startup", shell_builtin_uptime);
+    shell_register_command("clear", "Clear terminal", shell_builtin_clear);
+    shell_register_command("reboot", "Reset the board", shell_builtin_reboot);
+    shell_register_command("rmdir", "Remove empty RAM directories: rmdir path...", shell_builtin_rmdir);
+    shell_register_command("touch", "Create empty RAM files: touch path...", shell_builtin_touch);
+    shell_register_command("rm", "Remove RAM files: rm path...", shell_builtin_rm);
     shell_register_command("cd", "Change working directory: cd [path]", shell_builtin_cd);
     shell_register_command("pwd", "Print working directory", shell_builtin_pwd);
     shell_register_command("whoami", "Print current user", shell_builtin_whoami);

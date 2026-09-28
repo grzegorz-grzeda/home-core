@@ -30,8 +30,16 @@ extern "C" {
 #endif
 /*---------------------------------------------------------------------------*/
 #include <stdint.h>
+#include <stddef.h>
 /*---------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
+typedef struct {
+    size_t total;
+    size_t allocated;
+    size_t reusable;
+    size_t unclaimed;
+} k_heap_stats_t;
+void k_heap_stats(k_heap_stats_t *stats);
 void k_init(void);
 /* Milliseconds since the system timer was started during kernel initialization. */
 uint64_t k_uptime_ms(void);
