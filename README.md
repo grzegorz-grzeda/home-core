@@ -49,7 +49,9 @@ RAM files and session state are lost on reset.
 - [Automated quality checks](docs/development.md#automated-quality-check): run `scripts/check_quality.py`.
 - [Porting](docs/porting.md): adding boards, SoCs, and architecture support.
 - [Shell and system services](docs/shell.md): commands, sessions, RAM files, and uptime.
-- [Contributor and agent instructions](AGENTS.md): repository working conventions.
+- [Extending](docs/extending.md): adding shell commands and VFS device nodes.
+- [Contributor and agent instructions](AGENTS.md): repository working conventions
+  ([CLAUDE.md](CLAUDE.md) imports them for Claude Code).
 
 ## License
 

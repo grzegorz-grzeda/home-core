@@ -9,7 +9,8 @@ when documentation and code disagree.
 HomeCore is C11 bare-metal firmware using CMake, Kconfig, CMSIS, newlib-nano,
 and the G2BASIC submodule. Start with [architecture](docs/architecture.md) and
 [development](docs/development.md). Board-specific instructions are under
-`docs/boards/`; new target work follows [porting](docs/porting.md).
+`docs/boards/`; new target work follows [porting](docs/porting.md). New shell
+commands and VFS device nodes follow [extending](docs/extending.md).
 
 ## Working conventions
 

@@ -2,7 +2,7 @@
 
 ## Shell and BASIC
 
-Use `help` to list available commands. `echo` prints arguments. Enter `basic`
+Use `help` to list available commands. Enter `basic`
 to start G2BASIC; at its input prompt, Ctrl-C, Ctrl-D, or Ctrl-Z returns to the
 shell. For interpreter syntax, see the [G2BASIC documentation](../external/g2basic/README.md).
 
