@@ -1,21 +1,20 @@
-name: Build HomeCore
+name: HomeCore build and quality
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  build:
-    name: Build firmware
-    runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        build_type: [Debug, Release]
-        board: [lm3s6965evb]
+  quality:
+    name: Quality checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -27,45 +26,73 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
+            build-essential \
             cmake \
             ninja-build \
             gcc-arm-none-eabi \
             binutils-arm-none-eabi \
+            libnewlib-arm-none-eabi \
             python3 \
             python3-venv \
             python3-pip
 
-      - name: Setup Python venv
+      - name: Set up quality tools
         run: |
           python3 -m venv .venv
-          . .venv/bin/activate
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      
-      - name: Configure
-        run: |
-          . .venv/bin/activate
-          cmake -S . -B build-${{ matrix.build_type }}-${{ matrix.board }} \
-            -G Ninja \
-            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DHOMECORE_BOARD=${{ matrix.board }} \
-            -DPython3_EXECUTABLE=${{ github.workspace }}/.venv/bin/python \
-            -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/arm-none-eabi.cmake \
+          .venv/bin/python -m pip install -r requirements-quality.txt
 
-      - name: Build
-        run: |
-          cmake --build build-${{ matrix.build_type }}-${{ matrix.board }} --verbose
+      - name: Check formatting, headers, and host tests
+        run: .venv/bin/python scripts/check_quality.py --checks format headers host --verbose --timeout 300
 
-      - name: Firmware size
-        run: |
-          find build-${{ matrix.build_type }}-${{ matrix.board }} -type f \( -name "*.elf" -o -name "homecore" \) -exec arm-none-eabi-size {} \;
+  build:
+    name: Build ${{ matrix.board }} (${{ matrix.build_type }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        board: [lm3s6965evb, stm32f4discovery]
+        build_type: [Debug, Release]
+    env:
+      TARGET_BOARD: ${{ matrix.board }}
+      BUILD_TYPE: ${{ matrix.build_type }}
+      BUILD_DIR: build/ci/${{ matrix.board }}/${{ matrix.build_type }}
 
-      - name: Upload firmware artifact
-        uses: actions/upload-artifact@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          name: homecore-${{ matrix.build_type }}-${{ matrix.board }}
-          path: |
-            build-${{ matrix.build_type }}-${{ matrix.board }}/*.elf
-            build-${{ matrix.build_type }}-${{ matrix.board }}/*.bin
-            build-${{ matrix.build_type }}-${{ matrix.board }}/*.hex
-            build-${{ matrix.build_type }}-${{ matrix.board }}/*.map
+          submodules: recursive
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake ninja-build gcc-arm-none-eabi binutils-arm-none-eabi \
+            libnewlib-arm-none-eabi qemu-system-arm python3 python3-venv python3-pip
+
+      - name: Set up build tools
+        run: |
+          python3 -m venv .venv
+          .venv/bin/python -m pip install -r requirements.txt
+
+      - name: Configure firmware
+        run: |
+          cmake -S . -B "$BUILD_DIR" -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$PWD/cmake/toolchains/arm-none-eabi.cmake" \
+            -DHOMECORE_BOARD="$TARGET_BOARD" \
+            -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+            -DPython3_EXECUTABLE="$PWD/.venv/bin/python" \
+            -DHOMECORE_DEFCONFIG="$PWD/configs/homecore_defconfig" \
+            -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+
+      - name: Build firmware
+        run: cmake --build "$BUILD_DIR" --verbose
+
+      - name: Report firmware size
+        run: arm-none-eabi-size "$BUILD_DIR/homecore"
+
+      - name: Test firmware in QEMU
+        if: matrix.board == 'lm3s6965evb'
+        timeout-minutes: 2
+        run: .venv/bin/python tests/qemu_files_test.py --firmware "$BUILD_DIR/homecore"

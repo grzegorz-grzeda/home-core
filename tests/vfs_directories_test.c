@@ -15,7 +15,9 @@ static int collect(const char *name, bool directory, void *context) {
     return 0;
 }
 static int stop(const char *name, bool directory, void *context) {
-    (void)name; (void)directory; (void)context;
+    (void)name;
+    (void)directory;
+    (void)context;
     return 7;
 }
 static vfs_node_t device = {.name = "/dev/test"};

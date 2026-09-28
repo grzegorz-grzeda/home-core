@@ -1,12 +1,18 @@
 """Build lm3s6965evb, then run from the repository root with python3."""
+import argparse
 import re
 import select
 import subprocess
 import time
 
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--firmware", default="build/lm3s6965evb/homecore",
+                    help="LM3S firmware ELF to test")
+args = parser.parse_args()
+
 process = subprocess.Popen(
     ["qemu-system-arm", "-M", "lm3s6965evb", "-kernel",
-     "build/lm3s6965evb/homecore", "-display", "none", "-monitor", "none",
+     args.firmware, "-display", "none", "-monitor", "none",
      "-serial", "stdio"],
     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
 )

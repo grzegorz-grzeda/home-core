@@ -67,6 +67,9 @@ Documentation-only changes require link/instruction validation, not a C review.
 ## Validation
 
 Use the exact setup and test commands in [development](docs/development.md).
+The automated runner is `python scripts/check_quality.py`; see the guide for
+its dependencies, full-check scope, and existing findings. Its result does not
+replace the mandatory semantic review above.
 For shared firmware/build/startup changes, configure and build both targets:
 
 ```bash
@@ -84,5 +87,6 @@ new or changed executable instructions; firmware rebuilds are unnecessary unless
 needed to verify those instructions.
 
 Report what was checked and what remains unverified. A successful STM32 build
-is not evidence of successful execution on physical hardware. Current CI only
-builds the LM3S target; it does not replace local regression checks.
+is not evidence of successful execution on physical hardware. CI runs formatting,
+header, and host checks plus explicit Debug/Release build jobs for both boards
+and LM3S QEMU tests. It does not replace semantic review or hardware validation.

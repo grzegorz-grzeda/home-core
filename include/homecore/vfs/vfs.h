@@ -36,7 +36,7 @@ extern "C" {
 typedef struct vfs_node vfs_node_t;
 /* Maximum payload of a small read-only snapshot device. */
 #define VFS_SNAPSHOT_CAPACITY 32
-#define VFS_PATH_CAPACITY 128
+#define VFS_PATH_CAPACITY     128
 /*---------------------------------------------------------------------------*/
 typedef struct {
     int (*open)(vfs_node_t *node, int flags);

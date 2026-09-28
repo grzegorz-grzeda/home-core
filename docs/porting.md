@@ -70,8 +70,8 @@ shared `arch.ld` for the current contract.
    heap reporting, RAM-file operations, BASIC, and reboot. Confirm uptime against
    elapsed time and check the actual console wiring.
 5. Record tested hardware revision and setup; keep untested claims explicit.
-   Add the target to CI when extending build coverage, rather than implying the
-   current LM3S-only workflow already checks it.
+   Add new targets to `BOARDS` in `scripts/check_quality.py` to extend CI build
+   coverage; the current workflow checks LM3S and STM32F4DISCOVERY.
 
 A booting shell does not validate scheduling: SVC/PendSV are currently panic
 handlers. Peripheral interrupt drivers and thread support require additional

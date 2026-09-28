@@ -58,6 +58,52 @@ is not a validated minimal-system configuration: startup references them directl
 G2BASIC options such as `G2BASIC_ENABLE_MATH_FUNCTIONS` and `G2BASIC_ENABLE_MATH`
 are CMake options, separate from HomeCore Kconfig.
 
+## Automated quality check
+
+Install the pinned quality tools in the existing project venv, then run:
+
+```bash
+.venv/bin/pip install -r requirements-quality.txt
+.venv/bin/python scripts/check_quality.py
+```
+
+The runner works from any directory and never rewrites source files. By default it:
+
+- Checks formatting and formatter-assisted brace insertion for every `.c`/`.h`
+  under `src`, `include`, and `tests`, including untracked files. It excludes
+  `external`, generated build files, and the vendor-generated LM3S CMSIS header.
+- Compiles each public header in isolation with host warnings treated as errors.
+- Builds both boards in Debug and Release with compile warnings treated as errors.
+- Runs the seven host C regression variants and the runner's own Python tests.
+- Runs QEMU regressions on both newly built LM3S configurations.
+
+Builds use `build/quality/<board>/<configuration>` and default defconfig settings,
+leaving ordinary preset build directories alone. Host binaries use temporary
+folders. Missing tools, wrong formatter versions, timeouts, and failed checks
+produce a nonzero exit status. Independent checks continue after failures;
+failed builds never fall back to stale firmware. Commands time out after 120
+seconds by default; host test execution has a 10-second limit.
+
+For a shorter run or detailed diagnostics:
+
+```bash
+.venv/bin/python scripts/check_quality.py --checks format headers
+.venv/bin/python scripts/check_quality.py --checks build host qemu --verbose
+.venv/bin/python scripts/check_quality.py --help
+```
+
+`--checks` reports omitted categories explicitly and still runs prerequisites.
+Use `--clang-format`, `--python`, and `--cc` to select tool executables, or
+`--timeout` to adjust the command budget. This runner requires the build/test
+dependencies listed above; it does not install tools automatically.
+
+Formatting violations are reported as failures, not silently excluded.
+A green automated run does not replace the mandatory semantic review
+in `AGENTS.md`, static analysis of all possible behavior, or hardware validation.
+The existing host `mallinfo()` deprecation exception remains limited to the
+console I/O test. CI runs formatting/header/host checks through this script and
+uses explicit matrix jobs for firmware builds and QEMU regressions.
+
 ## Validation
 
 Configure the default LM3S build first: host tests include its generated header.
@@ -130,10 +176,27 @@ inspect fault registers and the stacked PC rather than relying on panic text.
 
 ## CI coverage
 
-The existing workflow builds LM3S Debug and Release. It does not build STM32
-or run host/QEMU regressions. Its artifact glob includes `.elf`, while the
-actual ELF is named `homecore`, so the ELF is not currently included by that
-pattern. These are workflow gaps; local checks above remain necessary.
+The [GitHub Actions workflow](../.github/workflows/build.yml) runs on pushes and
+pull requests targeting `main` or `master`, and supports manual dispatch.
+Its `Quality checks` job runs the script with `--checks format headers host`,
+covering formatting, public headers, host regressions, and runner self-tests.
+Four separate matrix jobs visibly configure and build firmware with CMake:
+
+- `Build lm3s6965evb (Debug)`
+- `Build lm3s6965evb (Release)`
+- `Build stm32f4discovery (Debug)`
+- `Build stm32f4discovery (Release)`
+
+Each build treats compiler warnings as errors and reports firmware size. The
+LM3S jobs also run QEMU against their own freshly built ELF. Jobs run independently
+so a quality failure does not hide build results. CI build output is under
+`build/ci/<board>/<configuration>`.
+
+A failed check fails the job. The workflow validates firmware without uploading
+artifacts or deploying it. GitHub branch protection/rulesets must require
+`Quality checks` and all four build checks if merging should be blocked by any
+failure; that repository setting is separate from the workflow. Physical STM32 validation and semantic
+review remain manual.
 
 ## UART and console regression tests
 
@@ -165,7 +228,6 @@ rg --files src -g '*.c' | xargs .venv/bin/clang-format --dry-run --Werror
 .venv/bin/clang-format --dry-run --Werror include/homecore/board/board.h tests/uart_contract_test.c tests/console_io_test.c
 ```
 
-The source implementation files and the listed header/tests have been formatted.
-Other existing headers/tests have not undergone a complete style conversion.
-`InsertBraces` is enabled; review formatter edits before accepting them. These
-checks are local and are not yet part of CI.
+The quality runner checks all first-party C sources and headers, including host
+tests, both locally and in CI. `InsertBraces` is enabled; review formatter edits
+before accepting them. Passing formatting does not establish semantic compliance.

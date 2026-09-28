@@ -12,17 +12,26 @@ arch_irq_key_t arch_irq_lock(void) {
     locked = 1;
     return old;
 }
-void arch_irq_unlock(arch_irq_key_t key) { locked = key; }
-uint32_t board_cpu_clock_hz(void) { return 12500000; }
+void arch_irq_unlock(arch_irq_key_t key) {
+    locked = key;
+}
+uint32_t board_cpu_clock_hz(void) {
+    return 12500000;
+}
 int arch_cpu_timer_init(uint32_t cpu_hz, uint32_t tick_hz) {
     assert(cpu_hz == 12500000 && tick_hz == 1000);
     return 0;
 }
-void board_panic(const char *message) { (void)message; assert(0); }
+void board_panic(const char *message) {
+    (void)message;
+    assert(0);
+}
 
 int main(void) {
     k_uptime_init();
-    for (int i = 0; i < 1234; i++) k_tick();
+    for (int i = 0; i < 1234; i++) {
+        k_tick();
+    }
     assert(k_uptime_ms() == 1234 && locked == 0);
     locked = 1;
     assert(k_uptime_ms() == 1234 && locked == 1);
@@ -56,5 +65,6 @@ int main(void) {
     assert(vfs_read(first, buf, sizeof(buf)) == 21);
     assert(strcmp(buf, "18446744073709551615\n") == 0);
     assert(vfs_close(first) == 0);
-    puts("PASS: uptime, interrupt state, rollover, independent snapshots, partial reads, EOF, seek, read-only");
+    puts("PASS: uptime, interrupt state, rollover, independent snapshots, partial reads, EOF, "
+         "seek, read-only");
 }

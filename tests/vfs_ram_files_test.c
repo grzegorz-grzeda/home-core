@@ -31,7 +31,8 @@ int main(void) {
     assert(vfs_lseek(reader, 0, SEEK_SET) == 0);
     assert(vfs_read(reader, buffer, sizeof(buffer)) == 9);
     assert(memcmp(buffer, "hello!\0\0x", 9) == 0);
-    assert(vfs_lseek(fd, CONFIG_HOMECORE_VFS_MAX_FILE_SIZE, SEEK_SET) == CONFIG_HOMECORE_VFS_MAX_FILE_SIZE);
+    assert(vfs_lseek(fd, CONFIG_HOMECORE_VFS_MAX_FILE_SIZE, SEEK_SET) ==
+           CONFIG_HOMECORE_VFS_MAX_FILE_SIZE);
     assert(vfs_write(fd, "x", 1) == -1 && errno == EFBIG);
     assert(vfs_lseek(fd, -1, SEEK_SET) == -1);
     int truncate = vfs_open("/tmp/file", O_WRONLY | O_TRUNC);
@@ -66,7 +67,9 @@ int main(void) {
     }
     assert(vfs_open("/full", O_CREAT | O_WRONLY) == -1 && errno == EMFILE);
     assert(!vfs_find_node("/full"));
-    for (int i = 0; i < CONFIG_HOMECORE_VFS_MAX_OPEN_FILES; i++) assert(vfs_close(descriptors[i]) == 0);
+    for (int i = 0; i < CONFIG_HOMECORE_VFS_MAX_OPEN_FILES; i++) {
+        assert(vfs_close(descriptors[i]) == 0);
+    }
     for (int i = 0; i < CONFIG_HOMECORE_VFS_MAX_RAM_FILES; i++) {
         char path[32];
         snprintf(path, sizeof(path), "/file%d", i);

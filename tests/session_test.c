@@ -6,12 +6,20 @@
 #include <stdio.h>
 #include <string.h>
 
-void k_heap_stats(k_heap_stats_t *stats) { memset(stats, 0, sizeof(*stats)); }
-uint64_t k_uptime_ms(void) { return 0; }
-void arch_cpu_reset(void) { assert(0); }
+void k_heap_stats(k_heap_stats_t *stats) {
+    memset(stats, 0, sizeof(*stats));
+}
+uint64_t k_uptime_ms(void) {
+    return 0;
+}
+void arch_cpu_reset(void) {
+    assert(0);
+}
 
 int shell_builtin_basic(shell_context_t *context, int argc, char **argv) {
-    (void)context; (void)argc; (void)argv;
+    (void)context;
+    (void)argc;
+    (void)argv;
     return 0;
 }
 static int check_context(shell_context_t *context, int argc, char **argv) {

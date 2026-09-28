@@ -132,8 +132,9 @@ Resolve warnings introduced by a change; do not suppress them broadly.
 
 The firmware currently enables `-Wall -Wextra`; documented host-test commands
 also use `-Werror`. Add stricter warnings or static-analysis checks incrementally,
-reviewing their diagnostics before making them mandatory. Automated formatting
-and comprehensive coding-standard checks are not currently enforced by CI.
+reviewing their diagnostics before making them mandatory. CI enforces the quality
+script, including formatting and builds with warnings treated as errors. Semantic
+coding-standard review remains a separate mandatory completion gate.
 
 ## Required review gate
 
