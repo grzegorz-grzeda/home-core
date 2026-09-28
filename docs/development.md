@@ -192,9 +192,18 @@ LM3S jobs also run QEMU against their own freshly built ELF. Jobs run independen
 so a quality failure does not hide build results. CI build output is under
 `build/ci/<board>/<configuration>`.
 
-A failed check fails the job. The workflow validates firmware without uploading
-artifacts or deploying it. GitHub branch protection/rulesets must require
-`Quality checks` and all four build checks if merging should be blocked by any
+The `API documentation` job installs Doxygen and Graphviz and runs
+`doxygen Doxyfile`, failing on any documentation warning. It uploads the HTML
+as a `github-pages` artifact, which pull-request runs keep as a downloadable
+preview. On pushes to the default branch, `Publish API documentation` deploys
+that artifact to GitHub Pages at <https://grzegorz-grzeda.github.io/home-core/>.
+It requires Pages to be enabled once under repository **Settings → Pages →
+Build and deployment → Source: GitHub Actions**. Pull requests and other
+branches never deploy.
+
+A failed check fails the job. Firmware is validated but never uploaded or
+deployed; only the API documentation is published. GitHub branch protection/rulesets must require
+`Quality checks`, `API documentation`, and all four build checks if merging should be blocked by any
 failure; that repository setting is separate from the workflow. Physical STM32 validation and semantic
 review remain manual.
 
@@ -231,3 +240,60 @@ rg --files src -g '*.c' | xargs .venv/bin/clang-format --dry-run --Werror
 The quality runner checks all first-party C sources and headers, including host
 tests, both locally and in CI. `InsertBraces` is enabled; review formatter edits
 before accepting them. Passing formatting does not establish semantic compliance.
+
+## API documentation
+
+The public headers under `include/homecore` carry Doxygen comments. Each header
+defines one module group, and each module belongs to a layer group:
+
+| Layer group | Modules |
+| --- | --- |
+| Hardware abstraction (`hal`) | `arch`, `soc`, `board` |
+| Kernel services (`kernel_services`) | `kernel`, `user`, `session` |
+| Subsystems (`subsystems`) | `vfs`, `shell` |
+
+The layer groups and the main page are defined in `docs/doxygen/groups.dox`.
+The configuration is the repository [`Doxyfile`](../Doxyfile). It requires
+Doxygen 1.9.8 or later and Graphviz `dot`. On Ubuntu, install them with
+`sudo apt-get install doxygen graphviz`. Generate the HTML from the repository
+root:
+
+```bash
+doxygen Doxyfile
+```
+
+Open `build/docs/html/index.html`. The output includes include-dependency
+graphs for each header, collaboration graphs for structures, and a group
+hierarchy graph for each module.
+
+When Doxygen and `dot` are found at configure time, each CMake build directory
+also has a `docs` target. It writes to `<build dir>/docs/html` and stamps the
+`project()` version:
+
+```bash
+cmake --build --preset lm3s6965evb --target docs
+```
+
+Without Doxygen or `dot`, configuration reports that the target is disabled
+and firmware builds are unaffected. Rerun configuration after installing them.
+
+CI publishes the documentation for the default branch to
+[GitHub Pages](https://grzegorz-grzeda.github.io/home-core/); see
+[CI coverage](#ci-coverage).
+
+Undocumented public declarations, undocumented parameters, and malformed
+comments are warnings, and `WARN_AS_ERROR = FAIL_ON_WARNINGS` makes the run
+fail on them. When adding or changing a public declaration:
+
+- Put it inside its header's `@defgroup ... @{ ... @}` block. Use a `@name`
+  member group for a related set of declarations, as in `vfs.h` and `arch.h`.
+- Give it a `@brief` and document every parameter. Also document the return
+  value and `errno` values, ownership and lifetime of retained pointers, and
+  interrupt-context restrictions.
+- A new header needs a `@file` comment and a `@defgroup` placed in a layer
+  group with `@ingroup`. Add a new layer group only in `docs/doxygen/groups.dox`.
+- Start license comments with `/*`, not `/**`. Doxygen treats `/**` as
+  documentation and would copy the license into the file description.
+
+Generated headers (`autoconf.h`, `version.h`) and sources under `src/` are
+not part of the API reference.

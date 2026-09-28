@@ -109,3 +109,5 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 add_subdirectory(external/g2basic)
 target_link_libraries(g2basic PRIVATE homecore_cpu)
 target_link_libraries(${PROJECT_NAME} PRIVATE g2basic)
+
+include(${HOMECORE_ROOT}/cmake/docs.cmake)

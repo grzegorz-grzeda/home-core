@@ -55,6 +55,9 @@ Use [architecture](architecture.md) for module boundaries and
   taking no arguments. Do not put storage definitions in public headers.
 - Document pointer validity, buffer capacity, ownership, lifetime, return values,
   and interrupt-context restrictions when they are not obvious from the API.
+- Document every declaration in `include/homecore` with a Doxygen comment
+  inside its header's module group. `doxygen Doxyfile` must finish without
+  warnings; see [API documentation](development.md#api-documentation).
 - Preserve architecture/SoC/board boundaries. Portable kernel and subsystem code
   must not depend on board register addresses or GPIO pin assignments.
 

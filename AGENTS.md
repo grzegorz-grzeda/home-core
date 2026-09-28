@@ -81,7 +81,8 @@ cmake --build --preset stm32f4discovery
 python3 tests/qemu_files_test.py
 ```
 
-Run relevant host regressions for VFS, sessions, and uptime changes. For startup
+Run relevant host regressions for VFS, sessions, and uptime changes. For changes
+to public headers, also run `doxygen Doxyfile`, which must finish without warnings. For startup
 or linker changes, inspect vector placement, stack/heap bounds, data alignment,
 and target CPU attributes. For documentation-only changes, check links and any
 new or changed executable instructions; firmware rebuilds are unnecessary unless

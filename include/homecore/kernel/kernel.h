@@ -1,4 +1,4 @@
-/**
+/*
  * MIT License
  *
  * Copyright (c) 2026 Grzegorz Grzęda
@@ -22,6 +22,11 @@
  * SOFTWARE.
  */
 /*---------------------------------------------------------------------------*/
+/**
+ * @file
+ * @brief Kernel interface: initialization, uptime, and heap statistics.
+ */
+/*---------------------------------------------------------------------------*/
 #ifndef HOME_CORE_KERNEL_H
 #define HOME_CORE_KERNEL_H
 /*---------------------------------------------------------------------------*/
@@ -32,20 +37,79 @@ extern "C" {
 #include <stdint.h>
 #include <stddef.h>
 /*---------------------------------------------------------------------------*/
+/**
+ * @defgroup kernel Kernel
+ * @ingroup kernel_services
+ * @brief Kernel startup, the millisecond uptime clock, and heap usage.
+ * @{
+ */
 /*---------------------------------------------------------------------------*/
+/**
+ * @brief Initialize kernel services and the standard streams.
+ *
+ * Starts the uptime clock (see k_uptime_init()) and opens `/dev/uart0` as
+ * descriptors 0, 1, and 2 for stdin, stdout, and stderr. Calls board_panic()
+ * if any step fails. `main()` calls it once, after soc_init() and
+ * board_init().
+ */
+void k_init(void);
+/*---------------------------------------------------------------------------*/
+/** @name Uptime
+ * @{
+ */
+/**
+ * @brief Start the 1 kHz system timer and register `/dev/uptime`.
+ *
+ * Called by k_init(). Calls board_panic() if the timer cannot produce 1 kHz
+ * from board_cpu_clock_hz().
+ */
+void k_uptime_init(void);
+/*---------------------------------------------------------------------------*/
+/**
+ * @brief Read the uptime clock.
+ *
+ * Masks interrupts briefly to read the 64-bit counter consistently.
+ * Masking interrupts for longer than one tick elsewhere loses time.
+ *
+ * @return Milliseconds since the system timer started during k_init().
+ */
+uint64_t k_uptime_ms(void);
+/*---------------------------------------------------------------------------*/
+/**
+ * @brief Advance the uptime clock by one millisecond.
+ *
+ * Call only from the 1 kHz system timer interrupt.
+ */
+void k_tick(void);
+/** @} */
+/*---------------------------------------------------------------------------*/
+/** @name Heap statistics
+ * @{
+ */
+/** @brief Heap usage snapshot filled by k_heap_stats(). All values are bytes. */
 typedef struct {
+    /** Size of the heap region between static RAM and the reserved main stack. */
     size_t total;
+    /** Bytes in allocated blocks, including allocator overhead. */
     size_t allocated;
+    /** Free bytes the allocator already holds for reuse. */
     size_t reusable;
+    /** Bytes of the heap region not yet claimed by the allocator. */
     size_t unclaimed;
 } k_heap_stats_t;
+/*---------------------------------------------------------------------------*/
+/**
+ * @brief Capture current heap usage.
+ *
+ * Available memory is `reusable + unclaimed`, which is not necessarily one
+ * contiguous block.
+ *
+ * @param[out] stats Destination. Must not be `NULL`; this is not checked.
+ */
 void k_heap_stats(k_heap_stats_t *stats);
-void k_init(void);
-/* Milliseconds since the system timer was started during kernel initialization. */
-uint64_t k_uptime_ms(void);
-/* Called only by the 1 kHz system timer interrupt. */
-void k_tick(void);
-void k_uptime_init(void);
+/** @} */
+/*---------------------------------------------------------------------------*/
+/** @} */
 /*---------------------------------------------------------------------------*/
 #if defined(__cplusplus)
 }

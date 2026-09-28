@@ -1,0 +1,55 @@
+/**
+@mainpage HomeCore API
+
+HomeCore is single-threaded C11 bare-metal firmware. It provides a serial shell,
+a VFS with RAM files, user sessions, a 1 kHz uptime clock, and the G2BASIC
+interpreter. This reference covers the public headers under `include/homecore`.
+Guides for architecture, development, porting, and extension are under `docs/`
+in the repository.
+
+@section mainpage_layers Layers
+
+The API is grouped by layer. Each header defines one module group.
+
+| Layer | Modules | Header location |
+| --- | --- | --- |
+| @ref hal | @ref arch, @ref soc, @ref board | `homecore/arch`, `homecore/soc`, `homecore/board` |
+| @ref kernel_services | @ref kernel, @ref user, @ref session | `homecore/kernel`, `homecore/user`, `homecore/session` |
+| @ref subsystems | @ref vfs, @ref shell | `homecore/vfs`, `homecore/shell` |
+
+The group tree is on the **Topics** page. Each group page shows its place in the hierarchy. Each header page
+shows include graphs in both directions. Structures that reference other
+documented types show a collaboration graph.
+
+@section mainpage_startup Startup order
+
+`main()` calls arch_init(), soc_init(), board_init(), k_init(), and shell_init()
+in that order, then prints the banner and enters shell_run(). A module may
+depend only on modules initialized before it. For example, soc_init() registers
+VFS devices but must not print, because the console is not open until k_init().
+
+@section mainpage_scope Scope
+
+The firmware has no scheduler, privilege separation, authentication, or
+persistent storage. The architecture thread primitives are scaffolding; the
+SVC and PendSV handlers they depend on currently panic.
+*/
+
+/**
+@defgroup hal Hardware abstraction
+@brief CPU, chip, and board layers under the portable code.
+
+Portable kernel and subsystem code uses these interfaces instead of register
+addresses or pin assignments. Each target selects one implementation of each
+interface at configure time through `HOMECORE_BOARD`.
+*/
+
+/**
+@defgroup kernel_services Kernel services
+@brief Kernel initialization, time, heap statistics, users, and sessions.
+*/
+
+/**
+@defgroup subsystems Subsystems
+@brief Portable services built on the kernel: the VFS and the command shell.
+*/

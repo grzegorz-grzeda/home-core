@@ -30,6 +30,7 @@ cmake --build --preset lm3s6965evb
 python3 tests/qemu_files_test.py                                # LM3S QEMU regression
 .venv/bin/python scripts/check_quality.py --checks format headers host
 .venv/bin/python scripts/check_quality.py                       # full run incl. both boards + QEMU
+doxygen Doxyfile                                                # API docs -> build/docs/html; fails on warnings
 ```
 
 ## Notes for Claude Code
@@ -42,5 +43,7 @@ python3 tests/qemu_files_test.py                                # LM3S QEMU regr
   behavior as verified from a build; say that hardware validation is pending.
 - `external/cmsis` and `external/g2basic` are submodules. Do not edit them in
   place. Do not edit anything under `build/`.
+- Public headers carry Doxygen comments grouped by layer (`docs/doxygen/groups.dox`).
+  When changing a public declaration, update its comment in the same change.
 - The QEMU shell is interactive (`bash scripts/run-qemu-lm3s6965evb.sh`, exit with
   Ctrl-A X). For non-interactive checks, extend `tests/qemu_files_test.py` instead.

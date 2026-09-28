@@ -47,6 +47,8 @@ RAM files and session state are lost on reset.
 - [C coding standard](docs/coding-standard.md): language, style, memory, and interrupt rules.
 - [Development](docs/development.md): setup, builds, configuration, tests, and debugging.
 - [Automated quality checks](docs/development.md#automated-quality-check): run `scripts/check_quality.py`.
+- [API reference](https://grzegorz-grzeda.github.io/home-core/): grouped HTML docs of the public headers,
+  published from `main` by CI. [Generate them locally](docs/development.md#api-documentation) with `doxygen Doxyfile`.
 - [Porting](docs/porting.md): adding boards, SoCs, and architecture support.
 - [Shell and system services](docs/shell.md): commands, sessions, RAM files, and uptime.
 - [Extending](docs/extending.md): adding shell commands and VFS device nodes.

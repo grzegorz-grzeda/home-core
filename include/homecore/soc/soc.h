@@ -1,4 +1,4 @@
-/**
+/*
  * MIT License
  *
  * Copyright (c) 2026 Grzegorz Grzęda
@@ -22,6 +22,11 @@
  * SOFTWARE.
  */
 /*---------------------------------------------------------------------------*/
+/**
+ * @file
+ * @brief SoC interface: chip-level device registration.
+ */
+/*---------------------------------------------------------------------------*/
 #ifndef HOME_CORE_SOC_H
 #define HOME_CORE_SOC_H
 /*---------------------------------------------------------------------------*/
@@ -33,7 +38,26 @@ extern "C" {
 #include <stddef.h>
 #include <stdbool.h>
 /*---------------------------------------------------------------------------*/
+/**
+ * @defgroup soc SoC
+ * @ingroup hal
+ * @brief Chip-specific device nodes and peripheral interrupt vectors.
+ *
+ * Each chip implements this interface in `src/soc/<vendor>/<chip>/soc.c` and
+ * supplies its peripheral vector entries after the architecture's core vectors.
+ * @{
+ */
+/*---------------------------------------------------------------------------*/
+/**
+ * @brief Register the chip's device nodes with the VFS.
+ *
+ * Must register at least `/dev/uart0`, which k_init() opens as the standard
+ * streams. `main()` calls it once, before board_init(). It must not access
+ * board hardware that is still uninitialized, and it must not print.
+ */
 void soc_init(void);
+/*---------------------------------------------------------------------------*/
+/** @} */
 /*---------------------------------------------------------------------------*/
 #if defined(__cplusplus)
 }

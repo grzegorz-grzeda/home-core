@@ -1,0 +1,92 @@
+# Doxygen configuration for the HomeCore public API.
+#
+# Run from the repository root:  doxygen Doxyfile
+# or through CMake:              cmake --build --preset lm3s6965evb --target docs
+#
+# Only settings that differ from Doxygen's defaults are listed, so the file works
+# with Doxygen 1.9.8 (Ubuntu 24.04) and later without upgrade warnings. Graph
+# output requires Graphviz `dot` on PATH. See docs/development.md#api-documentation.
+
+#---------------------------------------------------------------------------
+# Project
+#---------------------------------------------------------------------------
+PROJECT_NAME           = HomeCore
+PROJECT_BRIEF          = "Bare-metal personal computer firmware for Cortex-M"
+# The CMake docs target overrides this with the project() version.
+PROJECT_NUMBER         =
+OUTPUT_DIRECTORY       = build/docs
+CREATE_SUBDIRS         = NO
+
+#---------------------------------------------------------------------------
+# Language and extraction
+#---------------------------------------------------------------------------
+OPTIMIZE_OUTPUT_FOR_C  = YES
+JAVADOC_AUTOBRIEF      = YES
+FULL_PATH_NAMES        = YES
+STRIP_FROM_PATH        = .
+# Show includes as "homecore/<module>/<header>.h", matching real #include lines.
+STRIP_FROM_INC_PATH    = include
+MARKDOWN_SUPPORT       = YES
+TOC_INCLUDE_HEADINGS   = 3
+DISTRIBUTE_GROUP_DOC   = YES
+EXTRACT_ALL            = NO
+EXTRACT_STATIC         = NO
+SORT_MEMBER_DOCS       = NO
+SORT_GROUP_NAMES       = NO
+
+#---------------------------------------------------------------------------
+# Warnings: every public declaration must be documented.
+#---------------------------------------------------------------------------
+QUIET                  = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_IF_INCOMPLETE_DOC = YES
+WARN_NO_PARAMDOC       = YES
+WARN_AS_ERROR          = FAIL_ON_WARNINGS
+
+#---------------------------------------------------------------------------
+# Input: public headers plus the group hierarchy and main page.
+#---------------------------------------------------------------------------
+INPUT                  = docs/doxygen \
+                         include/homecore
+FILE_PATTERNS          = *.h \
+                         *.dox
+RECURSIVE              = YES
+EXCLUDE_PATTERNS       = */autoconf.h \
+                         */version.h
+
+#---------------------------------------------------------------------------
+# Preprocessor
+#---------------------------------------------------------------------------
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+INCLUDE_PATH           = include
+PREDEFINED             = "__attribute__(x)="
+
+#---------------------------------------------------------------------------
+# Output
+#---------------------------------------------------------------------------
+GENERATE_HTML          = YES
+GENERATE_TREEVIEW      = YES
+GENERATE_LATEX         = NO
+
+#---------------------------------------------------------------------------
+# Graphviz diagrams
+#---------------------------------------------------------------------------
+HAVE_DOT               = YES
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
+DOT_MULTI_TARGETS      = YES
+# Header dependency graphs in both directions.
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+# Structure member relationships, e.g. session_t -> user_t, vfs_node -> vfs_ops_t.
+COLLABORATION_GRAPH    = YES
+# Relationships between the module groups.
+GROUP_GRAPHS           = YES
+DIRECTORY_GRAPH        = YES
+# The input contains declarations only, so call graphs would be empty.
+CALL_GRAPH             = NO
+CALLER_GRAPH           = NO
