@@ -14,9 +14,10 @@
 #---------------------------------------------------------------------------
 PROJECT_NAME           = HomeCore
 PROJECT_BRIEF          = "Bare-metal personal computer firmware for Cortex-M"
-# Set HOMECORE_DOCS_VERSION to show a version; CI passes the project() version
-# and commit, and the CMake docs target passes the project() version.
+# Set HOMECORE_DOCS_VERSION to show a version; scripts/build_docs.sh (used by CI
+# and the CMake docs target) passes the project() version and short commit.
 PROJECT_NUMBER         = $(HOMECORE_DOCS_VERSION)
+PROJECT_LOGO           = docs/assets/homecore-logo.svg
 # Doxygen creates only the last directory level of each path, so the output
 # location is split in two: it creates build/ on a fresh clone, then docs/.
 OUTPUT_DIRECTORY       = build

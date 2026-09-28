@@ -1,4 +1,6 @@
-# HomeCore
+<p align="center">
+  <img src="docs/assets/homecore-logo-wordmark.svg" alt="HomeCore" width="360">
+</p>
 
 HomeCore is a small bare-metal personal-computer project for STM32, developed
 with a QEMU target. It currently runs a serial shell, RAM files, a VFS, a root
@@ -48,10 +50,12 @@ RAM files and session state are lost on reset.
 - [Development](docs/development.md): setup, builds, configuration, tests, and debugging.
 - [Automated quality checks](docs/development.md#automated-quality-check): run `scripts/check_quality.py`.
 - [API reference](https://grzegorz-grzeda.github.io/home-core/): grouped HTML docs of the public headers,
-  published from `main` by CI. [Generate them locally](docs/development.md#api-documentation) with `doxygen Doxyfile`.
+  published from `main` by CI, with the bundled G2Basic reference. [Generate them locally](docs/development.md#api-documentation)
+  with `bash scripts/build_docs.sh`.
 - [Porting](docs/porting.md): adding boards, SoCs, and architecture support.
 - [Shell and system services](docs/shell.md): commands, sessions, RAM files, and uptime.
 - [Extending](docs/extending.md): adding shell commands and VFS device nodes.
+- [Versioning](docs/versioning.md) and [changelog](CHANGELOG.md): SemVer 2.0.0 rules and release history.
 - [Contributor and agent instructions](AGENTS.md): repository working conventions
   ([CLAUDE.md](CLAUDE.md) imports them for Claude Code).
 

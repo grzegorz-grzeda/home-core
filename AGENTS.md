@@ -66,6 +66,27 @@ exceptions, or incomplete), checks performed, and remaining findings/limitations
 Self-review is sufficient unless a separate reviewer is explicitly requested.
 Documentation-only changes require link/instruction validation, not a C review.
 
+## Mandatory versioning
+
+HomeCore follows Semantic Versioning 2.0.0 as defined in
+[versioning](docs/versioning.md). Every change to shipped code (firmware
+sources and headers, linker scripts, Kconfig and defconfig, firmware-affecting
+CMake, and firmware-changing `external/` updates) MUST, in the same change:
+
+- Increment `project(homecore VERSION ...)` in `CMakeLists.txt`, the only
+  version source. While the major version is 0, incompatible public-interface
+  changes increment MINOR, and compatible features and fixes increment PATCH.
+- Add a matching [CHANGELOG.md](CHANGELOG.md) entry, marking incompatible
+  changes as **Breaking:**.
+
+Documentation, comment-only, test, CI, and development-tooling changes do not
+change the version. Judge compatibility against the public interface listed in
+the versioning guide, not against changed lines. Never reuse or rewrite a
+released version.
+
+The completion report MUST state the version decision: the new version and the
+reason for the increment, or why the change is exempt.
+
 ## Validation
 
 Use the exact setup and test commands in [development](docs/development.md).

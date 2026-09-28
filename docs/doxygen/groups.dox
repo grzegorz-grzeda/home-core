@@ -16,6 +16,7 @@ The source is on [GitHub](https://github.com/grzegorz-grzeda/home-core).
 | [Shell and system services](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/shell.md) | Commands, sessions, RAM files, and uptime |
 | [Extending](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/extending.md) | Adding shell commands and VFS device nodes |
 | [Porting](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/porting.md) | Adding boards, SoCs, and architecture support |
+| [Versioning](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/versioning.md) | SemVer rules, the public interface, and the changelog |
 
 @section mainpage_layers Layers
 
@@ -30,6 +31,26 @@ The API is grouped by layer. Each header defines one module group.
 The group tree is on the **Topics** page. Each group page shows its place in the hierarchy. Each header page
 shows include graphs in both directions. Structures that reference other
 documented types show a collaboration graph.
+
+@section mainpage_libraries Bundled libraries
+
+CMSIS is used only inside the architecture and SoC code; the public API does
+not expose its types. Its reference is Arm's documentation for the pinned
+release.
+
+| Library | Reference | Used by |
+| --- | --- | --- |
+| CMSIS 6.3.0 Core (`external/cmsis`) | [CMSIS-Core (Cortex-M)](https://arm-software.github.io/CMSIS_6/v6.3.0/Core/index.html) | NVIC, SysTick, and SCB access in `src/arch`, device headers in `src/soc` |
+| STM32F4 device headers (`external/stm32f4`) | Vendored ST CMSIS device headers; no separate reference | The STM32F407 SoC port |
+
+@if g2basic
+G2Basic is built into this site from the pinned submodule commit, so it matches
+this firmware. Its groups are also listed on the **Topics** page.
+
+| Library | Reference | Used by |
+| --- | --- | --- |
+| G2Basic (`external/g2basic`) | <a href="g2basic/index.html">G2Basic API</a>, starting with the @ref api | The `basic` shell command, which registers `millis()` |
+@endif
 
 @section mainpage_startup Startup order
 

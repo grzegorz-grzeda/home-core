@@ -21,8 +21,8 @@
 # SOFTWARE.
 #
 # Optional API documentation target. The firmware build never depends on it.
-# The repository Doxyfile is included unchanged; this wrapper only sets the
-# version, the build-directory output location, and the Graphviz path.
+# It runs scripts/build_docs.sh, which builds the G2Basic reference and then
+# HomeCore's, linked through a Doxygen tag file.
 
 find_package(Doxygen OPTIONAL_COMPONENTS dot)
 
@@ -31,27 +31,28 @@ if(NOT TARGET Doxygen::doxygen OR NOT TARGET Doxygen::dot)
     return()
 endif()
 
-if(NOT EXISTS ${HOMECORE_ROOT}/external/doxygen-awesome-css/doxygen-awesome.css)
-    message(STATUS "Documentation theme submodule missing; 'docs' target disabled. "
-                   "Run: git submodule update --init external/doxygen-awesome-css")
-    return()
-endif()
+# scripts/build_docs.sh also builds the G2Basic reference, which needs the
+# G2Basic submodule's Doxygen setup and its own theme submodule.
+foreach(required
+        external/doxygen-awesome-css/doxygen-awesome.css
+        external/g2basic/docs/doxygen/groups.dox
+        external/g2basic/external/doxygen-awesome-css/doxygen-awesome.css)
+    if(NOT EXISTS ${HOMECORE_ROOT}/${required})
+        message(STATUS "Missing ${required}; 'docs' target disabled. "
+                       "Run: git submodule update --init --recursive")
+        return()
+    endif()
+endforeach()
 
 cmake_path(GET DOXYGEN_DOT_EXECUTABLE PARENT_PATH HOMECORE_DOT_DIR)
 set(HOMECORE_DOCS_DIR ${CMAKE_CURRENT_BINARY_DIR}/docs)
-# The Doxyfile places HTML in the docs/ subdirectory of OUTPUT_DIRECTORY.
-set(HOMECORE_DOXYFILE ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.docs)
 
-file(CONFIGURE OUTPUT ${HOMECORE_DOXYFILE} CONTENT [[
-@INCLUDE         = "@HOMECORE_ROOT@/Doxyfile"
-PROJECT_NUMBER   = "@PROJECT_VERSION@"
-OUTPUT_DIRECTORY = "@CMAKE_CURRENT_BINARY_DIR@"
-DOT_PATH         = "@HOMECORE_DOT_DIR@"
-]] @ONLY)
-
-# Paths in the Doxyfile are relative to the repository root.
+# The script's defaults stamp each project() version and short commit.
 add_custom_target(docs
-    COMMAND Doxygen::doxygen ${HOMECORE_DOXYFILE}
+    COMMAND ${CMAKE_COMMAND} -E env
+        DOXYGEN=${DOXYGEN_EXECUTABLE}
+        --modify PATH=path_list_prepend:${HOMECORE_DOT_DIR}
+        bash ${HOMECORE_ROOT}/scripts/build_docs.sh ${HOMECORE_DOCS_DIR}
     WORKING_DIRECTORY ${HOMECORE_ROOT}
     COMMENT "Generating API documentation in ${HOMECORE_DOCS_DIR}"
     VERBATIM

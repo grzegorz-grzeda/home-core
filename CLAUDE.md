@@ -20,6 +20,7 @@ these as implemented.
 | Shell commands and system services | [docs/shell.md](docs/shell.md) |
 | New shell commands and VFS device nodes | [docs/extending.md](docs/extending.md) |
 | New boards, SoCs, CPUs | [docs/porting.md](docs/porting.md) |
+| Version bumps and changelog | [docs/versioning.md](docs/versioning.md) |
 | Board specifics | [docs/boards/](docs/boards/) |
 
 Commands, run from the repository root with the project venv:
@@ -30,7 +31,7 @@ cmake --build --preset lm3s6965evb
 python3 tests/qemu_files_test.py                                # LM3S QEMU regression
 .venv/bin/python scripts/check_quality.py --checks format headers host
 .venv/bin/python scripts/check_quality.py                       # full run incl. both boards + QEMU
-doxygen Doxyfile                                                # API docs -> build/docs; fails on warnings
+bash scripts/build_docs.sh                                      # API docs + G2Basic -> build/docs; fails on warnings
 ```
 
 ## Notes for Claude Code
@@ -43,6 +44,8 @@ doxygen Doxyfile                                                # API docs -> bu
   behavior as verified from a build; say that hardware validation is pending.
 - `external/cmsis`, `external/g2basic`, and `external/doxygen-awesome-css` are
   submodules. Do not edit them in place. Do not edit anything under `build/`.
+- Any change to shipped code bumps `project(homecore VERSION ...)` and adds a
+  CHANGELOG.md entry in the same change (see AGENTS.md, Mandatory versioning).
 - Public headers carry Doxygen comments grouped by layer (`docs/doxygen/groups.dox`).
   When changing a public declaration, update its comment in the same change.
 - The QEMU shell is interactive (`bash scripts/run-qemu-lm3s6965evb.sh`, exit with

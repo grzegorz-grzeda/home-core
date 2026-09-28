@@ -53,22 +53,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Only the documentation theme is needed, not the firmware submodules.
-      - name: Fetch documentation theme
-        run: git submodule update --init --depth 1 external/doxygen-awesome-css
+      # The theme and G2Basic (with its own theme) are needed, not CMSIS.
+      - name: Fetch documentation submodules
+        run: |
+          git submodule update --init --depth 1 external/doxygen-awesome-css external/g2basic
+          git -C external/g2basic submodule update --init --depth 1 external/doxygen-awesome-css
 
       - name: Install Doxygen and Graphviz
         run: |
           sudo apt-get update
           sudo apt-get install -y doxygen graphviz
 
-      # The Doxyfile sets WARN_AS_ERROR = FAIL_ON_WARNINGS. The version shown in
-      # the page header is the project() version plus the short commit.
+      # Builds the G2Basic reference into build/docs/g2basic, then HomeCore's,
+      # linked through a tag file. Both Doxyfiles set WARN_AS_ERROR, and page
+      # headers show each project() version plus its short commit.
       - name: Generate API documentation
-        run: |
-          version="$(sed -n 's/^project([^ ]* VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)"
-          test -n "$version"
-          HOMECORE_DOCS_VERSION="$version (${GITHUB_SHA::7})" doxygen Doxyfile
+        run: bash scripts/build_docs.sh
 
       # Uploaded on every run so pull requests can download a preview;
       # deploy-docs publishes it only for pushes to the default branch.

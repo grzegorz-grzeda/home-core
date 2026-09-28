@@ -193,10 +193,9 @@ LM3S jobs also run QEMU against their own freshly built ELF. Jobs run independen
 so a quality failure does not hide build results. CI build output is under
 `build/ci/<board>/<configuration>`.
 
-The `API documentation` job fetches only the theme submodule, installs
-Doxygen and Graphviz, and runs `doxygen Doxyfile` with the `project()` version
-and short commit as `HOMECORE_DOCS_VERSION`. It fails on any documentation
-warning. It uploads the HTML
+The `API documentation` job fetches the theme and G2Basic submodules (not
+CMSIS), installs Doxygen and Graphviz, and runs `scripts/build_docs.sh`. It
+fails on any documentation warning in either project. It uploads the HTML
 as a `github-pages` artifact, which pull-request runs keep as a downloadable
 preview. On pushes to the default branch, `Publish API documentation` deploys
 that artifact to GitHub Pages at <https://grzegorz-grzeda.github.io/home-core/>.
@@ -257,33 +256,53 @@ defines one module group, and each module belongs to a layer group:
 
 The layer groups and the main page are defined in `docs/doxygen/groups.dox`.
 The configuration is the repository [`Doxyfile`](../Doxyfile). It requires
-Doxygen 1.9.8 or later, Graphviz `dot`, and the theme submodule. On Ubuntu,
-install the tools with `sudo apt-get install doxygen graphviz`. The full
-`git submodule update --init --recursive` from [Setup](#setup) includes the
-theme; to fetch only the theme, run the first command below. Generate the HTML
-from the repository root:
+Doxygen 1.9.8 or later, Graphviz `dot`, and the submodules. On Ubuntu, install
+the tools with `sudo apt-get install doxygen graphviz`. Build the full site,
+including the bundled G2Basic reference, from the repository root:
 
 ```bash
-git submodule update --init external/doxygen-awesome-css
-doxygen Doxyfile
+git submodule update --init --recursive
+bash scripts/build_docs.sh
 ```
 
-Open `build/docs/index.html`. Set `HOMECORE_DOCS_VERSION` to show a version
-in the page header, for example `HOMECORE_DOCS_VERSION=0.0.2 doxygen Doxyfile`. The output includes include-dependency
-graphs for each header, collaboration graphs for structures, and a group
-hierarchy graph for each module.
+Open `build/docs/index.html`. The script takes an optional output directory
+(default `build/docs`) and a `DOXYGEN` variable naming the executable. It stamps
+each page header with the `project()` version and short commit, unless
+`HOMECORE_DOCS_VERSION` or `G2BASIC_DOCS_VERSION` is set. The output includes
+include-dependency graphs for each header, collaboration graphs for structures,
+and a group hierarchy graph for each module.
+
+For a quick check of HomeCore's headers alone, `doxygen Doxyfile` still works
+and needs only the theme submodule. It omits the G2Basic reference and its
+main-page section. Set `HOMECORE_DOCS_VERSION` to show a version.
 
 When Doxygen and `dot` are found at configure time, each CMake build directory
-also has a `docs` target. It writes to `<build dir>/docs` and stamps the
-`project()` version:
+also has a `docs` target that runs the script into `<build dir>/docs`:
 
 ```bash
 cmake --build --preset lm3s6965evb --target docs
 ```
 
-Without Doxygen, `dot`, or the theme submodule, configuration reports that the
+Without Doxygen, `dot`, or the submodules, configuration reports that the
 target is disabled and firmware builds are unaffected. Rerun configuration after
 installing them.
+
+### Bundled library references
+
+- **G2Basic** is built into `<output>/g2basic` from the pinned submodule commit,
+  using G2Basic's own Doxyfile and theme. That run writes a tag file,
+  `g2basic.tag`, next to the output directory. HomeCore's run reads it, so
+  G2Basic groups appear on the Topics page (marked `[external]`, without
+  descriptions) and `@ref` to G2Basic groups or functions links into the nested
+  reference. The main-page section is enabled with `ENABLED_SECTIONS = g2basic`.
+  Neither Doxyfile is modified; the script appends overrides on standard input.
+- **CMSIS** is not built. Its Doxygen build needs exactly Doxygen 1.9.6 and
+  `mscgen`, and HomeCore's public headers do not expose CMSIS types. The main
+  page links Arm's documentation for the pinned release. After updating
+  `external/cmsis`, update the version in that link in
+  `docs/doxygen/groups.dox`. If public docs start referencing CMSIS symbols,
+  Arm publishes a matching tag file at
+  `https://arm-software.github.io/CMSIS_6/v<version>/Core/cmsis_core_m.tag`.
 
 ### Theme
 
