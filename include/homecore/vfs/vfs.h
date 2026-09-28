@@ -66,7 +66,10 @@ typedef struct vfs_node {
 typedef int (*vfs_directory_visitor_t)(const char *name, bool is_directory, void *context);
 int vfs_mkdir(const char *path);
 int vfs_list(const char *path, vfs_directory_visitor_t visitor, void *context);
-/* Relative paths are resolved from root; there is no working directory yet. */
+/* Resolve relative paths against an explicit existing base directory.
+ * Output is a canonical absolute path; its final component may not exist.
+ * Existing VFS operations remain rooted at "/" for relative arguments. */
+int vfs_resolve_path(const char *base, const char *path, char result[VFS_PATH_CAPACITY]);
 void vfs_init(void);
 void vfs_register_node(vfs_node_t *node);
 vfs_node_t *vfs_find_node(const char *name);

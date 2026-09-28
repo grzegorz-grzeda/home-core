@@ -24,8 +24,9 @@
 /*---------------------------------------------------------------------------*/
 #ifndef HOME_CORE_SHELL_BUILTIN_BASIC_H
 #define HOME_CORE_SHELL_BUILTIN_BASIC_H
+#include "homecore/shell/shell.h"
 /*---------------------------------------------------------------------------*/
-int shell_builtin_basic(int argc, char **argv);
+int shell_builtin_basic(shell_context_t *context, int argc, char **argv);
 /*---------------------------------------------------------------------------*/
 #endif // HOME_CORE_SHELL_BUILTIN_BASIC_H
 /*---------------------------------------------------------------------------*/

@@ -125,6 +125,37 @@ static int resolve_path(const char *path, char result[VFS_PATH_CAPACITY]) {
     return 0;
 }
 
+int vfs_resolve_path(const char *base, const char *path, char result[VFS_PATH_CAPACITY]) {
+    if (!result || !path || !*path) {
+        errno = EINVAL;
+        return -1;
+    }
+    if (path[0] == '/') return resolve_path(path, result);
+    if (!base || base[0] != '/') {
+        errno = EINVAL;
+        return -1;
+    }
+    char directory[VFS_PATH_CAPACITY];
+    if (resolve_path(base, directory) < 0) return -1;
+    vfs_node_t *node = find_exact(directory);
+    if (!node || !node->is_directory) {
+        errno = node ? ENOTDIR : ENOENT;
+        return -1;
+    }
+    size_t base_length = strlen(directory);
+    size_t path_length = strlen(path);
+    char combined[2 * VFS_PATH_CAPACITY];
+    if (path_length >= VFS_PATH_CAPACITY ||
+        base_length + 1 + path_length >= sizeof(combined)) {
+        errno = ENAMETOOLONG;
+        return -1;
+    }
+    memcpy(combined, directory, base_length);
+    combined[base_length] = '/';
+    memcpy(combined + base_length + 1, path, path_length + 1);
+    return resolve_path(combined, result);
+}
+
 vfs_node_t *vfs_find_node(const char *name) {
     char path[VFS_PATH_CAPACITY];
     if (resolve_path(name, path) < 0) return NULL;

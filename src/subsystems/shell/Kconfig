@@ -7,7 +7,7 @@ config HOMECORE_SHELL
 if HOMECORE_SHELL
 
 config HOMECORE_SHELL_PROMPT
-    string "Shell prompt"
+    string "Shell prompt suffix (after user and cwd)"
     default "$ "
 
 config HOMECORE_SHELL_MAX_INPUT_LENGTH

@@ -52,7 +52,24 @@ try:
     assert "uptime\n" in command("ls //dev/./uptime")
     for text in ("mkdir", "cat", "ls / /dev"):
         assert "Usage:" in command(text)
-    print("PASS: QEMU ls, mkdir, cat, multiple operands, errors, descriptor reuse")
+    assert command("whoami") == "whoami\r\nroot\nroot:/$ "
+    assert "uid=0(root) gid=0\n" in command("id")
+    assert command("cd /tmp").endswith("root:/tmp$ ")
+    assert "/tmp\n" in command("pwd")
+    command("mkdir relative")
+    assert "relative/\n" in command("ls")
+    assert command("cd relative").endswith("root:/tmp/relative$ ")
+    assert command("cd ..").endswith("root:/tmp$ ")
+    assert command("cd /missing").endswith("root:/tmp$ ")
+    assert "No such file" in command("cd /missing")
+    assert "Not a directory" in command("cd /dev/uptime")
+    assert command("cd /dev").endswith("root:/dev$ ")
+    assert re.search(r"(?m)^\d+\n", command("cat uptime"))
+    assert command("cd").endswith("root:/$ ")
+    assert command("cd ../../..").endswith("root:/$ ")
+    for text in ("cd / /dev", "pwd extra", "whoami extra", "id extra"):
+        assert "Usage:" in command(text)
+    print("PASS: QEMU file commands, sessions, cwd, identity and relative paths")
 finally:
     process.terminate()
     process.wait(timeout=3)

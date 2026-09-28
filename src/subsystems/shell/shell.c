@@ -30,6 +30,7 @@
 #include "homecore/shell/shell.h"
 #include "builtin_basic.h"
 #include "builtin_files.h"
+#include "builtin_session.h"
 #include "homecore/autoconf.h"
 /*---------------------------------------------------------------------------*/
 #define SHELL_TERMINATOR '\n'
@@ -47,7 +48,8 @@ typedef struct shell_command {
 static shell_command_t *shell_commands = NULL;
 static char shell_input_buffer[CONFIG_HOMECORE_SHELL_MAX_INPUT_LENGTH];
 /*---------------------------------------------------------------------------*/
-static int shell_print_help(int argc, char **argv) {
+static int shell_print_help(shell_context_t *context, int argc, char **argv) {
+    (void)context;
     (void)argc;
     (void)argv;
     shell_command_t *command = shell_commands;
@@ -60,6 +62,11 @@ static int shell_print_help(int argc, char **argv) {
 }
 /*---------------------------------------------------------------------------*/
 void shell_init(void) {
+    if (shell_commands) return;
+    shell_register_command("cd", "Change working directory: cd [path]", shell_builtin_cd);
+    shell_register_command("pwd", "Print working directory", shell_builtin_pwd);
+    shell_register_command("whoami", "Print current user", shell_builtin_whoami);
+    shell_register_command("id", "Print user and group IDs", shell_builtin_id);
     shell_register_command("help", "Display this help message", shell_print_help);
     shell_register_command("ls", "List directory entries: ls [path]", shell_builtin_ls);
     shell_register_command("mkdir", "Create RAM directories: mkdir path...", shell_builtin_mkdir);
@@ -166,42 +173,45 @@ int shell_read_line(char *buffer, size_t max_length) {
     }
 }
 /*---------------------------------------------------------------------------*/
-static void shell_execute(const char *line, size_t len) {
-    if (len == 0) {
-        return;
-    }
-
-    char *args[CONFIG_HOMECORE_SHELL_MAX_ARGS];
+int shell_execute_line(shell_context_t *context, char *line) {
+    if (!context || !context->user || !line) return -1;
+    char *args[CONFIG_HOMECORE_SHELL_MAX_ARGS + 1];
     size_t argc = 0;
-
-    char *token = strtok((char *)line, " ");
-    while (token != NULL && argc < CONFIG_HOMECORE_SHELL_MAX_ARGS) {
-        args[argc++] = token;
-        token = strtok(NULL, " ");
-    }
-
-    if (argc == 0) {
-        return;
-    }
-
-    shell_command_t *command = shell_commands;
-    while (command != NULL) {
-        if (strcmp(command->name, args[0]) == 0) {
-            command->handler((int)argc, args);
-            return;
+    char *save = NULL;
+    char *token = strtok_r(line, " \t", &save);
+    while (token) {
+        if (argc == CONFIG_HOMECORE_SHELL_MAX_ARGS) {
+            puts("Too many arguments");
+            context->last_status = 2;
+            return 2;
         }
-        command = command->next;
+        args[argc++] = token;
+        token = strtok_r(NULL, " \t", &save);
     }
+    args[argc] = NULL;
+    if (!argc) return context->last_status;
 
+    for (shell_command_t *command = shell_commands; command; command = command->next) {
+        if (strcmp(command->name, args[0]) == 0) {
+            session_t *previous = session_set_current(context);
+            int status = command->handler(context, (int)argc, args);
+            session_set_current(previous);
+            context->last_status = status;
+            return status;
+        }
+    }
     printf("Unknown command: %s\n", args[0]);
+    context->last_status = 127;
+    return 127;
 }
 /*---------------------------------------------------------------------------*/
 void shell_run(void) {
     while (1) {
-        printf("%s", CONFIG_HOMECORE_SHELL_PROMPT);
+        shell_context_t *context = session_current();
+        printf("%s:%s%s", context->user->name, context->cwd, CONFIG_HOMECORE_SHELL_PROMPT);
         int len = shell_read_line(shell_input_buffer, sizeof(shell_input_buffer));
         if (len > 0) {
-            shell_execute(shell_input_buffer, (size_t)len);
+            shell_execute_line(context, shell_input_buffer);
         }
     }
 }

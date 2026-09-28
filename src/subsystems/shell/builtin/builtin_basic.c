@@ -104,7 +104,8 @@ static double basic_millis(double args[], int count) {
     return (double)k_uptime_ms();
 }
 
-int shell_builtin_basic(int argc, char **argv) {
+int shell_builtin_basic(shell_context_t *context, int argc, char **argv) {
+    (void)context;
     (void)argc;
     (void)argv;
     g2basic_init(basic_output);

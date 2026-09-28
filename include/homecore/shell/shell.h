@@ -31,9 +31,13 @@ extern "C" {
 /*---------------------------------------------------------------------------*/
 #include <stddef.h>
 #include <stdint.h>
+#include "homecore/session/session.h"
 /*---------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
-typedef int (*shell_command_handler_t)(int argc, char **argv);
+typedef session_t shell_context_t;
+typedef int (*shell_command_handler_t)(shell_context_t *context, int argc, char **argv);
+/* Tokenizes the writable input, dispatches in this session, and stores status. */
+int shell_execute_line(shell_context_t *context, char *line);
 /*---------------------------------------------------------------------------*/
 void shell_init(void);
 /*---------------------------------------------------------------------------*/

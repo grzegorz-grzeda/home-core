@@ -215,8 +215,9 @@ end with `/`. `mkdir path...` creates empty RAM directories; parents must
 already exist. They disappear on reboot. The default limit is 16 user
 directories, configured by `CONFIG_HOMECORE_VFS_MAX_DIRECTORIES`.
 
-Paths allow up to 127 bytes, resolve relative to `/`, and support repeated
-slashes, `.` and `..`. There is no `cd` or persistent file storage yet.
+Paths allow up to 127 bytes and support repeated slashes, `.` and `..`.
+Shell paths resolve relative to the session working directory. There is no
+persistent file storage yet.
 `mkdir -p` and other command options are not implemented.
 
 `cat path...` copies existing readable VFS nodes to the console until EOF.
@@ -231,4 +232,50 @@ in QEMU. The host directory tests can be run with:
 cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include \
   tests/vfs_directories_test.c src/subsystems/vfs/vfs.c -o /tmp/vfs-test
 /tmp/vfs-test
+```
+
+## Users and shell sessions
+
+The default session runs as `root` (UID 0, GID 0), with home and working directory
+`/`. The prompt includes the identity and CWD, for example `root:/dev$ `.
+`CONFIG_HOMECORE_SHELL_PROMPT` configures the suffix after those fields.
+
+```text
+whoami
+id
+pwd
+cd /dev
+ls
+cat uptime
+cd ..
+cd
+```
+
+`cd` without arguments returns to the user's home. A failed directory change
+leaves CWD unchanged. `ls` without arguments lists CWD. Relative paths in
+`mkdir`, `cat`, and libc `open`/`fopen` also use the active session's CWD.
+
+`user_t` holds UID, primary GID, name, and home. `session_t` holds a user pointer,
+CWD, and last command status; `shell_context_t` aliases it. Command handlers
+receive that context explicitly. `shell_execute_line(context, writable_line)`
+sets the active session during dispatch and restores it afterward. Unknown
+commands set status 127; excessive arguments set status 2. Empty input preserves
+the previous status. User objects must outlive their sessions.
+
+The VFS has no global CWD: `vfs_resolve_path(base, path, output)` accepts an
+explicit base, while existing low-level VFS operations keep their root-relative
+behavior. The current-session pointer used by libc is single-threaded and must
+become task-local when scheduling is added. This is identity and session state,
+not authentication or access control: there are no passwords, ownership checks,
+or privilege separation yet.
+
+Run the session regression tests with:
+
+```bash
+cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include \
+  -Isrc/subsystems/shell/builtin tests/session_test.c src/kernel/session.c \
+  src/subsystems/vfs/vfs.c src/subsystems/shell/shell.c \
+  src/subsystems/shell/builtin/builtin_files.c \
+  src/subsystems/shell/builtin/builtin_session.c -o /tmp/session-test
+/tmp/session-test
 ```

@@ -31,6 +31,7 @@
 /*---------------------------------------------------------------------------*/
 #include "homecore/board/board.h"
 #include "homecore/vfs/vfs.h"
+#include "homecore/session/session.h"
 /*---------------------------------------------------------------------------*/
 extern uint8_t _heap_start;
 extern uint8_t _heap_end;
@@ -52,7 +53,9 @@ void *_sbrk(ptrdiff_t incr) {
 }
 /*---------------------------------------------------------------------------*/
 int _open(const char *name, int flags, ...) {
-    return vfs_open(name, flags);
+    char path[VFS_PATH_CAPACITY];
+    if (vfs_resolve_path(session_current()->cwd, name, path) < 0) return -1;
+    return vfs_open(path, flags);
 }
 /*---------------------------------------------------------------------------*/
 int _write(int fd, const char *buf, int len) {

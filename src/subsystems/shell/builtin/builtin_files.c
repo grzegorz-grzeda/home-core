@@ -16,41 +16,50 @@ static int print_entry(const char *name, bool directory, void *context) {
     return printf("%s%s\n", name, directory ? "/" : "") < 0 ? -1 : 0;
 }
 
-int shell_builtin_ls(int argc, char **argv) {
+int shell_builtin_ls(shell_context_t *context, int argc, char **argv) {
     if (argc > 2) {
         puts("Usage: ls [path]");
         return 1;
     }
-    const char *path = argc == 2 ? argv[1] : "/";
-    vfs_node_t *node = vfs_find_node(path);
+    const char *path = argc == 2 ? argv[1] : ".";
+    char resolved[VFS_PATH_CAPACITY];
+    if (vfs_resolve_path(context->cwd, path, resolved) < 0) return file_error("ls", path);
+    vfs_node_t *node = vfs_find_node(resolved);
     if (!node) return file_error("ls", path);
     if (!node->is_directory) {
         return print_entry(strrchr(node->name, '/') + 1, false, NULL);
     }
-    if (vfs_list(path, print_entry, NULL) < 0) return file_error("ls", path);
+    if (vfs_list(resolved, print_entry, NULL) < 0) return file_error("ls", path);
     return 0;
 }
 
-int shell_builtin_mkdir(int argc, char **argv) {
+int shell_builtin_mkdir(shell_context_t *context, int argc, char **argv) {
     if (argc < 2) {
         puts("Usage: mkdir path...");
         return 1;
     }
     int status = 0;
     for (int i = 1; i < argc; i++) {
-        if (vfs_mkdir(argv[i]) < 0) status = file_error("mkdir", argv[i]);
+        char resolved[VFS_PATH_CAPACITY];
+        if (vfs_resolve_path(context->cwd, argv[i], resolved) < 0 ||
+            vfs_mkdir(resolved) < 0) status = file_error("mkdir", argv[i]);
     }
     return status;
 }
 
-int shell_builtin_cat(int argc, char **argv) {
+int shell_builtin_cat(shell_context_t *context, int argc, char **argv) {
     if (argc < 2) {
         puts("Usage: cat path...");
         return 1;
     }
     int status = 0;
     for (int i = 1; i < argc; i++) {
-        int fd = vfs_open(argv[i], O_RDONLY);
+        char resolved[VFS_PATH_CAPACITY];
+        if (vfs_resolve_path(context->cwd, argv[i], resolved) < 0) {
+            status = file_error("cat", argv[i]);
+            continue;
+        }
+        int fd = vfs_open(resolved, O_RDONLY);
         if (fd < 0) {
             status = file_error("cat", argv[i]);
             continue;
