@@ -27,8 +27,6 @@ target_sources(${PROJECT_NAME}
 target_compile_options(${PROJECT_NAME} PRIVATE
     -ffreestanding
     -fno-builtin
-    -mcpu=cortex-m3
-    -mthumb
 )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC

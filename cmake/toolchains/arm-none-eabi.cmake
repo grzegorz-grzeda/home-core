@@ -30,7 +30,7 @@ set(CMAKE_SIZE arm-none-eabi-size)
 
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
-set(COMMON_FLAGS "-mcpu=cortex-m3 -mthumb -ffreestanding -fno-builtin -fdata-sections -ffunction-sections")
+set(COMMON_FLAGS "-ffreestanding -fno-builtin -fdata-sections -ffunction-sections")
 
 set(CMAKE_C_FLAGS_INIT "${COMMON_FLAGS}")
 set(CMAKE_ASM_FLAGS_INIT "${COMMON_FLAGS}")

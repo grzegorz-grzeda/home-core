@@ -24,7 +24,7 @@
 /*---------------------------------------------------------------------------*/
 #include "homecore/arch/arch.h"
 #include "soc_cmsis.h"
-#include "core_cm3.h"
+
 /*---------------------------------------------------------------------------*/
 #define INITIAL_XPSR 0x01000000u
 /*---------------------------------------------------------------------------*/
@@ -56,7 +56,12 @@ volatile void *arch_switch_new_sp;
 /*---------------------------------------------------------------------------*/
 volatile void *arch_first_sp;
 /*---------------------------------------------------------------------------*/
+extern uint32_t __isr_vector_start;
+
 void arch_init(void) {
+    SCB->VTOR = (uint32_t)&__isr_vector_start;
+    __DSB();
+    __ISB();
     NVIC_SetPriority(PendSV_IRQn, 0xFF);
     NVIC_SetPriority(SysTick_IRQn, 0xFE);
     NVIC_SetPriority(SVCall_IRQn, 0xFD);

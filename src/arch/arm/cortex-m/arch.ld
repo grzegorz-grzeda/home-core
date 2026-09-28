@@ -18,12 +18,14 @@
     *(.rodata*)
     KEEP(*(.init))
     KEEP(*(.fini))
+    . = ALIGN(4);
 } > FLASH
 
 .data :
 {
     _sdata = .;
     *(.data*)
+    . = ALIGN(4);
     _edata = .;
 } > RAM AT > FLASH
 
@@ -34,6 +36,7 @@ _sidata = LOADADDR(.data);
     _sbss = .;
     *(.bss*)
     *(COMMON)
+    . = ALIGN(8);
     _ebss = .;
 } > RAM
 
@@ -47,3 +50,4 @@ _heap_start = .;
 . = ALIGN(8);
 
 _heap_end = ORIGIN(RAM) + LENGTH(RAM) - __stack_size;
+ASSERT(_heap_start <= _heap_end, "Static RAM and main stack exceed RAM")

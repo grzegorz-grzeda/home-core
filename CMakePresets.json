@@ -28,6 +28,17 @@
                 "CMAKE_BUILD_TYPE": "Release",
                 "HOMECORE_BOARD": "lm3s6965evb"
             }
+        },
+        {
+            "name": "stm32f4discovery",
+            "displayName": "STM32F4DISCOVERY",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/stm32f4discovery",
+            "toolchainFile": "${sourceDir}/cmake/toolchains/arm-none-eabi.cmake",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "HOMECORE_BOARD": "stm32f4discovery"
+            }
         }
     ],
     "buildPresets": [
@@ -40,6 +51,10 @@
             "name": "lm3s6965evb-release",
             "displayName": "Build LM3S6965EVB Release",
             "configurePreset": "lm3s6965evb-release"
+        },
+        {
+            "name": "stm32f4discovery",
+            "configurePreset": "stm32f4discovery"
         }
     ]
 }

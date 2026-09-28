@@ -32,7 +32,7 @@ set(HOMECORE_KCONFIG_CMAKE ${CMAKE_CURRENT_BINARY_DIR}/kconfig.cmake)
 set(HOMECORE_BOARD "" CACHE STRING "Target board")
 
 if(NOT HOMECORE_BOARD)
-    message(FATAL_ERROR "Use: cmake -B build -DHOMECORE_BOARD=bluepill")
+    message(FATAL_ERROR "Use a board preset, e.g.: cmake --preset lm3s6965evb")
 endif()
 
 set(HOMECORE_DEFCONFIG
@@ -79,6 +79,11 @@ target_include_directories(${PROJECT_NAME}
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+add_library(homecore_cpu INTERFACE)
+target_compile_options(homecore_cpu INTERFACE -mcpu=${HOMECORE_CPU} -mthumb -mfloat-abi=soft)
+target_link_options(homecore_cpu INTERFACE -mcpu=${HOMECORE_CPU} -mthumb -mfloat-abi=soft)
+target_link_libraries(${PROJECT_NAME} PRIVATE homecore_cpu)
+
 add_subdirectory(src)
 
 target_compile_options(${PROJECT_NAME} PRIVATE
@@ -86,8 +91,6 @@ target_compile_options(${PROJECT_NAME} PRIVATE
     -Wextra
     -ffreestanding
     -fno-builtin
-    -mcpu=cortex-m3
-    -mthumb
 )
 
 target_link_options(${PROJECT_NAME} PRIVATE
@@ -104,4 +107,5 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 )
 
 add_subdirectory(external/g2basic)
+target_link_libraries(g2basic PRIVATE homecore_cpu)
 target_link_libraries(${PROJECT_NAME} PRIVATE g2basic)
