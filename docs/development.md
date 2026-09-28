@@ -47,12 +47,16 @@ cmake --build build/stm32f4discovery-release
 ## Configuration
 
 `Kconfig` includes subsystem definitions under `src/`. The default input is
-`configs/homecore_defconfig`. To use another input, copy that file, edit its
-`CONFIG_...` settings, and configure with `-DHOMECORE_DEFCONFIG=/absolute/path`.
+`configs/<board>_defconfig` when the board provides one, otherwise
+`configs/homecore_defconfig`. The `stm32vldiscovery-qemu` preset selects
+`configs/stm32vldiscovery_qemu_defconfig`. To use another input, copy a
+defconfig, edit its `CONFIG_...` settings, and configure with
+`-DHOMECORE_DEFCONFIG=/absolute/path`. The choice is cached per build directory.
 Rerun configuration after changing Kconfig or defconfig; generation happens at
 configure time. Editing build-directory `.config` does not persist changes.
 
-Useful settings include main stack size, shell input/argument limits and prompt
+Useful settings include main stack size, stdio buffering, board clock setup
+(`CONFIG_HOMECORE_BOARD_CLOCK_SETUP`, disabled only for emulators), shell input/argument limits and prompt
 suffix, VFS open-file/directory/file limits, and maximum RAM-file size.
 Use the Kconfig files for current defaults and ranges. Disabling shell or VFS
 is not a validated minimal-system configuration: startup references them directly.
@@ -74,11 +78,13 @@ The runner works from any directory and never rewrites source files. By default 
   under `src`, `include`, and `tests`, including untracked files. It excludes
   `external`, generated build files, and the vendor-generated LM3S CMSIS header.
 - Compiles each public header in isolation with host warnings treated as errors.
-- Builds both boards in Debug and Release with compile warnings treated as errors.
-- Runs the seven host C regression variants and the runner's own Python tests.
-- Runs QEMU regressions on both newly built LM3S configurations.
+- Builds every target in Debug and Release with compile warnings treated as
+  errors: the three boards plus `stm32vldiscovery-qemu`.
+- Runs the eight host C regression variants and the runner's own Python tests.
+- Runs QEMU regressions on the newly built LM3S and `stm32vldiscovery-qemu`
+  configurations.
 
-Builds use `build/quality/<board>/<configuration>` and default defconfig settings,
+Builds use `build/quality/<target>/<configuration>` and each target's defconfig,
 leaving ordinary preset build directories alone. Host binaries use temporary
 folders. Missing tools, wrong formatter versions, timeouts, and failed checks
 produce a nonzero exit status. Independent checks continue after failures;
@@ -108,7 +114,7 @@ uses explicit matrix jobs for firmware builds and QEMU regressions.
 ## Validation
 
 Configure the default LM3S build first: host tests include its generated header.
-Run the relevant tests below, or all four for shared VFS/session changes:
+Run the relevant tests below, or all five for shared VFS/session changes:
 
 ```bash
 cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include \
@@ -123,6 +129,11 @@ cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include \
   tests/vfs_ram_files_test.c src/subsystems/vfs/vfs.c -o /tmp/homecore-ram-files-test
 /tmp/homecore-ram-files-test
 
+# --wrap=calloc lets the test fail chosen VFS allocations (GNU ld).
+cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include -Wl,--wrap=calloc \
+  tests/vfs_alloc_failure_test.c src/subsystems/vfs/vfs.c -o /tmp/homecore-alloc-failure-test
+/tmp/homecore-alloc-failure-test
+
 cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include \
   -Isrc/subsystems/shell/builtin tests/session_test.c src/kernel/session.c \
   src/subsystems/vfs/vfs.c src/subsystems/shell/shell.c \
@@ -132,14 +143,18 @@ cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include \
 /tmp/homecore-session-test
 ```
 
-After building LM3S, run the integration regression:
+After building the QEMU presets, run the integration regression on each
+emulated board:
 
 ```bash
 python3 tests/qemu_files_test.py
+python3 tests/qemu_files_test.py --board stm32vldiscovery
 ```
 
-It expects `build/lm3s6965evb/homecore` and checks shell/system/file commands,
-sessions, slot reuse, and reboot. Host tests exercise portable logic with stubs;
+It uses `build/lm3s6965evb/homecore` or `build/stm32vldiscovery-qemu/homecore`
+unless `--firmware` names another ELF. It checks shell/system/file commands,
+sessions, repeated create/remove cycles, BASIC at and just past the board's
+nesting limit, the stack high-water mark from `mem`, and reboot. Host tests exercise portable logic with stubs;
 QEMU tests exercise the LM3S firmware. Neither validates STM32 peripheral behavior.
 
 For architecture/linker changes, inspect the ELF and map:
@@ -181,17 +196,15 @@ The [GitHub Actions workflow](../.github/workflows/build.yml) runs on pushes and
 pull requests targeting `main` or `master`, and supports manual dispatch.
 Its `Quality checks` job runs the script with `--checks format headers host`,
 covering formatting, public headers, host regressions, and runner self-tests.
-Four separate matrix jobs visibly configure and build firmware with CMake:
+Eight matrix jobs visibly configure and build firmware with CMake, one per
+target and build type: `Build <target> (Debug)` and `Build <target> (Release)`
+for `lm3s6965evb`, `stm32f4discovery`, `stm32vldiscovery`, and
+`stm32vldiscovery-qemu`.
 
-- `Build lm3s6965evb (Debug)`
-- `Build lm3s6965evb (Release)`
-- `Build stm32f4discovery (Debug)`
-- `Build stm32f4discovery (Release)`
-
-Each build treats compiler warnings as errors and reports firmware size. The
-LM3S jobs also run QEMU against their own freshly built ELF. Jobs run independently
+Each build treats compiler warnings as errors and reports firmware size. The `lm3s6965evb` and `stm32vldiscovery-qemu`
+jobs also run QEMU against their own freshly built ELF. Jobs run independently
 so a quality failure does not hide build results. CI build output is under
-`build/ci/<board>/<configuration>`.
+`build/ci/<target>/<configuration>`.
 
 The `API documentation` job fetches the theme and G2Basic submodules (not
 CMSIS), installs Doxygen and Graphviz, and runs `scripts/build_docs.sh`. It
@@ -205,7 +218,7 @@ branches never deploy.
 
 A failed check fails the job. Firmware is validated but never uploaded or
 deployed; only the API documentation is published. GitHub branch protection/rulesets must require
-`Quality checks`, `API documentation`, and all four build checks if merging should be blocked by any
+`Quality checks`, `API documentation`, and all eight build checks if merging should be blocked by any
 failure; that repository setting is separate from the workflow. Physical STM32 validation and semantic
 review remain manual.
 
@@ -219,7 +232,8 @@ cc -Wall -Wextra -Werror -Iinclude tests/uart_contract_test.c -o /tmp/hc-uart-lm
 timeout 5 /tmp/hc-uart-lm3s
 cc -Wall -Wextra -Werror -Iinclude -DTEST_STM32 tests/uart_contract_test.c -o /tmp/hc-uart-stm32
 timeout 5 /tmp/hc-uart-stm32
-cc -Wall -Wextra -Werror -Wno-deprecated-declarations -ffunction-sections -fdata-sections -Iinclude tests/console_io_test.c -Wl,--gc-sections -o /tmp/hc-console
+cc -Wall -Wextra -Werror -Wno-deprecated-declarations -ffunction-sections -fdata-sections -Iinclude \
+  -Ibuild/lm3s6965evb/include tests/console_io_test.c -Wl,--gc-sections -o /tmp/hc-console
 /tmp/hc-console
 ```
 

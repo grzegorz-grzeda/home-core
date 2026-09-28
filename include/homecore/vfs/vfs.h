@@ -45,8 +45,10 @@ extern "C" {
  * @brief Single namespace of device nodes, RAM directories, and RAM files.
  *
  * Nodes are kept in one list and are named by canonical absolute paths.
- * Metadata and descriptors come from fixed pools sized by Kconfig. RAM file
- * contents are allocated from the heap and are lost on reset. libc I/O reaches
+ * RAM directories, RAM files, and descriptors are allocated from the heap
+ * when created or opened and freed when removed or closed; the Kconfig maxima
+ * cap how many can exist. RAM file contents also use the heap. Everything is
+ * lost on reset. libc I/O reaches
  * the VFS through the newlib hooks in `src/kernel/syscalls.c`. The VFS is not
  * reentrant and must not be called from interrupt handlers.
  *
@@ -135,6 +137,8 @@ typedef struct vfs_node {
     bool is_directory;
     /** The node is a RAM file managed by the VFS. Device drivers leave it `false`. */
     bool is_regular;
+    /** The VFS allocated the node and frees it on removal. Drivers leave it `false`. */
+    bool is_owned;
     /** RAM file length in bytes. Unused for devices and directories. */
     unsigned size;
 } vfs_node_t;
@@ -201,9 +205,9 @@ int vfs_resolve_path(const char *base, const char *path, char result[VFS_PATH_CA
  * @param path Directory to create. Its parent must exist.
  *
  * @retval 0  The directory was created.
- * @retval -1 `errno` is `EEXIST`, `ENOENT`, `ENOTDIR`, `ENAMETOOLONG`, or
- *            `ENOSPC` when all `CONFIG_HOMECORE_VFS_MAX_DIRECTORIES` slots are
- *            used.
+ * @retval -1 `errno` is `EEXIST`, `ENOENT`, `ENOTDIR`, `ENAMETOOLONG`,
+ *            `ENOSPC` when `CONFIG_HOMECORE_VFS_MAX_DIRECTORIES` directories
+ *            exist, or `ENOMEM` when the entry cannot be allocated.
  */
 int vfs_mkdir(const char *path);
 /*---------------------------------------------------------------------------*/
@@ -215,7 +219,7 @@ int vfs_mkdir(const char *path);
  *
  * @param path Directory to remove.
  *
- * @retval 0  The directory was removed and its slot freed.
+ * @retval 0  The directory was removed and its memory freed.
  * @retval -1 `errno` is `ENOENT`, `ENOTDIR`, `EBUSY` for `/` and `/dev`,
  *            `ENOTEMPTY`, or `EROFS` for a registered directory that was not
  *            created by vfs_mkdir().
@@ -227,7 +231,7 @@ int vfs_rmdir(const char *path);
  *
  * @param path File to remove.
  *
- * @retval 0  The file was removed and its slot freed.
+ * @retval 0  The file was removed and its memory freed.
  * @retval -1 `errno` is `ENOENT`, `EISDIR`, `EPERM` for a device node, or
  *            `EBUSY` while any descriptor is open on the file.
  */
@@ -283,7 +287,9 @@ int vfs_list(const char *path, vfs_directory_visitor_t visitor, void *context);
  *         `errno` set to `EINVAL` (invalid access mode), `EACCES` (`O_TRUNC`
  *         with `O_RDONLY`, or write access to a snapshot device), `EMFILE`,
  *         `EEXIST`, `EISDIR`, `ENOENT`, `ENOTDIR`, `ENAMETOOLONG`, `ENOSPC`
- *         (no free RAM-file slot), or `EIO` (snapshot failed).
+ *         (`CONFIG_HOMECORE_VFS_MAX_RAM_FILES` files exist), `ENOMEM` (the
+ *         descriptor or new file cannot be allocated; nothing is created or
+ *         truncated), or `EIO` (snapshot failed).
  */
 int vfs_open(const char *name, int flags);
 /*---------------------------------------------------------------------------*/

@@ -21,7 +21,7 @@
 # SOFTWARE.
 #
 cmake_minimum_required(VERSION 3.25)
-project(homecore VERSION 0.0.2 LANGUAGES C ASM)
+project(homecore VERSION 0.0.5 LANGUAGES C ASM)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -35,8 +35,13 @@ if(NOT HOMECORE_BOARD)
     message(FATAL_ERROR "Use a board preset, e.g.: cmake --preset lm3s6965evb")
 endif()
 
+# A board may provide configs/<board>_defconfig, for example to fit small RAM.
+set(HOMECORE_DEFAULT_DEFCONFIG ${HOMECORE_ROOT}/configs/homecore_defconfig)
+if(EXISTS ${HOMECORE_ROOT}/configs/${HOMECORE_BOARD}_defconfig)
+    set(HOMECORE_DEFAULT_DEFCONFIG ${HOMECORE_ROOT}/configs/${HOMECORE_BOARD}_defconfig)
+endif()
 set(HOMECORE_DEFCONFIG
-    ${HOMECORE_ROOT}/configs/homecore_defconfig
+    ${HOMECORE_DEFAULT_DEFCONFIG}
     CACHE FILEPATH "HomeCore defconfig file"
 )
 
@@ -106,6 +111,12 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_SIZE} ${PROJECT_NAME}
 )
 
+# Bound G2Basic's parser recursion to what the main stack can hold. Without the
+# shell the option does not exist, and G2Basic keeps its embedded default.
+if(DEFINED CONFIG_HOMECORE_SHELL_BASIC_MAX_NESTING)
+    set(G2BASIC_MAX_NESTING ${CONFIG_HOMECORE_SHELL_BASIC_MAX_NESTING} CACHE STRING
+        "Maximum BASIC nesting, from CONFIG_HOMECORE_SHELL_BASIC_MAX_NESTING" FORCE)
+endif()
 add_subdirectory(external/g2basic)
 target_link_libraries(g2basic PRIVATE homecore_cpu)
 target_link_libraries(${PROJECT_NAME} PRIVATE g2basic)

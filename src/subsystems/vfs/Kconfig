@@ -12,11 +12,18 @@ config HOMECORE_VFS_MAX_DIRECTORIES
     int "Maximum number of user-created RAM directories"
     default 16
     range 1 64
+    help
+        Cap on RAM directories. Each is allocated from the heap when created,
+        sized to its path, and freed when removed.
 
 config HOMECORE_VFS_MAX_RAM_FILES
     int "Maximum number of RAM files"
     default 16
     range 1 64
+    help
+        Cap on RAM files. Each entry is allocated from the heap when created,
+        sized to its path, and freed when removed; contents are allocated
+        separately when written.
 
 config HOMECORE_VFS_MAX_FILE_SIZE
     int "Maximum size of each RAM file in bytes"
@@ -29,6 +36,8 @@ config HOMECORE_VFS_MAX_OPEN_FILES
     range 4 64
     help
         Set the maximum number of files that can be opened simultaneously.
+        The VFS keeps one pointer per descriptor and allocates each descriptor
+        from the heap when opened. The three standard streams use three.
 
 endif
 

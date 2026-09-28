@@ -26,6 +26,9 @@ int shell_builtin_mem(shell_context_t *context, int argc, char **argv) {
            (unsigned long)stats.reusable,
            (unsigned long)stats.unclaimed,
            (unsigned long)(stats.reusable + stats.unclaimed));
+    k_stack_stats_t stack;
+    k_stack_stats(&stack);
+    printf("Stack: used %lu of %lu bytes\n", (unsigned long)stack.used, (unsigned long)stack.size);
     return 0;
 }
 

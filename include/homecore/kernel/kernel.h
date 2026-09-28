@@ -109,6 +109,38 @@ typedef struct {
 void k_heap_stats(k_heap_stats_t *stats);
 /** @} */
 /*---------------------------------------------------------------------------*/
+/** @name Stack statistics
+ * @{
+ */
+/**
+ * @brief Word written over the unused main stack at reset.
+ *
+ * The reset handler fills the main-stack reservation below its own frame with
+ * this value. k_stack_stats() finds the deepest word that no longer holds it.
+ */
+#define K_STACK_FILL_WORD 0xA5A5A5A5U
+/*---------------------------------------------------------------------------*/
+/** @brief Main-stack usage filled by k_stack_stats(). All values are bytes. */
+typedef struct {
+    /** Size of the main-stack reservation, `CONFIG_HOMECORE_KERNEL_MAIN_STACK_SIZE`. */
+    size_t size;
+    /** Deepest stack use since reset, including interrupt handlers. */
+    size_t used;
+} k_stack_stats_t;
+/*---------------------------------------------------------------------------*/
+/**
+ * @brief Measure the main stack's high-water mark.
+ *
+ * Scans the reservation from its lowest address for the first word that was
+ * overwritten since reset. `used == size` means the whole reservation was used
+ * and the stack may have overflowed into the heap, which is not detected
+ * otherwise. The scan reads up to `size` bytes; call it from foreground code.
+ *
+ * @param[out] stats Destination. Must not be `NULL`; this is not checked.
+ */
+void k_stack_stats(k_stack_stats_t *stats);
+/** @} */
+/*---------------------------------------------------------------------------*/
 /** @} */
 /*---------------------------------------------------------------------------*/
 #if defined(__cplusplus)

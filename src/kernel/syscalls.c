@@ -38,6 +38,7 @@
 /*---------------------------------------------------------------------------*/
 extern uint8_t _heap_start;
 extern uint8_t _heap_end;
+extern uint32_t _estack;
 /*---------------------------------------------------------------------------*/
 static uint8_t *heap_current = &_heap_start;
 /*---------------------------------------------------------------------------*/
@@ -59,6 +60,19 @@ void k_heap_stats(k_heap_stats_t *stats) {
     stats->allocated = (size_t)info.uordblks;
     stats->reusable = (size_t)info.fordblks;
     stats->unclaimed = (uintptr_t)&_heap_end - (uintptr_t)heap_current;
+}
+
+void k_stack_stats(k_stack_stats_t *stats) {
+    /* The reservation is [_heap_end, _estack); painting starts at the first
+     * aligned word, matching the reset handler. */
+    uintptr_t bottom = (uintptr_t)&_heap_end;
+    uintptr_t top = (uintptr_t)&_estack;
+    const uint32_t *word = (const uint32_t *)((bottom + 3U) & ~(uintptr_t)3U);
+    while ((uintptr_t)word < top && *word == K_STACK_FILL_WORD) {
+        word++;
+    }
+    stats->size = top - bottom;
+    stats->used = top - (uintptr_t)word;
 }
 /*---------------------------------------------------------------------------*/
 int _open(const char *name, int flags, ...) {

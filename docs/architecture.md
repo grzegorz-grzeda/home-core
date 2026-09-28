@@ -12,7 +12,7 @@ the implementation before relying on them.
 | `src/main.c` | Initialization order and foreground shell entry |
 | `src/arch/arm/cortex-m/` | Shared reset startup, core exceptions, IRQ/timer helpers, stack frame setup, linker sections |
 | `src/arch/arm/cortex-m3/`, `cortex-m4/` | Architecture selection and CPU identity |
-| `src/soc/ti/lm3s6965/`, `src/soc/st/stm32f407/` | Device definitions and UART device registration; STM32 peripheral vectors |
+| `src/soc/ti/lm3s6965/`, `src/soc/st/stm32f407/`, `src/soc/st/stm32f100/` | Device definitions and peripheral vectors; `src/soc/st/common/` registers the board-driven STM32 console |
 | `src/board/` | Memory regions, board clock policy, pin setup, polling UART, panic output |
 | `src/kernel/` | Initialization, uptime, session state, newlib hooks and heap accounting |
 | `src/subsystems/vfs/` | Device nodes, descriptors, RAM files/directories, path handling |
@@ -37,14 +37,17 @@ Arm tools. Kconfig generates `include/homecore/autoconf.h`, `.config`, and
 ## Startup
 
 1. The vector table supplies the initial main stack pointer and `Reset_Handler`.
-2. Shared reset code copies `.data` from flash to RAM and clears `.bss`, then
+2. Shared reset code fills the unused main stack with `K_STACK_FILL_WORD` for
+   high-water measurement, copies `.data` from flash to RAM, clears `.bss`, then
    calls `main()`. It does not call ST's `SystemInit()` or vendor startup code.
 3. `arch_init()` sets VTOR to the linked vector table and configures exception
    priorities.
 4. `soc_init()` registers UART device nodes. This happens before board peripheral
    initialization, so registration must not require a functioning console.
-5. `board_init()` initializes board hardware. The STM32 port selects HSI and
-   configures USART2; the QEMU board relies on the emulated reset configuration.
+5. `board_init()` initializes board hardware. STM32F4DISCOVERY selects HSI and
+   configures USART2. STM32VLDISCOVERY runs the PLL at 24 MHz, skipped in its
+   QEMU build, and configures USART1. LM3S6965EVB relies on QEMU's emulated
+   reset configuration.
 6. `k_init()` starts the 1 kHz timer, registers `/dev/uptime`, and opens
    `/dev/uart0` three times for stdin, stdout, and stderr.
 7. `shell_init()` prepares command handling; `main()` prints the banner and enters
@@ -65,6 +68,10 @@ The linker exports `_sidata`, `_sdata`, `_edata`, `_sbss`, and `_ebss` for start
 `_heap_end` leaves `CONFIG_HOMECORE_KERNEL_MAIN_STACK_SIZE` bytes reserved at
 RAM's top. `_sbrk()` provides the heap backing for newlib allocation. There is
 no stack guard or memory protection enforcing the reservation at runtime.
+`k_stack_stats()` reports the deepest stack use since reset (shown by `mem`), so
+overflow can be noticed in testing but is not prevented. With
+`CONFIG_HOMECORE_KERNEL_STDIO_BUFFERED` disabled, `k_init()` makes stdin and
+stdout unbuffered, so newlib never allocates their 1 KB buffers.
 
 SysTick calls `k_tick()`. Uptime reads mask interrupts around the 64-bit counter
 copy. Masking interrupts across multiple ticks can lose time. SVC and PendSV
@@ -78,7 +85,9 @@ node operations → peripheral. On STM32 the node uses the board UART functions;
 on LM3S the SoC node directly accesses the UART registers. Polling reads block
 until a character arrives. `/dev/console` is not currently an alias.
 
-VFS uses fixed metadata/descriptor pools and heap-backed RAM file contents.
+The VFS allocates RAM directories, RAM files, and open descriptors from the heap
+on demand and frees them on removal or close, so unused capacity costs no RAM.
+Kconfig maxima cap their numbers. Only a table of descriptor pointers is static.
 Files disappear on reset. Snapshot devices such as `/dev/uptime` capture content
 at open; each descriptor has its own position and snapshot. A live UART does
 not provide file EOF.

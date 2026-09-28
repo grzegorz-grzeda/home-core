@@ -1,23 +1,34 @@
-"""Build lm3s6965evb, then run from the repository root with python3."""
+"""Build the board's QEMU configuration, then run from the repository root with python3."""
 import argparse
 import re
 import select
 import subprocess
 import time
 
+# QEMU machine, default firmware, console devices the SoC registers, and the
+# BASIC nesting limit from the board's defconfig.
+BOARDS = {
+    "lm3s6965evb": ("lm3s6965evb", "build/lm3s6965evb/homecore",
+                    ("uart0", "uart1", "uart2"), 8),
+    "stm32vldiscovery": ("stm32vldiscovery", "build/stm32vldiscovery-qemu/homecore",
+                         ("uart0",), 4),
+}
+
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("--firmware", default="build/lm3s6965evb/homecore",
-                    help="LM3S firmware ELF to test")
+parser.add_argument("--board", choices=sorted(BOARDS), default="lm3s6965evb",
+                    help="board to emulate (default: lm3s6965evb)")
+parser.add_argument("--firmware", help="firmware ELF to test (default: the board's preset build)")
 args = parser.parse_args()
+machine, default_firmware, uarts, nesting = BOARDS[args.board]
 
 process = subprocess.Popen(
-    ["qemu-system-arm", "-M", "lm3s6965evb", "-kernel",
-     args.firmware, "-display", "none", "-monitor", "none",
+    ["qemu-system-arm", "-M", machine, "-kernel",
+     args.firmware or default_firmware, "-display", "none", "-monitor", "none",
      "-serial", "stdio"],
     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
 )
 
-def prompt():
+def prompt(ending=b"$ "):
     output = b""
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline:
@@ -26,20 +37,20 @@ def prompt():
             if not chunk:
                 raise AssertionError(output)
             output += chunk
-            if output.endswith(b"$ "):
+            if output.endswith(ending):
                 return output
     raise AssertionError(("shell timeout", output))
 
-def command(text):
+def command(text, ending=b"$ "):
     process.stdin.write(text.encode() + b"\r")
     process.stdin.flush()
-    return prompt().decode()
+    return prompt(ending).decode()
 
 try:
     prompt()
     assert "dev/\n" in command("ls")
     devices = command("ls /dev")
-    for name in ("uart0", "uart1", "uart2", "uptime"):
+    for name in uarts + ("uptime",):
         assert name + "\n" in devices, devices
     assert command("mkdir /tmp").endswith("$ ")
     assert "tmp/\n" in command("ls /")
@@ -96,6 +107,17 @@ try:
         command("touch /reused/file")
         command("rm /reused/file")
         command("rmdir /reused")
+    # Nested function calls are the most stack-hungry BASIC construct; the mem
+    # check below proves the stack held at the board's nesting limit.
+    command("basic", b"> ")
+    def calls(depth):
+        return "PRINT " + "min(" * depth + "7" + ")" * depth
+    assert re.search(r"(?m)^7$", command(calls(nesting), b"> ")), nesting
+    assert "expression too deeply nested" in command(calls(nesting + 1), b"> ")
+    assert "42" in command("PRINT 6 * 7", b"> ")
+    process.stdin.write(b"\x03")
+    process.stdin.flush()
+    prompt()
     memory = command("mem")
     values = dict(re.findall(r"(Heap total|Allocated|Reusable|Unclaimed|Available): (\d+) bytes", memory))
     assert len(values) == 5, memory
@@ -103,6 +125,8 @@ try:
     assert values["Heap total"] > 0 and values["Allocated"] > 0, memory
     assert values["Available"] == values["Reusable"] + values["Unclaimed"], memory
     assert values["Available"] <= values["Heap total"], memory
+    stack = re.search(r"Stack: used (\d+) of (\d+) bytes", memory)
+    assert stack and 0 < int(stack.group(1)) < int(stack.group(2)), memory
     assert re.search(r"up \d+ days, \d{2}:\d{2}:\d{2}\.\d{3}", command("uptime"))
     assert "\x1b[2J\x1b[H" in command("clear")
     for text in ("mem extra", "uptime extra", "clear extra", "reboot extra", "touch", "rm", "rmdir"):
@@ -112,7 +136,8 @@ try:
     assert "Rebooting..." in restarted and "HomeCore OS" in restarted, restarted
     assert restarted.endswith("root:/$ "), restarted
     assert "No such file" in command("ls /volatile")
-    print("PASS: QEMU system/file commands, sessions, slot reuse and reboot")
+    print(f"PASS: QEMU {args.board} system/file commands, sessions, create/remove cycles, "
+          f"BASIC nesting limit {nesting} and reboot")
 finally:
     process.terminate()
     process.wait(timeout=3)

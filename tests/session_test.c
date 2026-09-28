@@ -9,6 +9,9 @@
 void k_heap_stats(k_heap_stats_t *stats) {
     memset(stats, 0, sizeof(*stats));
 }
+void k_stack_stats(k_stack_stats_t *stats) {
+    memset(stats, 0, sizeof(*stats));
+}
 uint64_t k_uptime_ms(void) {
     return 0;
 }

@@ -1,0 +1,9 @@
+# STM32VLDISCOVERY: STM32F100RB with 8 KB of RAM. A smaller stack with BASIC
+# nesting limited to 4 levels, a 1 KB per-file limit, and unbuffered stdio
+# leave room for a usable heap. VFS entries cost heap only while they exist,
+# so the default caps are kept.
+CONFIG_HOMECORE_SHELL=y
+CONFIG_HOMECORE_KERNEL_MAIN_STACK_SIZE=2048
+CONFIG_HOMECORE_SHELL_BASIC_MAX_NESTING=4
+CONFIG_HOMECORE_VFS_MAX_FILE_SIZE=1024
+# CONFIG_HOMECORE_KERNEL_STDIO_BUFFERED is not set

@@ -5,6 +5,10 @@
 Use `help` to list available commands. Enter `basic`
 to start G2BASIC; at its input prompt, Ctrl-C, Ctrl-D, or Ctrl-Z returns to the
 shell. For interpreter syntax, see the [G2BASIC documentation](../external/g2basic/README.md).
+One line may nest parentheses, unary signs, function calls, and `IF ... THEN`
+up to `CONFIG_HOMECORE_SHELL_BASIC_MAX_NESTING` levels (8 by default); deeper
+lines fail with "expression too deeply nested", which keeps BASIC within the
+main stack.
 
 ## Uptime
 
@@ -102,15 +106,18 @@ or privilege separation yet.
 
 | Command | Behavior |
 | --- | --- |
-| `mem` | Heap total, allocated bytes, reusable allocator space, unclaimed space, and available bytes |
+| `mem` | Heap total, allocated bytes, reusable allocator space, unclaimed space, available bytes, and the main-stack high-water mark |
 | `uptime` | Elapsed days and hours:minutes:seconds.milliseconds |
 | `clear` | Clear an ANSI terminal and move the cursor home |
 | `reboot` | Reset the board; RAM files, directories and session state are lost |
-| `rmdir path...` | Remove empty user-created directories and reclaim their slots |
+| `rmdir path...` | Remove empty user-created directories and free their memory |
 | `touch path...` | Create empty RAM files, preserving existing file contents |
-| `rm path...` | Remove closed RAM files and reclaim their storage and slots |
+| `rm path...` | Remove closed RAM files and free their memory |
 
 `mem` reports the heap region, excluding static RAM and reserved stack space.
+Its last line, `Stack: used N of M bytes`, is the deepest main-stack use since
+reset, including interrupt handlers. `N` equal to `M` means the stack was
+exhausted and has probably overwritten heap memory.
 Allocated bytes include allocator overhead; available bytes combine reusable
 allocator blocks and unclaimed heap space, not necessarily one contiguous block.
 
@@ -118,9 +125,12 @@ allocator blocks and unclaimed heap space, not necessarily one contiguous block.
 `rm` rejects directories, device nodes and files that still have open descriptors.
 There are no recursive-removal flags. `touch` does not maintain timestamps yet.
 
-RAM-file metadata uses a fixed pool; contents are allocated from the heap only
-when written. Defaults are 16 files (`CONFIG_HOMECORE_VFS_MAX_RAM_FILES`) and
-4096 bytes per file (`CONFIG_HOMECORE_VFS_MAX_FILE_SIZE`). Contents are available
+Each RAM file or directory is allocated from the heap when created, sized to
+its path, and freed when removed; file contents are allocated only when
+written. The defaults cap the VFS at 16 files
+(`CONFIG_HOMECORE_VFS_MAX_RAM_FILES`), 16 directories, and 4096 bytes per file
+(`CONFIG_HOMECORE_VFS_MAX_FILE_SIZE`). Reaching a cap reports "No space left on
+device"; an exhausted heap reports "Not enough space". Contents are available
 through VFS read/write/seek and libc `fopen`/`fread`/`fwrite`, including append and
 truncate modes. Seeking past EOF and then writing fills the gap with zero bytes.
 

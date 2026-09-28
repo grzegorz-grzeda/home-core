@@ -25,7 +25,9 @@
 #include "homecore/kernel/kernel.h"
 #include "homecore/vfs/vfs.h"
 #include "homecore/board/board.h"
+#include "homecore/autoconf.h"
 #include <fcntl.h>
+#include <stdio.h>
 /*---------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
 void k_init(void) {
@@ -45,5 +47,12 @@ void k_init(void) {
             return;
         }
     }
+#if !defined(CONFIG_HOMECORE_KERNEL_STDIO_BUFFERED)
+    /* Unbuffered streams never allocate newlib's 1 KB stream buffers. If either
+     * call fails, that stream stays buffered: output is unchanged and only the
+     * heap saving is lost, so startup continues. */
+    (void)setvbuf(stdin, NULL, _IONBF, 0);
+    (void)setvbuf(stdout, NULL, _IONBF, 0);
+#endif
 }
 /*---------------------------------------------------------------------------*/

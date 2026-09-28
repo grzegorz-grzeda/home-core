@@ -100,18 +100,32 @@ jobs:
         uses: actions/deploy-pages@v5
 
   build:
-    name: Build ${{ matrix.board }} (${{ matrix.build_type }})
+    name: Build ${{ matrix.target }} (${{ matrix.build_type }})
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        board: [lm3s6965evb, stm32f4discovery]
+        target: [lm3s6965evb, stm32f4discovery, stm32vldiscovery, stm32vldiscovery-qemu]
         build_type: [Debug, Release]
+        # Board, optional defconfig (default: the board's), and QEMU test board.
+        include:
+          - target: lm3s6965evb
+            board: lm3s6965evb
+            qemu_board: lm3s6965evb
+          - target: stm32f4discovery
+            board: stm32f4discovery
+          - target: stm32vldiscovery
+            board: stm32vldiscovery
+          - target: stm32vldiscovery-qemu
+            board: stm32vldiscovery
+            defconfig: configs/stm32vldiscovery_qemu_defconfig
+            qemu_board: stm32vldiscovery
     env:
       TARGET_BOARD: ${{ matrix.board }}
+      TARGET_DEFCONFIG: ${{ matrix.defconfig }}
       BUILD_TYPE: ${{ matrix.build_type }}
-      BUILD_DIR: build/ci/${{ matrix.board }}/${{ matrix.build_type }}
+      BUILD_DIR: build/ci/${{ matrix.target }}/${{ matrix.build_type }}
 
     steps:
       - name: Checkout
@@ -138,7 +152,7 @@ jobs:
             -DHOMECORE_BOARD="$TARGET_BOARD" \
             -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
             -DPython3_EXECUTABLE="$PWD/.venv/bin/python" \
-            -DHOMECORE_DEFCONFIG="$PWD/configs/homecore_defconfig" \
+            ${TARGET_DEFCONFIG:+-DHOMECORE_DEFCONFIG="$PWD/$TARGET_DEFCONFIG"} \
             -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
 
       - name: Build firmware
@@ -148,6 +162,8 @@ jobs:
         run: arm-none-eabi-size "$BUILD_DIR/homecore"
 
       - name: Test firmware in QEMU
-        if: matrix.board == 'lm3s6965evb'
+        if: matrix.qemu_board != ''
         timeout-minutes: 2
-        run: .venv/bin/python tests/qemu_files_test.py --firmware "$BUILD_DIR/homecore"
+        run: >-
+          .venv/bin/python tests/qemu_files_test.py
+          --board "${{ matrix.qemu_board }}" --firmware "$BUILD_DIR/homecore"

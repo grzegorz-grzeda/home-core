@@ -18,7 +18,16 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 FORMAT_VERSION = "19.1.7"
 CHECKS = ("format", "headers", "build", "host", "qemu")
-BOARDS = ("lm3s6965evb", "stm32f4discovery")
+# Build targets: name -> (board, defconfig relative to the root, or None for the
+# board's default from configs/<board>_defconfig or configs/homecore_defconfig).
+TARGETS = {
+    "lm3s6965evb": ("lm3s6965evb", None),
+    "stm32f4discovery": ("stm32f4discovery", None),
+    "stm32vldiscovery": ("stm32vldiscovery", None),
+    "stm32vldiscovery-qemu": ("stm32vldiscovery", "configs/stm32vldiscovery_qemu_defconfig"),
+}
+# QEMU regressions: target -> board name passed to tests/qemu_files_test.py.
+QEMU_TARGETS = {"lm3s6965evb": "lm3s6965evb", "stm32vldiscovery-qemu": "stm32vldiscovery"}
 CONFIGURATIONS = ("Debug", "Release")
 # Vendor-generated SVD/CMSIS definitions live outside external/ in the legacy port.
 VENDOR_HEADERS = {Path("src/soc/ti/lm3s6965/soc_cmsis.h")}
@@ -123,41 +132,47 @@ class QualityRunner:
                 [self.args.clang_format, "--dry-run", "--Werror", path],
             )
 
-    def build_dir(self, board, configuration):
-        return self.root / "build/quality" / board / configuration.lower()
+    def build_dir(self, target, configuration):
+        return self.root / "build/quality" / target / configuration.lower()
 
-    def configure(self, board, configuration):
-        key = (board, configuration)
+    def configure(self, target, configuration):
+        key = (target, configuration)
         if key not in self.configured:
+            board, defconfig = TARGETS[target]
+            # Always pass the defconfig, so a reused build directory cannot keep
+            # a stale cached value.
+            defconfig = self.root / (defconfig or f"configs/{board}_defconfig")
+            if not defconfig.exists():
+                defconfig = self.root / "configs/homecore_defconfig"
             self.configured[key] = self.command(
-                f"configure {board} {configuration}",
+                f"configure {target} {configuration}",
                 [
                     "cmake", "-S", self.root, "-B", self.build_dir(*key), "-G", "Ninja",
                     f"-DCMAKE_TOOLCHAIN_FILE={self.root / 'cmake/toolchains/arm-none-eabi.cmake'}",
                     f"-DHOMECORE_BOARD={board}", f"-DCMAKE_BUILD_TYPE={configuration}",
                     f"-DPython3_EXECUTABLE={self.args.python}",
-                    f"-DHOMECORE_DEFCONFIG={self.root / 'configs/homecore_defconfig'}",
+                    f"-DHOMECORE_DEFCONFIG={defconfig}",
                     "-DCMAKE_COMPILE_WARNING_AS_ERROR=ON",
                 ],
             )
         return self.configured[key]
 
-    def build(self, board, configuration):
-        key = (board, configuration)
+    def build(self, target, configuration):
+        key = (target, configuration)
         if key not in self.built:
             if not self.configure(*key):
                 self.built[key] = False
                 return False
             self.built[key] = self.command(
-                f"build {board} {configuration} (warnings are errors)",
+                f"build {target} {configuration} (warnings are errors)",
                 ["cmake", "--build", self.build_dir(*key), "--clean-first"],
             )
         return self.built[key]
 
     def firmware(self):
-        for board in BOARDS:
+        for target in TARGETS:
             for configuration in CONFIGURATIONS:
-                self.build(board, configuration)
+                self.build(target, configuration)
 
     def host_flags(self):
         return [
@@ -186,6 +201,9 @@ class QualityRunner:
             ("uptime", ["tests/uptime_test.c", "src/subsystems/vfs/vfs.c"], []),
             ("directories", ["tests/vfs_directories_test.c", "src/subsystems/vfs/vfs.c"], []),
             ("ram-files", ["tests/vfs_ram_files_test.c", "src/subsystems/vfs/vfs.c"], []),
+            ("allocation-failures",
+             ["tests/vfs_alloc_failure_test.c", "src/subsystems/vfs/vfs.c"],
+             ["-Wl,--wrap=calloc"]),
             ("sessions", [
                 "tests/session_test.c", "src/kernel/session.c", "src/subsystems/vfs/vfs.c",
                 "src/subsystems/shell/shell.c", "src/subsystems/shell/builtin/builtin_files.c",
@@ -208,13 +226,14 @@ class QualityRunner:
                     self.command(f"run host {name}", [binary], timeout=10)
 
     def qemu(self):
-        for configuration in CONFIGURATIONS:
-            if self.build("lm3s6965evb", configuration):
-                self.command(
-                    f"QEMU regression {configuration}",
-                    [self.args.python, "tests/qemu_files_test.py", "--firmware",
-                     self.build_dir("lm3s6965evb", configuration) / "homecore"],
-                )
+        for target, board in QEMU_TARGETS.items():
+            for configuration in CONFIGURATIONS:
+                if self.build(target, configuration):
+                    self.command(
+                        f"QEMU regression {target} {configuration}",
+                        [self.args.python, "tests/qemu_files_test.py", "--board", board,
+                         "--firmware", self.build_dir(target, configuration) / "homecore"],
+                    )
 
     def run(self):
         methods = {"format": self.formatting, "headers": self.headers,

@@ -25,7 +25,7 @@ void board_uart_putc(char c) {
     ++writes;
     last_byte = (unsigned char)c;
 }
-#include "../src/soc/st/stm32f407/soc.c"
+#include "../src/soc/st/common/soc.c"
 #else
 /* Replace only the MMIO device header; exercise the real LM3S callbacks. */
 #define HOME_CORE_SOC_CMSIS_H

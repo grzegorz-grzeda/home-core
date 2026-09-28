@@ -16,13 +16,18 @@ Create `src/board/<name>/` with:
 - `board.ld`: additional board sections, or an empty commented fragment.
 
 `board_init()` configures clocks, GPIO alternate functions, and the console.
-`board_cpu_clock_hz()` must return the actual core clock used by SysTick.
+`board_cpu_clock_hz()` must return the actual core clock used by SysTick. If an
+emulator runs the board but does not model its clock controller, put the clock
+setup under `CONFIG_HOMECORE_BOARD_CLOCK_SETUP` and provide an emulator
+defconfig that disables it, as `stm32vldiscovery` does.
 Implement polling UART read/write/availability and a panic path that can halt
 safely before the console is ready. Define memory banks by their real addresses;
 STM32F407's CCM must not be merged into the contiguous main SRAM region.
 
 Add a configure/build preset with its own output directory and a board guide
 covering flashing, pin wiring, clock/memory choices, limitations, and validation.
+A board with little RAM can provide `configs/<board>_defconfig`, which CMake
+uses by default; check the stack high-water mark from `mem` when sizing it.
 
 ## SoC integration
 
@@ -70,8 +75,10 @@ shared `arch.ld` for the current contract.
    heap reporting, RAM-file operations, BASIC, and reboot. Confirm uptime against
    elapsed time and check the actual console wiring.
 5. Record tested hardware revision and setup; keep untested claims explicit.
-   Add new targets to `BOARDS` in `scripts/check_quality.py` to extend CI build
-   coverage; the current workflow checks LM3S and STM32F4DISCOVERY.
+   Add new targets to `TARGETS` (and `QEMU_TARGETS` if emulated) in
+   `scripts/check_quality.py` and to the build matrix in
+   `.github/workflows/build.yml`; for an emulated board, add it to
+   `BOARDS` in `tests/qemu_files_test.py`.
 
 A booting shell does not validate scheduling: SVC/PendSV are currently panic
 handlers. Peripheral interrupt drivers and thread support require additional

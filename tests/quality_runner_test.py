@@ -70,7 +70,7 @@ class QualityRunnerTests(unittest.TestCase):
             with redirect_stdout(io.StringIO()):
                 result = runner.run()
             self.assertEqual(result, 1)
-            self.assertEqual(run.call_count, 2)
+            self.assertEqual(run.call_count, len(quality.QEMU_TARGETS) * len(quality.CONFIGURATIONS))
             self.assertTrue(all("-S" in call.args[0] for call in run.call_args_list))
 
     def test_wrong_formatter_version_fails(self):

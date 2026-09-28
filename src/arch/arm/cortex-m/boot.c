@@ -26,8 +26,14 @@
 #include "homecore/board/board.h"
 /*---------------------------------------------------------------------------*/
 #include "homecore/kernel/kernel.h"
+#include "soc_cmsis.h"
+
+/* Words left unpainted below the reset handler's stack pointer, covering its
+ * own frame and the calls it makes before main(). */
+#define STACK_FILL_MARGIN_WORDS 16U
 
 extern uint32_t _estack;
+extern uint8_t _heap_end;
 /*---------------------------------------------------------------------------*/
 extern uint32_t _sidata;
 extern uint32_t _sdata;
@@ -77,6 +83,14 @@ __attribute__((section(".isr_vector.arch"))) const void *vector_table[] = {
 };
 /*---------------------------------------------------------------------------*/
 void Reset_Handler(void) {
+    /* Fill the unused main stack for k_stack_stats(). The reservation starts at
+     * _heap_end; start at its first aligned word and stop below this frame. */
+    uint32_t *fill = (uint32_t *)(((uintptr_t)&_heap_end + 3U) & ~(uintptr_t)3U);
+    uint32_t *fill_end = (uint32_t *)(__get_MSP() & ~(uintptr_t)3U) - STACK_FILL_MARGIN_WORDS;
+    while (fill < fill_end) {
+        *fill++ = K_STACK_FILL_WORD;
+    }
+
     uint32_t *src = &_sidata;
     uint32_t *dst = &_sdata;
 

@@ -2,7 +2,23 @@ menu "Kernel Configuration"
 
 config HOMECORE_KERNEL_MAIN_STACK_SIZE
     int "Kernel stack size"
-    default 1024
+    default 3072
     range 256 8192
+    help
+        Bytes reserved at the top of RAM for the main stack, shared by the
+        shell, BASIC, and interrupt handlers. File commands peak at about
+        0.9 KB. BASIC needs about 910 bytes plus up to 230 bytes per nesting
+        level, bounded by HOMECORE_SHELL_BASIC_MAX_NESTING: about 2.75 KB at
+        the default of 8. The mem command reports the high-water mark.
+        Overflow is not detected and corrupts the heap.
+
+config HOMECORE_KERNEL_STDIO_BUFFERED
+    bool "Buffer standard input and output"
+    default y
+    help
+        Let newlib allocate its default buffers for stdin and stdout on first
+        use, about 1 KB each from the heap. Disable on small-RAM boards to make
+        both streams unbuffered; each character then passes directly to the
+        console device.
 
 endmenu

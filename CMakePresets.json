@@ -39,6 +39,28 @@
                 "CMAKE_BUILD_TYPE": "Debug",
                 "HOMECORE_BOARD": "stm32f4discovery"
             }
+        },
+        {
+            "name": "stm32vldiscovery",
+            "displayName": "STM32VLDISCOVERY",
+            "description": "Build HomeCore for the STM32VLDISCOVERY (STM32F100RB) board",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/stm32vldiscovery",
+            "toolchainFile": "${sourceDir}/cmake/toolchains/arm-none-eabi.cmake",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "HOMECORE_BOARD": "stm32vldiscovery"
+            }
+        },
+        {
+            "name": "stm32vldiscovery-qemu",
+            "displayName": "STM32VLDISCOVERY in QEMU",
+            "description": "STM32VLDISCOVERY build for QEMU, without clock setup",
+            "inherits": "stm32vldiscovery",
+            "binaryDir": "${sourceDir}/build/stm32vldiscovery-qemu",
+            "cacheVariables": {
+                "HOMECORE_DEFCONFIG": "${sourceDir}/configs/stm32vldiscovery_qemu_defconfig"
+            }
         }
     ],
     "buildPresets": [
@@ -55,6 +77,14 @@
         {
             "name": "stm32f4discovery",
             "configurePreset": "stm32f4discovery"
+        },
+        {
+            "name": "stm32vldiscovery",
+            "configurePreset": "stm32vldiscovery"
+        },
+        {
+            "name": "stm32vldiscovery-qemu",
+            "configurePreset": "stm32vldiscovery-qemu"
         }
     ]
 }

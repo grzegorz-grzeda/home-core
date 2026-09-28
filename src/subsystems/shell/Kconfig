@@ -19,6 +19,20 @@ config HOMECORE_SHELL_MAX_ARGS
     default 10
     range 1 20
 
+config HOMECORE_SHELL_BASIC_MAX_NESTING
+    int "Maximum BASIC expression nesting"
+    default 8
+    range 1 32
+    help
+        Maximum nesting of parentheses, unary signs, function calls, and
+        IF-THEN statements in one BASIC line. Deeper lines fail with
+        "expression too deeply nested" instead of overflowing the stack. The
+        parser recurses once per level: measured costs are up to about 230
+        bytes per level (nested function calls, Debug build) on top of about
+        910 bytes for BASIC at depth 0. Keep HOMECORE_KERNEL_MAIN_STACK_SIZE
+        at least 910 + 230 * this value, plus a margin. Sets G2Basic's
+        G2BASIC_MAX_NESTING.
+
 endif
 
 endmenu

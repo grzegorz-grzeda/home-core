@@ -12,6 +12,7 @@ session, and the G2BASIC interpreter in a single-threaded firmware image.
 | --- | --- | --- |
 | [lm3s6965evb](docs/boards/lm3s6965evb.md) | Cortex-M3 | QEMU build and command regression tested |
 | [stm32f4discovery](docs/boards/stm32f4discovery.md) | STM32F407 Cortex-M4F | Cross-compiled; physical-board validation pending |
+| [stm32vldiscovery](docs/boards/stm32vldiscovery.md) | STM32F100 Cortex-M3, 8 KB RAM | QEMU regression tested; physical-board validation pending |
 
 ## Quick start
 

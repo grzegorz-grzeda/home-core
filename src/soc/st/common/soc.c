@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+/* Shared soc_init() for STM32 SoCs: the console is /dev/uart0, driven by the
+ * board's polling UART functions, so this file has no chip-specific code. */
 #include "homecore/soc/soc.h"
 #include "homecore/board/board.h"
 #include "homecore/vfs/vfs.h"
