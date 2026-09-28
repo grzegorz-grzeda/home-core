@@ -30,6 +30,11 @@
 #define UART_FR_TXFF (1u << 5)
 #define UART_FR_RXFE (1u << 4)
 /*---------------------------------------------------------------------------*/
+/* QEMU lm3s6965evb reset clock: 200 MHz / 16. No clock changes yet. */
+uint32_t board_cpu_clock_hz(void) {
+    return 12500000U;
+}
+
 void board_init(void) {
 }
 /*---------------------------------------------------------------------------*/

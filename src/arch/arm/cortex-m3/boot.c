@@ -25,6 +25,8 @@
 #include <stdint.h>
 #include "homecore/board/board.h"
 /*---------------------------------------------------------------------------*/
+#include "homecore/kernel/kernel.h"
+
 extern uint32_t _estack;
 /*---------------------------------------------------------------------------*/
 extern uint32_t _sidata;
@@ -130,6 +132,6 @@ void PendSV_Handler(void) {
 }
 /*---------------------------------------------------------------------------*/
 void SysTick_Handler(void) {
-    board_panic("SysTick_Handler");
+    k_tick();
 }
 /*---------------------------------------------------------------------------*/

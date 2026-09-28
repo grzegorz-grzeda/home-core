@@ -33,6 +33,11 @@ extern "C" {
 /*---------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
 void k_init(void);
+/* Milliseconds since the system timer was started during kernel initialization. */
+uint64_t k_uptime_ms(void);
+/* Called only by the 1 kHz system timer interrupt. */
+void k_tick(void);
+void k_uptime_init(void);
 /*---------------------------------------------------------------------------*/
 #if defined(__cplusplus)
 }

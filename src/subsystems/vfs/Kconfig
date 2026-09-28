@@ -8,6 +8,11 @@ config HOMECORE_VFS
 
 if HOMECORE_VFS
 
+config HOMECORE_VFS_MAX_DIRECTORIES
+    int "Maximum number of user-created RAM directories"
+    default 16
+    range 1 64
+
 config HOMECORE_VFS_MAX_OPEN_FILES
     int "Maximum number of open files"
     default 16

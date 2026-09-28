@@ -176,6 +176,9 @@ void arch_yield(void) {
 }
 /*---------------------------------------------------------------------------*/
 int arch_cpu_timer_init(uint32_t cpu_hz, uint32_t tick_hz) {
+    if (tick_hz == 0 || cpu_hz < tick_hz || cpu_hz % tick_hz != 0) {
+        return -1;
+    }
     uint32_t reload = (cpu_hz / tick_hz) - 1U;
 
     if (reload > SysTick_LOAD_RELOAD_Msk) {

@@ -155,3 +155,80 @@ src/
 
 ## License
 Created under MIT license by Grzegorz Grzęda
+## Uptime
+
+The kernel starts a 1 kHz SysTick during initialization. `k_uptime_ms()` returns
+a 64-bit millisecond count; BASIC exposes the same count as `millis()`,
+independently of its math configuration:
+
+```basic
+print millis()
+```
+
+Open `/dev/uptime` read-only to capture uptime as decimal milliseconds followed
+by a newline (for example, `12345\n`). Each open has an independent snapshot
+and read position. Partial reads are supported, followed by EOF. Close and
+reopen to capture a fresh value; seeking replays the existing snapshot.
+
+```c
+FILE *file = fopen("/dev/uptime", "r");
+if (file) {
+    char line[32];
+    if (fgets(line, sizeof(line), file)) {
+        fputs(line, stdout);
+    }
+    fclose(file);
+}
+```
+
+The current board clock value targets QEMU's LM3S6965EVB reset configuration
+(12.5 MHz). This follows the reset divider and clock calculation in
+[QEMU's Stellaris model](https://github.com/qemu/qemu/blob/master/hw/arm/stellaris.c).
+Update `board_cpu_clock_hz()` if configuring a different clock or running on
+physical hardware. Uptime begins when the timer starts, not at reset entry;
+interrupt masking across multiple ticks can lose elapsed time. QEMU uptime
+tracks guest virtual time and stops advancing when emulation is paused.
+
+Run the host uptime/VFS regression test after configuring the firmware:
+
+```bash
+cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include \
+  tests/uptime_test.c src/subsystems/vfs/vfs.c -o /tmp/uptime-test
+/tmp/uptime-test
+```
+
+## File commands
+
+The shell supports:
+
+```text
+ls
+ls /dev
+mkdir /tmp
+mkdir /tmp/a /tmp/b
+ls /tmp
+cat /dev/uptime
+```
+
+`ls [path]` lists direct directory children or the named file. Directory names
+end with `/`. `mkdir path...` creates empty RAM directories; parents must
+already exist. They disappear on reboot. The default limit is 16 user
+directories, configured by `CONFIG_HOMECORE_VFS_MAX_DIRECTORIES`.
+
+Paths allow up to 127 bytes, resolve relative to `/`, and support repeated
+slashes, `.` and `..`. There is no `cd` or persistent file storage yet.
+`mkdir -p` and other command options are not implemented.
+
+`cat path...` copies existing readable VFS nodes to the console until EOF.
+Streaming devices such as UARTs can wait indefinitely because they do not
+provide file EOF. These commands do not add regular-file creation or shell
+redirection.
+
+Run `python3 tests/qemu_files_test.py` after building to check these commands
+in QEMU. The host directory tests can be run with:
+
+```bash
+cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include \
+  tests/vfs_directories_test.c src/subsystems/vfs/vfs.c -o /tmp/vfs-test
+/tmp/vfs-test
+```

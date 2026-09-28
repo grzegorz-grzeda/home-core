@@ -23,6 +23,7 @@
  */
 /*---------------------------------------------------------------------------*/
 #include "g2basic.h"
+#include "homecore/kernel/kernel.h"
 #include "homecore/shell/shell.h"
 #include <stdio.h>
 #include <math.h>
@@ -97,10 +98,17 @@ static void basic_output_number(double value) {
     }
 }
 /*---------------------------------------------------------------------------*/
+static double basic_millis(double args[], int count) {
+    (void)args;
+    (void)count;
+    return (double)k_uptime_ms();
+}
+
 int shell_builtin_basic(int argc, char **argv) {
     (void)argc;
     (void)argv;
     g2basic_init(basic_output);
+    g2basic_register_function("millis", 0, basic_millis);
     g2basic_set_number_output(basic_output_number);
 
     printf("G2BASIC Interpreter with line numbers. Ctrl-C/Ctrl-D/Ctrl-Z to "

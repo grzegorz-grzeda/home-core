@@ -37,8 +37,8 @@ int main(void) {
     arch_init();
     soc_init();
     board_init();
-    shell_init();
     k_init();
+    shell_init();
 
     printf("\nHomeCore OS\n");
     printf("Version: %s\n", HOMECORE_VERSION_STRING);

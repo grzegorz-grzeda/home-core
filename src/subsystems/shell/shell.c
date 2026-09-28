@@ -29,6 +29,7 @@
 #include <string.h>
 #include "homecore/shell/shell.h"
 #include "builtin_basic.h"
+#include "builtin_files.h"
 #include "homecore/autoconf.h"
 /*---------------------------------------------------------------------------*/
 #define SHELL_TERMINATOR '\n'
@@ -60,6 +61,9 @@ static int shell_print_help(int argc, char **argv) {
 /*---------------------------------------------------------------------------*/
 void shell_init(void) {
     shell_register_command("help", "Display this help message", shell_print_help);
+    shell_register_command("ls", "List directory entries: ls [path]", shell_builtin_ls);
+    shell_register_command("mkdir", "Create RAM directories: mkdir path...", shell_builtin_mkdir);
+    shell_register_command("cat", "Print file contents: cat path...", shell_builtin_cat);
     shell_register_command("basic", "BASIC language interpreter", shell_builtin_basic);
 }
 /*---------------------------------------------------------------------------*/
