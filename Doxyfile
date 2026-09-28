@@ -14,7 +14,10 @@ PROJECT_NAME           = HomeCore
 PROJECT_BRIEF          = "Bare-metal personal computer firmware for Cortex-M"
 # The CMake docs target overrides this with the project() version.
 PROJECT_NUMBER         =
-OUTPUT_DIRECTORY       = build/docs
+# Doxygen creates only the last directory level of each path, so the output
+# location is split in two: it creates build/ on a fresh clone, then docs/.
+OUTPUT_DIRECTORY       = build
+HTML_OUTPUT            = docs
 CREATE_SUBDIRS         = NO
 
 #---------------------------------------------------------------------------

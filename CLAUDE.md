@@ -30,7 +30,7 @@ cmake --build --preset lm3s6965evb
 python3 tests/qemu_files_test.py                                # LM3S QEMU regression
 .venv/bin/python scripts/check_quality.py --checks format headers host
 .venv/bin/python scripts/check_quality.py                       # full run incl. both boards + QEMU
-doxygen Doxyfile                                                # API docs -> build/docs/html; fails on warnings
+doxygen Doxyfile                                                # API docs -> build/docs; fails on warnings
 ```
 
 ## Notes for Claude Code

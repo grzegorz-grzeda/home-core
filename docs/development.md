@@ -262,12 +262,12 @@ root:
 doxygen Doxyfile
 ```
 
-Open `build/docs/html/index.html`. The output includes include-dependency
+Open `build/docs/index.html`. The output includes include-dependency
 graphs for each header, collaboration graphs for structures, and a group
 hierarchy graph for each module.
 
 When Doxygen and `dot` are found at configure time, each CMake build directory
-also has a `docs` target. It writes to `<build dir>/docs/html` and stamps the
+also has a `docs` target. It writes to `<build dir>/docs` and stamps the
 `project()` version:
 
 ```bash
