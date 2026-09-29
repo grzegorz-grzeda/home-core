@@ -122,13 +122,20 @@ Filesystems attach at mount points with `vfs_mount()` and own every path below
 them; those paths have no node, and `vfs_stat()`/`vfs_fstat()` report their
 type and size. Up to `CONFIG_HOMECORE_VFS_MAX_MOUNTS` mounts exist; they cannot
 be nested, removed, or unmounted. The board's `mounts` section generates the
-mount calls in `dt_mount_all()`. FAT volumes use ChaN's FatFs R0.16
-(`external/fatfs`, configured by `src/subsystems/fs/fat/ffconf.h`) on block
-devices (`include/homecore/drivers/block.h`); FatFs structures, open files, and
-long-name buffers are allocated from the heap. STM32F4DISCOVERY mounts a 64 KB
-ramdisk at `/ram`, formatted at every boot, so its contents are lost on reset
-like RAM files. LM3S6965EVB and STM32VLDISCOVERY have no mounted filesystem:
-their RAM cannot hold the 64 KB FatFs minimum.
+mount calls in `dt_mount_all()`. Filesystems sit on block devices
+(`include/homecore/drivers/block.h`) and allocate their state from the heap:
+
+| Filesystem | Library | Glue | Suited to |
+| --- | --- | --- | --- |
+| `fat` | ChaN's FatFs R0.16, vendored in `external/fatfs` and configured by `src/subsystems/fs/fat/ffconf.h` | `src/subsystems/fs/fat/` | Removable media shared with PCs; needs 64 KB or more |
+| `littlefs` | littlefs v2.11.3, the `external/littlefs` submodule | `src/subsystems/fs/littlefs/` | Storage the firmware owns; survives resets during writes |
+
+LM3S6965EVB mounts littlefs on a 32 KB ramdisk at `/ram`. STM32F4DISCOVERY
+mounts FAT on a 64 KB ramdisk at `/ram` and littlefs on a 16 KB ramdisk at
+`/lfs`. Ramdisks are formatted at every boot, so their contents are lost on
+reset like RAM files. STM32VLDISCOVERY mounts nothing. The
+[Files and storage](https://grzegorz-grzeda.github.io/home-core/storage.html) page of the API reference
+describes the namespace, descriptors, both filesystems, and their memory use.
 
 A session holds a user pointer, working directory, and last command status.
 The default user is root. Shell commands receive context explicitly; libc path

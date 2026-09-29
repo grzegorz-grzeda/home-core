@@ -14,8 +14,20 @@
  * @brief Storage read and written in fixed-size sectors, such as a ramdisk.
  *
  * Block devices have no VFS node. The device description's `mounts` section
- * attaches a filesystem to one; the generated code builds the ::block_device_t.
- * Operations return 0 on success and -1 with `errno` set on failure.
+ * attaches a filesystem to one; the generated code builds the ::block_device_t
+ * from the driver's `<driver>_block_ops` and device instance. Operations
+ * return 0 on success and -1 with `errno` set on failure, and are called only
+ * from thread context, never from interrupt handlers.
+ *
+ * A block driver sets `block: true` in its binding. Transfers are whole
+ * #BLOCK_SECTOR_SIZE sectors; a sector range outside the device fails with
+ * `EIO`. There is no erase operation: current devices overwrite in place.
+ *
+ * | Driver | Compatible | Backing store |
+ * | --- | --- | --- |
+ * | Ramdisk | `homecore,ramdisk` | A `.bss` buffer sized by the `size` property; lost on reset |
+ *
+ * @see @ref storage "Files and storage" for how filesystems use block devices.
  * @{
  */
 

@@ -171,6 +171,10 @@ class DevicetreeTest(unittest.TestCase):
         self.assertIn("#define DT_MOUNT_COUNT 1U", out["h"])
         self.assertIn('set(HOMECORE_DT_FILESYSTEMS "fat")', out["cmake"])
         self.assertIn("ramdisk.c", out["cmake"])
+        status, stderr, out = self.run_generator(board=board + mount.replace("fat", "littlefs"))
+        self.assertEqual(status, 0, stderr)
+        self.assertIn('fs_littlefs_mount(&dt_ram0_block, "/ram", true) < 0', out["c"])
+        self.assertIn('set(HOMECORE_DT_FILESYSTEMS "littlefs")', out["cmake"])
         # Overlays can add mounts; no mounts compile no filesystem.
         status, stderr, out = self.run_generator(board=board, overlays=[mount])
         self.assertEqual(status, 0, stderr)

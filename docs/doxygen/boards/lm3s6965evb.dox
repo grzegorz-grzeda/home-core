@@ -37,7 +37,9 @@ bash scripts/run-qemu-lm3s6965evb.sh
 
 The script boots `build/lm3s6965evb/homecore` with `-nographic`. Exit with
 Ctrl-A, then X. Try `help`, `uptime`, `cat /dev/uptime`, `mem`, the file
-commands, and `reboot`. Reboot discards RAM files and resets the session.
+commands (also under `/ram`, a littlefs volume on a 32 KB ramdisk), and
+`reboot`. Reboot discards RAM files and the `/ram` contents and resets the
+session. See @ref storage.
 
 For the non-interactive regression, run:
 

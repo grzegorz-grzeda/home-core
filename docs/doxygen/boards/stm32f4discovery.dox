@@ -72,7 +72,9 @@ jumpers. See [ST's board manual (UM1472)](https://www.st.com/resource/en/user_ma
 @htmlinclude[block] stm32f4discovery-memory.svg
 
 The main stack uses the default `CONFIG_HOMECORE_KERNEL_MAIN_STACK_SIZE` of
-3 KB. The rest of main SRAM after static data is heap.
+3 KB. Static data includes two ramdisks, 80 KB together: FAT at `/ram` (64 KB)
+and littlefs at `/lfs` (16 KB), formatted at every boot; see @ref storage. The
+rest of main SRAM after static data is heap.
 
 @section board_stm32f4discovery_validation Hardware validation checklist
 

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" class="hc-diagram" viewBox="0 0 760 316" width="760" height="316" role="img" aria-labelledby="lm3s6965evb-memory-title lm3s6965evb-memory-desc" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
 <title id="lm3s6965evb-memory-title">LM3S6965EVB memory map</title>
-<desc id="lm3s6965evb-memory-desc">Flash holds the vector table, code, and the .data load image. RAM holds .data and .bss, then the heap up to the 3 KB main stack at the top of RAM.</desc>
+<desc id="lm3s6965evb-memory-desc">Flash holds the vector table, code, and the .data load image. RAM holds .data and .bss, including the 32 KB ramdisk, then the heap up to the 3 KB main stack at the top of RAM.</desc>
 <rect width="760" height="316" class="hc-bg" fill="#ffffff"/>
 <text x="250" y="36" class="hc-text" fill="#2f4153" font-size="14" text-anchor="middle" font-weight="600">Flash · 256 KB</text>
 <text x="140" y="65" class="hc-muted" fill="#6f7e8e" font-size="11" text-anchor="end" font-family="ui-monospace, Menlo, Consolas, monospace">0x0004 0000</text>
@@ -21,6 +21,6 @@
 <rect x="480" y="104" width="200" height="132" rx="0" class="hc-frame" fill="none" stroke="#6f7e8e" stroke-width="1.5" stroke-dasharray="6 4"/>
 <text x="580" y="174.0" class="hc-muted" fill="#6f7e8e" font-size="12" text-anchor="middle">heap (grows up)</text>
 <rect x="480" y="236" width="200" height="44" rx="0" class="hc-accent" fill="#d6eef1" stroke="#0e7c8a" stroke-width="1.5"/>
-<text x="580" y="262.0" class="hc-text" fill="#2f4153" font-size="12" text-anchor="middle">.data, .bss</text>
+<text x="580" y="262.0" class="hc-text" fill="#2f4153" font-size="12" text-anchor="middle">.data, .bss (32 KB ramdisk)</text>
 <text x="20" y="306" class="hc-muted" fill="#6f7e8e" font-size="12">Not to scale. The heap is all RAM between .bss and the main stack.</text>
 </svg>

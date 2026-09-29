@@ -5,13 +5,14 @@ import select
 import subprocess
 import time
 
-# QEMU machine, default firmware, console devices the SoC registers, and the
-# BASIC nesting limit from the board's defconfig.
+# QEMU machine, default firmware, console devices the SoC registers, the
+# BASIC nesting limit from the board's defconfig, and the mounted filesystem
+# (None when the board mounts none).
 BOARDS = {
     "lm3s6965evb": ("lm3s6965evb", "build/lm3s6965evb/homecore",
-                    ("uart0", "uart1", "uart2"), 8),
+                    ("uart0", "uart1", "uart2"), 8, "/ram"),
     "stm32vldiscovery": ("stm32vldiscovery", "build/stm32vldiscovery-qemu/homecore",
-                         ("uart0",), 4),
+                         ("uart0",), 4, None),
 }
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -19,7 +20,7 @@ parser.add_argument("--board", choices=sorted(BOARDS), default="lm3s6965evb",
                     help="board to emulate (default: lm3s6965evb)")
 parser.add_argument("--firmware", help="firmware ELF to test (default: the board's preset build)")
 args = parser.parse_args()
-machine, default_firmware, uarts, nesting = BOARDS[args.board]
+machine, default_firmware, uarts, nesting, mount = BOARDS[args.board]
 
 process = subprocess.Popen(
     ["qemu-system-arm", "-M", machine, "-kernel",
@@ -107,6 +108,27 @@ try:
         command("touch /reused/file")
         command("rm /reused/file")
         command("rmdir /reused")
+    if mount:
+        assert mount[1:] + "/\n" in command("ls /")
+        assert "Device or resource busy" in command(f"rmdir {mount}")
+        command(f"mkdir {mount}/logs")
+        assert command(f"cd {mount}/logs").endswith(f"root:{mount}/logs$ ")
+        command("cp /dev/uptime boot")
+        assert re.search(r"(?m)^\d+\n", command("cat boot"))
+        command("cp boot ../copy")
+        assert "copy\n" in command("ls ..") and "logs/\n" in command(f"ls {mount}")
+        assert "Is a directory" in command("cat .")
+        assert "Usage:" in command("cp boot")
+        for _ in range(20):
+            command("touch cycle")
+            command("cp boot cycle")
+            command("rm cycle")
+        command("cd ..")
+        assert "Directory not empty" in command("rmdir logs")
+        command("rm logs/boot copy")
+        command("rmdir logs")
+        command("touch kept")
+        command("cd /")
     # Nested function calls are the most stack-hungry BASIC construct; the mem
     # check below proves the stack held at the board's nesting limit.
     command("basic", b"> ")
@@ -136,8 +158,13 @@ try:
     assert "Rebooting..." in restarted and "HomeCore OS" in restarted, restarted
     assert restarted.endswith("root:/$ "), restarted
     assert "No such file" in command("ls /volatile")
+    if mount:
+        # The ramdisk is formatted at every boot: the file did not survive.
+        assert command(f"ls {mount}").endswith("$ ")
+        assert "No such file" in command(f"ls {mount}/kept")
     print(f"PASS: QEMU {args.board} system/file commands, sessions, create/remove cycles, "
-          f"BASIC nesting limit {nesting} and reboot")
+          f"BASIC nesting limit {nesting}, {'filesystem at ' + mount if mount else 'no mounts'} "
+          "and reboot")
 finally:
     process.terminate()
     process.wait(timeout=3)

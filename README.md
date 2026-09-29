@@ -35,8 +35,8 @@ For STM32 flashing and UART wiring, follow the board guide above.
 ## Current scope
 
 Implemented: UART console, shell commands, libc I/O and heap integration,
-RAM files/directories, mountable filesystems with FAT (FatFs) on a ramdisk
-(STM32F4DISCOVERY `/ram`), per-session working directories, user identity,
+RAM files/directories, mounted FAT (FatFs) and littlefs volumes on ramdisks,
+per-session working directories, user identity,
 1 kHz SysTick uptime, and BASIC with `millis()`.
 
 Still planned: persistent storage, authentication and permissions, a scheduler
@@ -68,4 +68,5 @@ Board photos in `docs/assets/boards` are CC BY-SA; see
 [photo credits](docs/assets/boards/PHOTOS.md).
 External dependencies retain their own licenses, including the vendored
 [STM32 device headers](external/stm32f4/README.md) and
-[FatFs](external/fatfs/README.md) (ChaN's BSD-style one-clause license).
+[FatFs](external/fatfs/README.md) (ChaN's BSD-style one-clause license), and the
+[littlefs](https://github.com/littlefs-project/littlefs) submodule (BSD-3-Clause).

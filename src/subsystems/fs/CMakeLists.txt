@@ -33,3 +33,23 @@ if("fat" IN_LIST HOMECORE_DT_FILESYSTEMS)
     # fat/ provides ffconf.h, which ff.h includes by name.
     target_include_directories(${PROJECT_NAME} PRIVATE fat ${HOMECORE_FATFS_DIR})
 endif()
+
+if("littlefs" IN_LIST HOMECORE_DT_FILESYSTEMS)
+    set(HOMECORE_LITTLEFS_DIR ${HOMECORE_ROOT}/external/littlefs)
+    target_sources(${PROJECT_NAME} PRIVATE
+        littlefs/littlefs.c
+        ${HOMECORE_LITTLEFS_DIR}/lfs.c
+        ${HOMECORE_LITTLEFS_DIR}/lfs_util.c
+    )
+    target_include_directories(${PROJECT_NAME} PRIVATE littlefs ${HOMECORE_LITTLEFS_DIR})
+    # Upstream lfs.c v2.11.3 defines lfs_mlist_isopen() for assertions only, so
+    # NDEBUG (Release) builds leave it unused. Only that warning is disabled,
+    # and only for the unmodified submodule file.
+    set_source_files_properties(${HOMECORE_LITTLEFS_DIR}/lfs.c TARGET_DIRECTORY ${PROJECT_NAME}
+        PROPERTIES COMPILE_OPTIONS -Wno-unused-function)
+    # Names are bounded by VFS paths (127 bytes), which keeps struct lfs_info,
+    # a stack object, small. littlefs's diagnostic printing is disabled; its
+    # assertions follow NDEBUG like the rest of the firmware.
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        LFS_NAME_MAX=127 LFS_NO_DEBUG LFS_NO_WARN LFS_NO_ERROR)
+endif()

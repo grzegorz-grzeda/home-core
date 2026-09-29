@@ -217,6 +217,12 @@ class QualityRunner:
                 "src/subsystems/fs/fat/diskio.c", "src/drivers/block/ramdisk.c",
                 "external/fatfs/ff.c", "external/fatfs/ffsystem.c", "external/fatfs/ffunicode.c",
             ], ["-Isrc/subsystems/fs/fat", "-Iexternal/fatfs", "-Isrc/drivers/block"]),
+            ("littlefs", [
+                "tests/littlefs_test.c", "src/subsystems/vfs/vfs.c",
+                "src/subsystems/fs/littlefs/littlefs.c", "src/drivers/block/ramdisk.c",
+                "external/littlefs/lfs.c", "external/littlefs/lfs_util.c",
+            ], ["-Isrc/subsystems/fs/littlefs", "-Iexternal/littlefs", "-Isrc/drivers/block",
+                "-DLFS_NAME_MAX=127", "-DLFS_NO_DEBUG", "-DLFS_NO_WARN", "-DLFS_NO_ERROR"]),
             ("sessions", [
                 "tests/session_test.c", "src/kernel/session.c", "src/subsystems/vfs/vfs.c",
                 "src/subsystems/shell/shell.c", "src/subsystems/shell/builtin/builtin_files.c",

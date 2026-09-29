@@ -24,6 +24,11 @@ configuration; see the [QEMU model](https://github.com/qemu/qemu/blob/master/hw/
 Uptime follows guest virtual time and stops while emulation is paused. Change
 the clock reporting if introducing clock setup or physical hardware support.
 
-Try `help`, `uptime`, `cat /dev/uptime`, `mem`, file commands, and `reboot`.
-Reboot discards RAM files and resets the session. QEMU success verifies this
+A 32 KB ramdisk holds a littlefs volume mounted at `/ram`, formatted at every
+boot. The QEMU regression exercises it; FAT is not used because FatFs needs at
+least 64 KB, all of this board's RAM.
+
+Try `help`, `uptime`, `cat /dev/uptime`, `mem`, file commands (also under
+`/ram`), and `reboot`. Reboot discards RAM files, the `/ram` contents, and the
+session. QEMU success verifies this
 emulated target, not STM32 device register programming or UART wiring.

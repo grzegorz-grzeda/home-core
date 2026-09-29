@@ -30,7 +30,10 @@ SELECTION = re.compile(r"^[a-z0-9_-]+(/[a-z0-9_-]+)*$")  # no "." so no ".."
 MEMORY_REGIONS = {"FLASH": "rx", "RAM": "rwx"}
 C_IDENTIFIER = re.compile(r"^[a-z][a-z0-9_]*$")
 # Filesystem types a mount may name: header and function that mount one.
-FILESYSTEMS = {"fat": ("homecore/fs/fat.h", "fs_fat_mount")}
+FILESYSTEMS = {
+    "fat": ("homecore/fs/fat.h", "fs_fat_mount"),
+    "littlefs": ("homecore/fs/littlefs.h", "fs_littlefs_mount"),
+}
 MOUNT_KEYS = {"device", "fs", "format"}
 MOUNT_PATH = re.compile(r"^/[a-z0-9_]+$")
 

@@ -4,9 +4,9 @@
 
 The `stm32f4discovery` target supports the STM32F407VGT6 board with a
 USART2 console (interrupt-driven receive, polled transmit), shell/VFS, and 1 kHz SysTick. It uses the 16 MHz internal HSI
-clock, software floating point, 1 MB flash, and 128 KB main SRAM, of which a
-64 KB ramdisk mounted at `/ram` (FAT, formatted at every boot, contents lost
-on reset) takes half. The separate 64 KB CCM RAM is unused. USB, audio, sensors, and hardware FPU context switching
+clock, software floating point, 1 MB flash, and 128 KB main SRAM, of which
+80 KB hold two ramdisks formatted at every boot: FAT at `/ram` (64 KB) and
+littlefs at `/lfs` (16 KB). Their contents are lost on reset. The separate 64 KB CCM RAM is unused. USB, audio, sensors, and hardware FPU context switching
 are not implemented. SVC/PendSV remain the existing panic handlers.
 
 Build with an Arm GNU bare-metal toolchain, CMake, Ninja, and Python:
@@ -47,14 +47,15 @@ Configure the terminal to display LF as a new line; press Enter to submit comman
 
 After reset, check the HomeCore banner and prompt, then run `help`, `mem`,
 `uptime`, `cat /dev/uptime`, `mkdir /tmp`, `touch /tmp/test`, `ls /tmp`,
-`cp /dev/uptime /ram/boot`, `cat /ram/boot`, `ls /ram`, and `reboot`. Uptime accuracy follows HSI oscillator tolerance. Received bytes are
+`cp /dev/uptime /ram/boot`, `cat /ram/boot`, `cp /ram/boot /lfs/boot`,
+`ls /ram /lfs`, and `reboot`. Uptime accuracy follows HSI oscillator tolerance. Received bytes are
 buffered by the USART interrupt in a 64-byte ring, so pasted input is no longer
 limited to the one-byte data register; bytes beyond a full ring are dropped.
 This has not yet been checked on hardware.
 
 This port has been cross-compiled and its linked layout checked. The `/ram`
-FAT volume is covered by host tests with the same driver and FatFs code, not
-yet on the board. The existing
+FAT and `/lfs` littlefs volumes are covered by host tests with the same driver
+and filesystem code, not yet on the board. The existing
 LM3S6965EVB QEMU command regression passes; STM32 hardware validation is still
 required. ST's pinned CMSIS device headers and license are in `external/stm32f4`.
 

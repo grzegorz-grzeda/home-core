@@ -5,6 +5,20 @@ All notable changes to HomeCore are recorded here. The format is based on
 follow [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html) as
 described in [versioning](docs/versioning.md).
 
+## [0.1.2] - 2026-09-29
+
+### Added
+- littlefs volumes through littlefs v2.11.3 (the `external/littlefs`
+  submodule), with `fs_littlefs_mount()` and `fs: littlefs` in board `mounts`.
+  Volumes need 4 sectors (2 KB), survive resets during writes, and are
+  compiled only for boards that mount one.
+- LM3S6965EVB mounts littlefs on a 32 KB ramdisk at `/ram`, formatted at every
+  boot and covered by the QEMU regression.
+- STM32F4DISCOVERY also mounts littlefs on a 16 KB ramdisk at `/lfs` (host
+  tests only; not yet run on hardware).
+- API reference: a "Files and storage" page, a Filesystems group, and expanded
+  VFS, FAT, littlefs, and block-device documentation.
+
 ## [0.1.1] - 2026-09-29
 
 ### Added

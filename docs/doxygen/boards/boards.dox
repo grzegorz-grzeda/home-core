@@ -63,6 +63,7 @@ console wiring, memory limits, and how each board is validated.
 | Feature | LM3S6965EVB | STM32F4DISCOVERY | STM32VLDISCOVERY |
 | --- | --- | --- | --- |
 | Shell, sessions, RAM files, G2BASIC | Yes | Yes | Yes (BASIC nesting 4, files up to 1 KB) |
+| Mounted filesystems (@ref storage) | `/ram`: littlefs, 32 KB ramdisk | `/ram`: FAT, 64 KB; `/lfs`: littlefs, 16 KB | None (8 KB RAM) |
 | 1 kHz SysTick uptime | Yes, guest time | Yes, HSI accuracy | Yes |
 | Console | UART0 (IRQ receive) | USART2 (IRQ receive) | USART1 (IRQ receive) |
 | VFS device nodes | `/dev/uart0` to `/dev/uart2` | `/dev/uart0` | `/dev/uart0` |
@@ -73,8 +74,8 @@ console wiring, memory limits, and how each board is validated.
 | CI | Build + QEMU regression | Build | Build both presets + QEMU regression |
 | Physical hardware | Not covered | Pending | Pending |
 
-No board has a scheduler, privilege separation, authentication, persistent
-storage, or interrupt-driven UART I/O. The SVC and PendSV handlers panic on all
+No board has a scheduler, privilege separation, authentication, or persistent
+storage; mounted volumes are ramdisks formatted at boot. The SVC and PendSV handlers panic on all
 targets.
 
 @section boards_memory Memory

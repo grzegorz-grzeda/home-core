@@ -104,14 +104,19 @@ top-level path; `format: true` creates a volume when the device has none
 ```yaml
 devices:
   ram0: {compatible: "homecore,ramdisk", size: 64K}
+  ram1: {compatible: "homecore,ramdisk", size: 16K}
 mounts:
   /ram: {device: ram0, fs: fat, format: true}
+  /lfs: {device: ram1, fs: littlefs, format: true}
 ```
 
 The generated `dt_mount_all()`, called by `main()` after `k_init()`, mounts
 them in order and prints `mount <path>: <error>` for a failure instead of
-stopping. FatFs is compiled only when a board mounts a `fat` volume; FAT
-volumes need at least 128 sectors (64 KB).
+stopping. `fs` is `fat` or `littlefs`; each library is compiled only when a
+board mounts one of its volumes. FAT volumes need at least 128 sectors
+(64 KB), littlefs volumes 4 sectors. The API reference's
+[Files and storage](https://grzegorz-grzeda.github.io/home-core/storage.html)
+page compares them.
 
 Each compatible has a binding next to its driver,
 `src/drivers/<class>/<compatible>.yaml`. It names the driver prefix and sources
@@ -193,7 +198,7 @@ uses explicit matrix jobs for firmware builds and QEMU regressions.
 ## Validation
 
 Configure the default LM3S build first: host tests include its generated header.
-Run the relevant tests below, or all six for shared VFS/session changes:
+Run the relevant tests below, or all seven for shared VFS/session changes:
 
 ```bash
 cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include \
@@ -229,6 +234,16 @@ cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include \
   external/fatfs/ff.c external/fatfs/ffsystem.c external/fatfs/ffunicode.c \
   -o /tmp/homecore-fat-test
 /tmp/homecore-fat-test
+
+# littlefs volumes through the VFS, including simulated resets during writes.
+# The -D options match the firmware build (src/subsystems/fs/CMakeLists.txt).
+cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include \
+  -Isrc/subsystems/fs/littlefs -Iexternal/littlefs -Isrc/drivers/block \
+  -DLFS_NAME_MAX=127 -DLFS_NO_DEBUG -DLFS_NO_WARN -DLFS_NO_ERROR \
+  tests/littlefs_test.c src/subsystems/vfs/vfs.c \
+  src/subsystems/fs/littlefs/littlefs.c src/drivers/block/ramdisk.c \
+  external/littlefs/lfs.c external/littlefs/lfs_util.c -o /tmp/homecore-littlefs-test
+/tmp/homecore-littlefs-test
 ```
 
 After building the QEMU presets, run the integration regression on each

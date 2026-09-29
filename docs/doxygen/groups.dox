@@ -2,8 +2,8 @@
 @mainpage HomeCore API
 
 HomeCore is single-threaded C11 bare-metal firmware. It provides a serial shell,
-a VFS with RAM files, user sessions, a 1 kHz uptime clock, and the G2BASIC
-interpreter. This reference covers the public headers under `include/homecore`.
+a VFS with RAM files and mounted FAT and littlefs volumes, user sessions, a
+1 kHz uptime clock, and the G2BASIC interpreter. This reference covers the public headers under `include/homecore`.
 The source is on [GitHub](https://github.com/grzegorz-grzeda/home-core).
 
 @section mainpage_guides Guides
@@ -13,7 +13,8 @@ The source is on [GitHub](https://github.com/grzegorz-grzeda/home-core).
 | [Architecture](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/architecture.md) | Layers, startup, memory, and runtime contracts |
 | [Development](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/development.md) | Setup, builds, configuration, tests, and debugging |
 | [C coding standard](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/coding-standard.md) | Language, style, memory, and interrupt rules |
-| [Shell and system services](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/shell.md) | Commands, sessions, RAM files, and uptime |
+| @ref storage "Files and storage" | The VFS, mounted filesystems (FAT, littlefs), and block devices |
+| [Shell and system services](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/shell.md) | Commands, sessions, files, and uptime |
 | [Extending](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/extending.md) | Adding shell commands and VFS device nodes |
 | [Porting](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/porting.md) | Adding boards, SoCs, and architecture support |
 | [Versioning](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/versioning.md) | SemVer rules, the public interface, and the changelog |
@@ -35,9 +36,9 @@ The API is grouped by layer. Each header defines one module group.
 | Layer | Modules | Header location |
 | --- | --- | --- |
 | @ref hal | @ref arch, @ref soc, @ref board | `homecore/arch`, `homecore/soc`, `homecore/board` |
-| @ref drivers | @ref console | `homecore/drivers` |
+| @ref drivers | @ref console, @ref block | `homecore/drivers` |
 | @ref kernel_services | @ref kernel, @ref user, @ref session | `homecore/kernel`, `homecore/user`, `homecore/session` |
-| @ref subsystems | @ref vfs, @ref shell | `homecore/vfs`, `homecore/shell` |
+| @ref subsystems | @ref vfs, @ref filesystems (@ref fat, @ref littlefs), @ref shell | `homecore/vfs`, `homecore/fs`, `homecore/shell` |
 
 The group tree is on the **Topics** page. Each group page shows its place in the hierarchy. Each header page
 shows include graphs in both directions. Structures that reference other
@@ -53,6 +54,8 @@ release.
 | --- | --- | --- |
 | CMSIS 6.3.0 Core (`external/cmsis`) | [CMSIS-Core (Cortex-M)](https://arm-software.github.io/CMSIS_6/v6.3.0/Core/index.html) | NVIC, SysTick, and SCB access in `src/arch`, device headers in `src/soc` |
 | STM32F4 device headers (`external/stm32f4`) | Vendored ST CMSIS device headers; no separate reference | The STM32F407 SoC port |
+| FatFs R0.16 (`external/fatfs`) | [FatFs documentation](https://elm-chan.org/fsw/ff/); HomeCore's use is in @ref fat | FAT volumes, compiled only for boards that mount one |
+| littlefs v2.11.3 (`external/littlefs`) | [README](https://github.com/littlefs-project/littlefs/blob/v2.11.3/README.md), [design](https://github.com/littlefs-project/littlefs/blob/v2.11.3/DESIGN.md); HomeCore's use is in @ref littlefs | littlefs volumes, compiled only for boards that mount one |
 
 @if g2basic
 G2Basic is built into this site from the pinned submodule commit, so it matches
@@ -65,15 +68,17 @@ this firmware. Its groups are also listed on the **Topics** page.
 
 @section mainpage_startup Startup order
 
-`main()` calls arch_init(), soc_init(), board_init(), k_init(), and shell_init()
-in that order, then prints the banner and enters shell_run(). A module may
+`main()` calls arch_init(), soc_init(), board_init(), `dt_init()` (generated
+driver initialization), k_init(), `dt_mount_all()` (the board's filesystem
+mounts), and shell_init() in that order, then prints the banner and enters
+shell_run(). A module may
 depend only on modules initialized before it. For example, soc_init() registers
 VFS devices but must not print, because the console is not open until k_init().
 
 @section mainpage_scope Scope
 
 The firmware has no scheduler, privilege separation, authentication, or
-persistent storage. The architecture thread primitives are scaffolding; the
+persistent storage: every mounted volume is a ramdisk formatted at boot. The architecture thread primitives are scaffolding; the
 SVC and PendSV handlers they depend on currently panic.
 */
 
@@ -103,5 +108,24 @@ the board interface. See the Development guide's "Device description" section.
 
 /**
 @defgroup subsystems Subsystems
-@brief Portable services built on the kernel: the VFS and the command shell.
+@brief Portable services built on the kernel: the VFS, filesystems, and the command shell.
+*/
+
+/**
+@defgroup filesystems Filesystems
+@ingroup subsystems
+@brief Volumes on block devices, mounted into the VFS.
+
+A filesystem implements ::vfs_fs_ops_t and owns every path below its mount
+point. Boards list their mounts in the device description, and the generated
+`dt_mount_all()` mounts them at startup; each library is compiled only when a
+board uses it.
+
+| Filesystem | Suited to | Mount function |
+| --- | --- | --- |
+| @ref fat | Removable media shared with other systems | fs_fat_mount() |
+| @ref littlefs | Storage the firmware owns; survives resets during writes | fs_littlefs_mount() |
+
+@ref storage "Files and storage" compares them and describes mounting, path
+resolution, and descriptors across the whole VFS.
 */

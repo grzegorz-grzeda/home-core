@@ -7,6 +7,9 @@ devices:
   usart2: {status: okay, baud: 115200, devname: uart0}
   # 64 KB of the 128 KB main SRAM as a FAT disk, formatted at every boot.
   ram0: {compatible: "homecore,ramdisk", size: 64K}
+  # 16 KB littlefs disk, formatted at every boot.
+  ram1: {compatible: "homecore,ramdisk", size: 16K}
 mounts:
   /ram: {device: ram0, fs: fat, format: true}
+  /lfs: {device: ram1, fs: littlefs, format: true}
 chosen: {console: usart2}

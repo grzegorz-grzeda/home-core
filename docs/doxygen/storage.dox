@@ -1,0 +1,220 @@
+/**
+@page storage Files and storage
+@brief How the VFS, mounted filesystems, and block devices fit together.
+
+@tableofcontents
+
+HomeCore has one file namespace, the @ref vfs "VFS". Device drivers, RAM files,
+and whole filesystems appear in it as paths, and the shell, BASIC, and libc
+`open()`/`read()`/`write()` reach all of them through the same descriptor
+calls. This page explains the model; the group pages document each function.
+
+@section storage_layers Layers
+
+@dot
+digraph storage {
+    rankdir=TB;
+    node [shape=box, style="rounded,filled", fillcolor="#e6f2f0", fontname="Helvetica", fontsize=10];
+    edge [fontname="Helvetica", fontsize=9];
+    callers [label="Shell commands, BASIC, libc (newlib hooks)"];
+    vfs [label="VFS\nnamespace, paths, descriptors"];
+    devices [label="Device nodes\n/dev/uart0, /dev/uptime"];
+    ram [label="RAM files and directories"];
+    fatglue [label="FAT glue\nfat.c, diskio.c"];
+    lfsglue [label="littlefs glue\nlittlefs.c"];
+    fatfs [label="FatFs R0.16\nexternal/fatfs", fillcolor="#f2ece6"];
+    lfs [label="littlefs v2.11.3\nexternal/littlefs", fillcolor="#f2ece6"];
+    block [label="Block devices\nblock_device_t"];
+    ramdisk [label="Ramdisk driver\nhomecore,ramdisk"];
+    callers -> vfs;
+    vfs -> devices [label="vfs_ops_t"];
+    vfs -> ram;
+    vfs -> fatglue [label="vfs_fs_ops_t"];
+    vfs -> lfsglue [label="vfs_fs_ops_t"];
+    fatglue -> fatfs -> block;
+    lfsglue -> lfs -> block;
+    block -> ramdisk [label="block_ops_t"];
+}
+@enddot
+
+| Layer | Interface | Group |
+| --- | --- | --- |
+| Namespace and descriptors | `vfs_*()` functions | @ref vfs |
+| Filesystems | ::vfs_fs_ops_t, vfs_mount() | @ref filesystems, @ref fat, @ref littlefs |
+| Storage devices | ::block_ops_t, ::block_device_t | @ref block |
+
+@section storage_namespace Namespace
+
+Every entry has a canonical absolute path of at most 127 bytes
+(#VFS_PATH_CAPACITY includes the terminator).
+
+| Entry | Created by | Node | Removed by |
+| --- | --- | --- | --- |
+| Device, such as `/dev/uart0` | A driver, with vfs_register_node() | Static, driver-owned | Never |
+| Snapshot device, such as `/dev/uptime` | A driver, with a `snapshot` operation | Static, driver-owned | Never |
+| RAM directory | vfs_mkdir() outside mount points | Heap, VFS-owned | vfs_rmdir() |
+| RAM file | vfs_open() with `O_CREAT` outside mount points | Heap, VFS-owned | vfs_unlink() |
+| Mount point, such as `/ram` | vfs_mount(), from the board's `mounts` | Heap, VFS-owned directory | Never |
+| Any path below a mount point | The filesystem | None | The filesystem |
+
+The built-in entries are `/` and `/dev`. Entries below a mount point have no
+::vfs_node_t: vfs_find_node() and vfs_fd_node() do not see them, so code that
+needs a type or size calls vfs_stat() or vfs_fstat(), which work for every
+entry.
+
+@subsection storage_paths Path resolution
+
+- Paths are resolved from `/`; relative arguments to `vfs_*()` functions are
+  also resolved from `/`. The shell and libc resolve against the session's
+  working directory first, with vfs_resolve_path().
+- Repeated slashes, `.`, and `..` are normalized; `..` at `/` stays at `/`. A
+  trailing slash is accepted for directories.
+- Every intermediate component must be an existing directory, whether a node
+  or a directory inside a mounted filesystem; otherwise the call fails with
+  `ENOENT` or `ENOTDIR` before anything is created.
+- A path equal to a mount point, or starting with it followed by `/`, belongs
+  to that filesystem; mounts never nest, so at most one matches. The
+  filesystem receives the rest of the path, starting with `/`; the mount point
+  itself is `/` to the filesystem.
+
+@section storage_descriptors Descriptors
+
+vfs_open() returns the lowest free descriptor, from 0 to
+`CONFIG_HOMECORE_VFS_MAX_OPEN_FILES - 1`; the kernel opens 0, 1, and 2 on the
+console. Each descriptor has its own position and access mode, is allocated
+from the heap, and is freed by vfs_close() even when closing reports an error.
+Descriptor functions return -1 for an out-of-range descriptor and -2 for a
+closed one, without setting `errno`.
+
+How each kind of entry handles the open flags and positions:
+
+| Behavior | RAM file | Stream device | Snapshot device | FAT file | littlefs file |
+| --- | --- | --- | --- | --- | --- |
+| `O_CREAT` | Creates the file | Ignored | Rejected (`EACCES`) | Creates the file | Creates the file |
+| `O_CREAT` with `O_EXCL` on an existing entry | `EEXIST` | `EEXIST` | `EEXIST` | `EEXIST` | `EEXIST` |
+| `O_TRUNC` | Frees the contents | Ignored | Rejected (`EACCES`) | Supported | Supported |
+| `O_APPEND` | Each write at the end | Ignored | Rejected (`EACCES`) | Each write at the end | Each write at the end |
+| Position | Per descriptor | Driver's | Per descriptor | Per descriptor | Per descriptor |
+| Seek past the end | Allowed; gap reads as zeros | Driver's | `EINVAL` | `EINVAL` | Allowed; gap reads as zeros |
+| Size limit | `CONFIG_HOMECORE_VFS_MAX_FILE_SIZE` | None | #VFS_SNAPSHOT_CAPACITY | Free space | Free space |
+| Remove while open | `EBUSY` | `EPERM` | `EPERM` | `EBUSY` | `EBUSY` |
+| vfs_ioctl() | -1 | Driver's | -1 | `ENOTTY` | `ENOTTY` |
+
+`O_TRUNC` together with `O_RDONLY` is rejected with `EACCES` for every entry.
+The VFS itself rejects reads on write-only descriptors, writes on read-only
+ones (`EBADF`), and `NULL` buffers (`EFAULT`) before a filesystem sees them.
+
+@section storage_mounts Mounted filesystems
+
+A filesystem implements every operation of ::vfs_fs_ops_t and is attached with
+vfs_mount(). Boards do not call it directly: the device description lists the
+mounts, and the generated `dt_mount_all()`, which `main()` calls after
+`k_init()`, mounts them in order.
+
+@code{.yaml}
+# src/board/<board>/board.yaml, or an overlay
+devices:
+  ram0: {compatible: "homecore,ramdisk", size: 32K}
+mounts:
+  /ram: {device: ram0, fs: littlefs, format: true}
+@endcode
+
+| Key | Meaning |
+| --- | --- |
+| Mount point | A top-level path such as `/ram`; not `/dev` |
+| `device` | An enabled device whose binding has `block: true`; each device is mounted once |
+| `fs` | `fat` or `littlefs` |
+| `format` | `true` creates a volume when the device holds none; default `false`, so existing media are never reformatted by accident |
+
+A failed mount prints `mount <path>: <error>` and startup continues without
+it. Up to `CONFIG_HOMECORE_VFS_MAX_MOUNTS` filesystems can be mounted; mounts
+cannot be nested, removed (`EBUSY`), or unmounted. The generator compiles a
+filesystem's library only when some mount uses it.
+
+@subsection storage_boards Board configuration
+
+| Board | Mounts | RAM used |
+| --- | --- | --- |
+| @ref board_lm3s6965evb "LM3S6965EVB" | `/ram`: littlefs on a 32 KB ramdisk | 32 KB of 64 KB |
+| @ref board_stm32f4discovery "STM32F4DISCOVERY" | `/ram`: FAT on a 64 KB ramdisk; `/lfs`: littlefs on a 16 KB ramdisk | 80 KB of 128 KB |
+| @ref board_stm32vldiscovery "STM32VLDISCOVERY" | None | Its 8 KB of RAM cannot hold a volume |
+
+Every current volume is a ramdisk formatted at boot, so its files are lost on
+reset like RAM files. HomeCore has no persistent storage yet.
+
+@section storage_choosing Choosing a filesystem
+
+| | @ref fat | @ref littlefs |
+| --- | --- | --- |
+| Intended media | Removable media read by other systems (SD cards) | Storage the firmware owns (flash, internal disks) |
+| Reset during a write | Can corrupt the volume | Keeps the old or the new file contents |
+| Wear leveling | None | Dynamic, over all blocks |
+| Smallest volume | 128 sectors (64 KB) | #FS_LITTLEFS_MIN_SECTORS sectors (2 KB) |
+| Names | Case-insensitive; 8.3 without `CONFIG_HOMECORE_FS_FAT_LFN` | Case-sensitive |
+| Seek past the end | `EINVAL` | Zero-filled |
+| Heap per volume | about 570 bytes | about 1260 bytes |
+| Heap per open file | about 560 bytes (none with `CONFIG_HOMECORE_FS_FAT_TINY`) | about 600 bytes plus the path |
+| Code (Cortex-M4, `-O3` objects) | about 22 KB | about 32 KB |
+| Library | FatFs R0.16, vendored | littlefs v2.11.3, submodule |
+
+@section storage_errors Common errors
+
+| `errno` | Typical cause |
+| --- | --- |
+| `ENOENT` | A path component does not exist |
+| `ENOTDIR` | A path component is a file or device |
+| `EEXIST` | vfs_mkdir() or `O_CREAT` with `O_EXCL` on an existing entry |
+| `EISDIR` | Opening or unlinking a directory |
+| `ENOTEMPTY` | Removing a directory that has entries |
+| `EBUSY` | Removing an open file, `/`, `/dev`, a mount point, or the shell's working directory |
+| `EPERM`, `EROFS` | Removing a device node, or a directory a driver registered |
+| `ENOSPC` | A RAM entry cap, the mount cap, or a full filesystem |
+| `EMFILE` | All descriptors are open |
+| `ENOMEM` | The heap cannot hold a descriptor, entry, or filesystem buffer |
+| `EFBIG` | A RAM file would exceed `CONFIG_HOMECORE_VFS_MAX_FILE_SIZE` |
+| `ENAMETOOLONG` | A path longer than 127 bytes |
+| `ENODEV` | A mount without `format` on a device with no volume |
+| `EIO` | The block device failed, or the volume is corrupt |
+
+@section storage_extending Adding a filesystem or block device
+
+A new filesystem:
+
+1. Implement every ::vfs_fs_ops_t operation. Paths start at the mount point
+   (`/`); return byte counts or 0, and -1 with `errno` values matching the
+   tables above, so callers see the same codes as for RAM files.
+2. Handle `O_CREAT`, `O_EXCL`, `O_TRUNC`, and `O_APPEND` in `open`, refuse to
+   remove open files with `EBUSY`, and report directories through `stat` so the
+   VFS can resolve paths through them.
+3. Provide a `fs_<name>_mount(const block_device_t *, const char *path, bool format)`
+   function, add it to `FILESYSTEMS` in `scripts/devicetree_generate.py`, and
+   compile the library in `src/subsystems/fs/CMakeLists.txt` only when
+   `HOMECORE_DT_FILESYSTEMS` contains the name.
+4. Add a host test on a ramdisk, like `tests/fat_test.c` and
+   `tests/littlefs_test.c`.
+
+A new block device: write a driver in `src/drivers/<class>/` that exports
+`const block_ops_t <driver>_block_ops`, mark its binding `block: true`, and use
+the ramdisk (`src/drivers/block/ramdisk.c`) as the reference. The Extending
+guide lists the driver conventions.
+
+@section storage_testing Testing
+
+| Test | Covers |
+| --- | --- |
+| `tests/vfs_directories_test.c`, `tests/vfs_ram_files_test.c`, `tests/vfs_alloc_failure_test.c` | Paths, RAM entries, descriptors, caps, and allocation failures |
+| `tests/fat_test.c` | FAT through the VFS on ramdisks: mounting, files, directories, errors, a full volume, and mount limits |
+| `tests/littlefs_test.c` | littlefs through the VFS, data read back by an independent instance, and a reset simulated after every possible block write |
+| `tests/session_test.c` | Shell file commands, including `cp` |
+| `tests/qemu_files_test.py` | The firmware in QEMU, including littlefs at `/ram` on LM3S6965EVB and its loss at reboot |
+
+The FAT and littlefs code paths on STM32F4DISCOVERY are the same sources the
+host tests run, but they have not run on the board.
+
+@section storage_limits Limitations
+
+- No unmount, rename, timestamps, permissions, or free-space query.
+- The VFS is single-threaded and must not be called from interrupt handlers.
+- Volumes are ramdisks; persistent storage (SD cards, flash) is not
+  implemented yet.
+*/

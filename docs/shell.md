@@ -62,9 +62,9 @@ Paths allow up to 127 bytes and support repeated slashes, `.` and `..`.
 Shell paths resolve relative to the session working directory. There is no
 persistent file storage yet.
 
-On boards with a mounted filesystem, such as `/ram` on STM32F4DISCOVERY, the
-file commands work the same below the mount point, and `cp` copies between
-filesystems:
+On boards with a mounted filesystem (`/ram` on LM3S6965EVB and
+STM32F4DISCOVERY, `/lfs` on STM32F4DISCOVERY), the file commands work the same
+below the mount point, and `cp` copies between filesystems:
 
 ```text
 cd /ram
@@ -74,10 +74,11 @@ cp /dev/uptime boot-time
 ls
 ```
 
-FAT names are case-insensitive, and names longer than 8.3 need
-`CONFIG_HOMECORE_FS_FAT_LFN` (enabled by default). `/ram` cannot be removed,
-and a FAT volume that runs out of space fails writes with "No space left on
-device".
+Mount points cannot be removed, and a full volume fails writes with "No space
+left on device". FAT names (STM32F4DISCOVERY `/ram`) are case-insensitive,
+and names longer than 8.3 need `CONFIG_HOMECORE_FS_FAT_LFN` (enabled by
+default); littlefs names are case-sensitive, like RAM files. Every current
+volume is a ramdisk formatted at boot, so its files are lost on reboot.
 `mkdir -p` and other command options are not implemented.
 
 `cat path...` copies existing readable VFS nodes to the console until EOF.

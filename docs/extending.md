@@ -189,6 +189,11 @@ filesystem handles `O_CREAT`, `O_EXCL`, `O_TRUNC`, and `O_APPEND` and returns
 the same errno values as RAM files. Paths below a mount point have no
 `vfs_node_t`, so code that needs a type or size uses `vfs_stat()` or
 `vfs_fstat()` rather than `vfs_find_node()`. The FAT glue in
-`src/subsystems/fs/fat/fat.c` is the reference; add the filesystem's type and
-mount function to `FILESYSTEMS` in `scripts/devicetree_generate.py` so boards
-can name it.
+`src/subsystems/fs/fat/fat.c` and the littlefs glue in
+`src/subsystems/fs/littlefs/littlefs.c` are the references; add the
+filesystem's type and mount function to `FILESYSTEMS` in
+`scripts/devicetree_generate.py` so boards can name it, and compile its
+library in `src/subsystems/fs/CMakeLists.txt` only when
+`HOMECORE_DT_FILESYSTEMS` names it. The API reference's
+[Files and storage](https://grzegorz-grzeda.github.io/home-core/storage.html#storage_extending)
+page lists the full contract.

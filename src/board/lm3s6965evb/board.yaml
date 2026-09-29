@@ -6,4 +6,9 @@ devices:
   uart0: {status: okay}
   uart1: {status: okay}
   uart2: {status: okay}
+  # 32 KB of the 64 KB SRAM as a littlefs disk, formatted at every boot.
+  # FAT cannot be used: FatFs needs at least 64 KB.
+  ram0: {compatible: "homecore,ramdisk", size: 32K}
+mounts:
+  /ram: {device: ram0, fs: littlefs, format: true}
 chosen: {console: uart0}

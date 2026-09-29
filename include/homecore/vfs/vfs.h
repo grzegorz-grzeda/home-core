@@ -24,8 +24,8 @@
 /*---------------------------------------------------------------------------*/
 /**
  * @file
- * @brief Virtual file system: device nodes, RAM files and directories, paths,
- *        and descriptors.
+ * @brief Virtual file system: device nodes, RAM files and directories, mounted
+ *        filesystems, paths, and descriptors.
  */
 /*---------------------------------------------------------------------------*/
 #ifndef HOME_CORE_VFS_H
@@ -42,15 +42,30 @@ extern "C" {
 /**
  * @defgroup vfs Virtual file system
  * @ingroup subsystems
- * @brief Single namespace of device nodes, RAM directories, and RAM files.
+ * @brief Single namespace of device nodes, RAM directories, RAM files, and
+ *        mounted filesystems.
  *
  * Nodes are kept in one list and are named by canonical absolute paths.
  * RAM directories, RAM files, and descriptors are allocated from the heap
  * when created or opened and freed when removed or closed; the Kconfig maxima
- * cap how many can exist. RAM file contents also use the heap. Everything is
- * lost on reset. libc I/O reaches
+ * cap how many can exist. RAM file contents also use the heap and are lost on
+ * reset. Filesystems attached with vfs_mount() own every path below their
+ * mount point; see @ref filesystems. libc I/O reaches
  * the VFS through the newlib hooks in `src/kernel/syscalls.c`. The VFS is not
  * reentrant and must not be called from interrupt handlers.
+ *
+ * | Entry | Created by | Has a node | Contents |
+ * | --- | --- | --- | --- |
+ * | Device | A driver, vfs_register_node() | Yes | Stream or snapshot operations |
+ * | RAM directory | vfs_mkdir() outside mounts | Yes | Child entries |
+ * | RAM file | vfs_open() with `O_CREAT` outside mounts | Yes | Heap buffer |
+ * | Mount point | vfs_mount() | Yes (a directory) | The filesystem's root |
+ * | Path below a mount point | The filesystem | No | Owned by the filesystem |
+ *
+ * Code that needs a type or size uses vfs_stat() or vfs_fstat(), which work
+ * for every entry; vfs_find_node() and vfs_fd_node() see nodes only. The
+ * @ref storage "Files and storage" page describes path resolution, descriptors,
+ * and the filesystems in detail.
  *
  * Paths passed to these functions are resolved from `/`, even when they do not
  * start with a slash. To honor a session's working directory, resolve the path
@@ -170,7 +185,8 @@ void vfs_register_node(vfs_node_t *node);
  *             existing directories.
  *
  * @return The node, or `NULL` with `errno` set to `ENOENT`, `ENOTDIR`, or
- *         `ENAMETOOLONG`.
+ *         `ENAMETOOLONG`. Paths below a mount point have no node and return
+ *         `NULL` with `ENOENT` even when they exist; use vfs_stat() instead.
  */
 vfs_node_t *vfs_find_node(const char *name);
 /** @} */
@@ -182,9 +198,10 @@ vfs_node_t *vfs_find_node(const char *name);
  * @brief Resolve a path against an explicit base directory.
  *
  * Absolute paths ignore @p base. Repeated slashes, `.`, and `..` are
- * normalized. Every intermediate component must be an existing directory, but
- * the final component may not exist. Other VFS operations remain rooted at `/`
- * for relative arguments.
+ * normalized. Every intermediate component must be an existing directory,
+ * including directories inside mounted filesystems, but the final component
+ * may not exist. Other VFS operations remain rooted at `/` for relative
+ * arguments.
  *
  * @param base   Existing absolute directory. Used only when @p path is
  *               relative.
@@ -200,14 +217,18 @@ vfs_node_t *vfs_find_node(const char *name);
 int vfs_resolve_path(const char *base, const char *path, char result[VFS_PATH_CAPACITY]);
 /*---------------------------------------------------------------------------*/
 /**
- * @brief Create an empty RAM directory.
+ * @brief Create an empty directory.
+ *
+ * Below a mount point, the filesystem creates the directory; elsewhere it is a
+ * RAM directory.
  *
  * @param path Directory to create. Its parent must exist.
  *
  * @retval 0  The directory was created.
  * @retval -1 `errno` is `EEXIST`, `ENOENT`, `ENOTDIR`, `ENAMETOOLONG`,
- *            `ENOSPC` when `CONFIG_HOMECORE_VFS_MAX_DIRECTORIES` directories
- *            exist, or `ENOMEM` when the entry cannot be allocated.
+ *            `ENOSPC` when `CONFIG_HOMECORE_VFS_MAX_DIRECTORIES` RAM
+ *            directories exist or the filesystem is full, `ENOMEM` when the
+ *            entry cannot be allocated, or set by the filesystem.
  */
 int vfs_mkdir(const char *path);
 /*---------------------------------------------------------------------------*/
@@ -220,20 +241,22 @@ int vfs_mkdir(const char *path);
  * @param path Directory to remove.
  *
  * @retval 0  The directory was removed and its memory freed.
- * @retval -1 `errno` is `ENOENT`, `ENOTDIR`, `EBUSY` for `/` and `/dev`,
- *            `ENOTEMPTY`, or `EROFS` for a registered directory that was not
- *            created by vfs_mkdir().
+ * @retval -1 `errno` is `ENOENT`, `ENOTDIR`, `EBUSY` for `/`, `/dev`, and
+ *            mount points, `ENOTEMPTY`, `EROFS` for a registered directory
+ *            that was not created by vfs_mkdir(), or set by the filesystem.
  */
 int vfs_rmdir(const char *path);
 /*---------------------------------------------------------------------------*/
 /**
- * @brief Remove a RAM file and free its contents.
+ * @brief Remove a file: a RAM file, whose contents are freed, or a file on a
+ *        mounted filesystem.
  *
  * @param path File to remove.
  *
- * @retval 0  The file was removed and its memory freed.
- * @retval -1 `errno` is `ENOENT`, `EISDIR`, `EPERM` for a device node, or
- *            `EBUSY` while any descriptor is open on the file.
+ * @retval 0  The file was removed.
+ * @retval -1 `errno` is `ENOENT`, `EISDIR` (including a mount point), `EPERM`
+ *            for a device node, `EBUSY` while any descriptor is open on the
+ *            file, or set by the filesystem.
  */
 int vfs_unlink(const char *path);
 /*---------------------------------------------------------------------------*/
@@ -253,7 +276,9 @@ typedef int (*vfs_directory_visitor_t)(const char *name, bool is_directory, void
 /**
  * @brief Visit the direct children of a directory.
  *
- * Entries are visited most recently registered first. The namespace must not
+ * Node entries are visited most recently registered first, so a mount point
+ * appears in its parent's listing. Below a mount point the filesystem lists
+ * its entries in its own order, without `.` and `..`. The namespace must not
  * be modified during the visit.
  *
  * @param path    Directory to list.
@@ -262,7 +287,7 @@ typedef int (*vfs_directory_visitor_t)(const char *name, bool is_directory, void
  *
  * @return 0 after visiting every child; the visitor's nonzero result if it
  *         stopped early; or -1 with `errno` set to `EINVAL` for a `NULL`
- *         visitor, `ENOENT`, or `ENOTDIR`.
+ *         visitor, `ENOENT`, `ENOTDIR`, or set by the filesystem.
  */
 int vfs_list(const char *path, vfs_directory_visitor_t visitor, void *context);
 /** @} */
@@ -275,7 +300,9 @@ int vfs_list(const char *path, vfs_directory_visitor_t visitor, void *context);
  *
  * `O_CREAT` creates a RAM file when the parent directory exists. `O_TRUNC`
  * discards a RAM file's contents. Opening a snapshot device captures its
- * content for this descriptor.
+ * content for this descriptor. Below a mount point, the VFS checks the access
+ * mode and allocates the descriptor, and the filesystem opens the file and
+ * handles `O_CREAT`, `O_EXCL`, `O_TRUNC`, and `O_APPEND`.
  *
  * @param name  Path to open, resolved from `/`.
  * @param flags One of `O_RDONLY`, `O_WRONLY`, or `O_RDWR`, optionally combined
@@ -289,7 +316,7 @@ int vfs_list(const char *path, vfs_directory_visitor_t visitor, void *context);
  *         `EEXIST`, `EISDIR`, `ENOENT`, `ENOTDIR`, `ENAMETOOLONG`, `ENOSPC`
  *         (`CONFIG_HOMECORE_VFS_MAX_RAM_FILES` files exist), `ENOMEM` (the
  *         descriptor or new file cannot be allocated; nothing is created or
- *         truncated), or `EIO` (snapshot failed).
+ *         truncated), `EIO` (snapshot failed), or set by the filesystem.
  */
 int vfs_open(const char *name, int flags);
 /*---------------------------------------------------------------------------*/
@@ -298,8 +325,10 @@ int vfs_open(const char *name, int flags);
  *
  * @param fd Descriptor returned by vfs_open().
  *
- * @return The node's `close` result, or 0 if it has none; -1 for an
- *         out-of-range descriptor; -2 for a closed descriptor.
+ * @return The node's `close` result, or 0 if it has none; for a mounted
+ *         file, the filesystem's result, which reports data that could not be
+ *         written; -1 for an out-of-range descriptor; -2 for a closed
+ *         descriptor. The descriptor is released in every case.
  */
 int vfs_close(int fd);
 /*---------------------------------------------------------------------------*/
@@ -307,7 +336,8 @@ int vfs_close(int fd);
  * @brief Read from a descriptor.
  *
  * RAM files and snapshot devices copy from the descriptor's position and
- * advance it. Other nodes forward to their `read` operation, which may block.
+ * advance it. Files on mounted filesystems read through the filesystem. Other
+ * nodes forward to their `read` operation, which may block.
  *
  * @param fd  Open descriptor.
  * @param buf Destination of at least @p len bytes. May be `NULL` only if
@@ -315,8 +345,8 @@ int vfs_close(int fd);
  * @param len Maximum number of bytes to read.
  *
  * @return Bytes read, or 0 at end of file; -1 on failure (`errno` is `EBADF`
- *         for a write-only RAM file, `EFAULT` for a `NULL` buffer, or set by
- *         the driver); -2 for a closed descriptor.
+ *         for a write-only file, `EFAULT` for a `NULL` buffer, or set by the
+ *         driver or filesystem); -2 for a closed descriptor.
  */
 int vfs_read(int fd, void *buf, unsigned len);
 /*---------------------------------------------------------------------------*/
@@ -324,8 +354,10 @@ int vfs_read(int fd, void *buf, unsigned len);
  * @brief Write to a descriptor.
  *
  * RAM files are written at the descriptor's position, or at the end with
- * `O_APPEND`. A write past the end grows the file and zero-fills any gap. Other
- * nodes forward to their `write` operation.
+ * `O_APPEND`. A write past the end grows the file and zero-fills any gap.
+ * Files on mounted filesystems write through the filesystem, which may return
+ * a short count when it fills up. Other nodes forward to their `write`
+ * operation.
  *
  * @param fd  Open descriptor.
  * @param buf Source of at least @p len bytes. May be `NULL` only if @p len
@@ -334,8 +366,9 @@ int vfs_read(int fd, void *buf, unsigned len);
  *
  * @return Bytes written; -1 on failure (`errno` is `EBADF` for a read-only
  *         descriptor or snapshot device, `EFAULT`, `EFBIG` beyond
- *         `CONFIG_HOMECORE_VFS_MAX_FILE_SIZE`, `ENOMEM`, or set by the
- *         driver); -2 for a closed descriptor.
+ *         `CONFIG_HOMECORE_VFS_MAX_FILE_SIZE`, `ENOMEM`, `ENOSPC` when a
+ *         mounted filesystem is full, or set by the driver or filesystem); -2
+ *         for a closed descriptor.
  */
 int vfs_write(int fd, const void *buf, unsigned len);
 /*---------------------------------------------------------------------------*/
@@ -346,7 +379,8 @@ int vfs_write(int fd, const void *buf, unsigned len);
  * @param request Device-specific request code.
  * @param arg     Device-specific argument.
  *
- * @return The node's `ioctl` result; -1 if it has none; -2 for a closed
+ * @return The node's `ioctl` result; -1 if it has none, or with `errno`
+ *         `ENOTTY` for a file on a mounted filesystem; -2 for a closed
  *         descriptor.
  */
 int vfs_ioctl(int fd, unsigned request, void *arg);
@@ -355,8 +389,9 @@ int vfs_ioctl(int fd, unsigned request, void *arg);
  * @brief Move a descriptor's position.
  *
  * RAM files accept positions from 0 to `CONFIG_HOMECORE_VFS_MAX_FILE_SIZE`.
- * Snapshot devices accept positions within the captured content. Other nodes
- * forward to their `lseek` operation.
+ * Snapshot devices accept positions within the captured content. Files on
+ * mounted filesystems follow the filesystem's rules; see @ref fat and
+ * @ref littlefs. Other nodes forward to their `lseek` operation.
  *
  * @param fd     Open descriptor.
  * @param offset Offset relative to @p whence.

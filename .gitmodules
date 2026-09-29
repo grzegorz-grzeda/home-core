@@ -7,3 +7,6 @@
 [submodule "external/doxygen-awesome-css"]
 	path = external/doxygen-awesome-css
 	url = https://github.com/jothepro/doxygen-awesome-css.git
+[submodule "external/littlefs"]
+	path = external/littlefs
+	url = https://github.com/littlefs-project/littlefs.git
