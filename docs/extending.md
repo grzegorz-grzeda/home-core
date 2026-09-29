@@ -169,6 +169,24 @@ registers through the SoC's CMSIS types (`soc_cmsis.h`); host tests substitute
 a stand-in header from `tests/fakes/`, as `tests/uart_contract_test.c` does.
 Add generator cases for new property rules to `tests/devicetree_generate_test.py`.
 
+### GPIO ports and LEDs
+
+A GPIO port driver sets `gpio: true` and exports
+`const gpio_ops_t <driver>_gpio_ops` (`include/homecore/drivers/gpio.h`):
+configure, set, and get a pin. Its init function enables the port clock; the
+ports are SoC devices, like UARTs. A driver that uses a pin declares a `gpio`
+property, which fills a `gpio_port_t`, and a `pin`; the generator initializes
+the port first. `src/drivers/gpio/stm32f4_gpio.c` is the reference.
+
+An LED driver sets `led: true`, exports `const led_ops_t <driver>_led_ops`
+(`include/homecore/drivers/led.h`), and calls `led_register_node()` from its
+init function for the `/dev/ledN` file; `src/drivers/led/led.c` implements the
+file, numbering, and the `led_*()` API. `homecore,gpio-led` drives a GPIO pin
+and `homecore,console-led` prints changes for emulators without LEDs. A board
+describes an emulator variant as disabled console LEDs with the same `devname`
+and swaps them in from an overlay, as `src/board/stm32vldiscovery/qemu.yaml`
+does.
+
 ### Block devices
 
 A block driver sets `block: true` in its binding and exports

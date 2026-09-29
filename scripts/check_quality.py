@@ -233,6 +233,13 @@ class QualityRunner:
              ["-Itests/fakes/stellaris", "-Isrc/drivers/serial"]),
             ("uart-stm32", ["tests/uart_contract_test.c"],
              ["-DTEST_STM32", "-Itests/fakes/stm32", "-Isrc/drivers/serial"]),
+            ("gpio-stm32f4", ["tests/gpio_contract_test.c"],
+             ["-Itests/fakes/stm32f4", "-Isrc/drivers/gpio"]),
+            ("gpio-stm32f1", ["tests/gpio_contract_test.c"],
+             ["-DTEST_STM32F1", "-Itests/fakes/stm32f1", "-Isrc/drivers/gpio"]),
+            ("leds", ["tests/led_test.c", "src/drivers/led/led.c", "src/drivers/led/gpio_led.c",
+                      "src/drivers/led/console_led.c", "src/subsystems/vfs/vfs.c"],
+             ["-Isrc/drivers/led"]),
             # Documented host-only exception: newlib uses mallinfo; glibc deprecates it.
             ("console-io", ["tests/console_io_test.c"], [
                 "-Wno-deprecated-declarations", "-ffunction-sections", "-fdata-sections",

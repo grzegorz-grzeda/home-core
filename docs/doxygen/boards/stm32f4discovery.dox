@@ -76,11 +76,25 @@ The main stack uses the default `CONFIG_HOMECORE_KERNEL_MAIN_STACK_SIZE` of
 and littlefs at `/lfs` (16 KB), formatted at every boot; see @ref storage. The
 rest of main SRAM after static data is heap.
 
+@section board_stm32f4discovery_leds LEDs
+
+The four user LEDs are GPIO LEDs on port D, lit when the pin is high:
+
+| File | LED | Pin |
+| --- | --- | --- |
+| `/dev/led0` | LD4 green | PD12 |
+| `/dev/led1` | LD3 orange | PD13 |
+| `/dev/led2` | LD5 red | PD14 |
+| `/dev/led3` | LD6 blue | PD15 |
+
+`write /dev/led0 on` or `PRINT led(0, 1)` in BASIC lights LD4; see @ref led.
+They have not been checked on hardware.
+
 @section board_stm32f4discovery_validation Hardware validation checklist
 
 After reset, check the HomeCore banner and prompt, then run `help`, `mem`,
-`uptime`, `cat /dev/uptime`, `mkdir /tmp`, `touch /tmp/test`, `ls /tmp`, and
-`reboot`. Compare `uptime` against elapsed time; its accuracy follows the HSI
+`uptime`, `cat /dev/uptime`, `mkdir /tmp`, `touch /tmp/test`, `ls /tmp`,
+`write /dev/ledN on` and `cat /dev/ledN` for each LED, and `reboot`. Compare `uptime` against elapsed time; its accuracy follows the HSI
 oscillator tolerance.
 
 @section board_stm32f4discovery_limits Limitations

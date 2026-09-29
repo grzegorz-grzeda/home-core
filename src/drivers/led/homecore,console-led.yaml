@@ -1,0 +1,11 @@
+# Binding for a stand-in LED that reports changes on the console.
+compatible: homecore,console-led
+description: LED stand-in for emulators without LEDs; prints "[ledN] on" or "[ledN] off" on each change request.
+driver: console_led
+sources: [console_led.c]
+led: true
+properties:
+  devname:
+    type: devpath
+    field: path
+    description: Device file name under /dev; defaults to the node name.

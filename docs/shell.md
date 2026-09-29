@@ -10,6 +10,39 @@ up to `CONFIG_HOMECORE_SHELL_BASIC_MAX_NESTING` levels (8 by default); deeper
 lines fail with "expression too deeply nested", which keeps BASIC within the
 main stack.
 
+## LEDs
+
+Boards number their LEDs from 0, and each has a device file, `/dev/ledN`.
+Reading it gives `0` or `1`; writing `on`, `off`, `1`, `0`, or `toggle` sets
+it. From the shell, use `write`, since the shell has no output redirection:
+
+```text
+write /dev/led0 on
+cat /dev/led0
+write /dev/led0 toggle
+```
+
+BASIC controls the same LEDs by number:
+
+```basic
+PRINT led(0, 1)
+PRINT ledget(0)
+```
+
+`led(n, state)` lights LED `n` for a nonzero `state` and turns it off for 0,
+returning the new state. `ledget(n)` returns 1 if the LED is lit and 0 if not.
+Both return -1 for a number without an LED, including fractions.
+
+| Board | LEDs |
+| --- | --- |
+| STM32F4DISCOVERY | `led0` green (PD12), `led1` orange (PD13), `led2` red (PD14), `led3` blue (PD15) |
+| STM32VLDISCOVERY | `led0` green (PC9), `led1` blue (PC8); in QEMU, console LEDs |
+| LM3S6965EVB (QEMU) | `led0`, a console LED |
+
+QEMU models no LEDs, so emulated boards use console LEDs: each change request
+prints a line such as `[led0] on` on the console, and reads return the last
+state set. LED states are not kept across reboots; every LED starts off.
+
 ## Uptime
 
 The kernel starts a 1 kHz SysTick during initialization. `k_uptime_ms()` returns
@@ -132,6 +165,7 @@ or privilege separation yet.
 | `touch path...` | Create empty files, preserving existing file contents |
 | `rm path...` | Remove closed files and free their memory |
 | `cp source target` | Copy a readable file or snapshot device to a new or truncated file; a directory target keeps the source's name |
+| `write path text...` | Write the words, joined by spaces and ending in a newline, to a file (created or truncated) or device in one write; up to 126 characters plus the newline |
 
 `mem` reports the heap region, excluding static RAM and reserved stack space.
 Its last line, `Stack: used N of M bytes`, is the deepest main-stack use since

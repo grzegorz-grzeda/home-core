@@ -17,7 +17,7 @@ from pathlib import Path
 
 import yaml
 
-TYPES = ("int", "size", "string", "bool", "clock", "devpath")
+TYPES = ("int", "size", "string", "bool", "clock", "devpath", "gpio")
 DEVICE_KEYS = {"compatible", "status"}
 # Keys each layer may set. The board selects the SoC and the SoC the
 # architecture; overlays may change properties but not the selection.
@@ -106,6 +106,8 @@ def check_value(value, spec, where, clocks):
             raise DescriptionError(f"{where}: expected an integer")
         if value < spec.get("minimum", 0):
             raise DescriptionError(f"{where}: must be at least {spec.get('minimum', 0)}")
+        if "maximum" in spec and value > spec["maximum"]:
+            raise DescriptionError(f"{where}: must be at most {spec['maximum']}")
         return value
     if kind == "bool":
         if not isinstance(value, bool):
@@ -117,6 +119,10 @@ def check_value(value, spec, where, clocks):
         return clocks[value]
     if not isinstance(value, str) or not value:
         raise DescriptionError(f"{where}: expected a non-empty string")
+    if kind == "gpio":
+        if not C_IDENTIFIER.match(value):
+            raise DescriptionError(f"{where}: expected a GPIO port node name")
+        return {"gpio": value}
     if kind == "devpath":
         if not re.fullmatch(r"[a-z0-9_]+", value):
             raise DescriptionError(f"{where}: device names use a-z, 0-9, and _")
@@ -206,10 +212,15 @@ def resolve(description, bindings):
             values[prop] = value
             if spec.get("unique") or spec.get("type") == "devpath":
                 key = (prop, value)
+                if "unique-with" in spec:
+                    # Unique together with another property, such as a pin
+                    # within its GPIO port.
+                    key = (prop, value, str(node.get(spec["unique-with"])))
                 if key in seen:
                     raise DescriptionError(f"{where}.{prop}: {value!r} also used by {seen[key]}")
                 seen[key] = name
         devices.append({"name": name, "binding": binding, "values": values})
+    devices = order_devices(devices)
 
     console = description.get("chosen", {}).get("console")
     by_name = {device["name"]: device for device in devices}
@@ -248,6 +259,35 @@ def resolve_mounts(description, by_name):
     return mounts
 
 
+def order_devices(devices):
+    """Check GPIO references and order devices so every referenced device is
+    initialized before the devices that use it; otherwise keep description
+    order."""
+    by_name = {device["name"]: device for device in devices}
+    for device in devices:
+        device["requires"] = []
+        for prop, value in device["values"].items():
+            if isinstance(value, dict) and "gpio" in value:
+                target = by_name.get(value["gpio"])
+                if target is None or not target["binding"].get("gpio"):
+                    raise DescriptionError(f"devices.{device['name']}.{prop}: "
+                                           f"{value['gpio']!r} is not an enabled GPIO port")
+                value["driver"] = target["binding"]["driver"]
+                device["requires"].append(target["name"])
+    ordered, placed = [], set()
+
+    def place(device):
+        if device["name"] not in placed:
+            placed.add(device["name"])
+            for name in device["requires"]:
+                place(by_name[name])
+            ordered.append(device)
+
+    for device in devices:
+        place(device)
+    return ordered
+
+
 def c_literal(value, hexadecimal=False):
     if isinstance(value, bool):
         return "true" if value else "false"
@@ -274,6 +314,8 @@ def generate(memory, clocks, clock_setup, devices, console, mounts, selection, a
     header.append(f"#define DT_CHOSEN_CONSOLE_PATH {c_literal(console_path)}")
     header.append(f"#define DT_DEVICE_COUNT {len(devices)}U")
     header.append(f"#define DT_MOUNT_COUNT {len(mounts)}U")
+    leds = [device for device in devices if device["binding"].get("led")]
+    header.append(f"#define DT_LED_COUNT {len(leds)}U")
     header += ["", "/* Initialize every enabled device, in description order. */",
                "void dt_init(void);",
                "/* Run the handler of the device that owns peripheral interrupt irq;",
@@ -285,7 +327,8 @@ def generate(memory, clocks, clock_setup, devices, console, mounts, selection, a
                "void dt_mount_all(void);", "", "#endif /* HOMECORE_DEVICETREE_H */", ""]
 
     source = [banner, '#include "homecore/devicetree.h"', '#include "homecore/board/board.h"',
-              '#include "homecore/drivers/console.h"', "#include <stdint.h>"]
+              '#include "homecore/drivers/console.h"', '#include "homecore/drivers/led.h"',
+              "#include <stddef.h>", "#include <stdint.h>"]
     filesystems = sorted({mount["fs"] for mount in mounts})
     for fs in filesystems:
         source.append(f'#include "{FILESYSTEMS[fs][0]}"')
@@ -298,8 +341,12 @@ def generate(memory, clocks, clock_setup, devices, console, mounts, selection, a
         driver = device["binding"]["driver"]
         fields = []
         for prop, spec in device["binding"].get("properties", {}).items():
-            if "field" in spec and prop in device["values"]:
-                literal = c_literal(device["values"][prop], hexadecimal=prop == "reg")
+            value = device["values"].get(prop)
+            if "field" in spec and isinstance(value, dict):
+                fields.append(f"    .{spec['field']} = {{.ops = &{value['driver']}_gpio_ops, "
+                              f".port = &dt_{value['gpio']}}},")
+            elif "field" in spec and prop in device["values"]:
+                literal = c_literal(value, hexadecimal=prop == "reg")
                 fields.append(f"    .{spec['field']} = {literal},")
             if "buffer" in spec and prop in device["values"]:
                 buffer = f"dt_{device['name']}_{spec['buffer']}"
@@ -311,6 +358,14 @@ def generate(memory, clocks, clock_setup, devices, console, mounts, selection, a
         source.append("};")
         source.append(f"static {driver}_t dt_{device['name']} = "
                       f"{{.config = &dt_{device['name']}_config}};")
+    source.append("")
+    if leds:
+        source.append("static const led_t dt_leds[] = {")
+        source += [f"    {{.ops = &{led['binding']['driver']}_led_ops, .device = &dt_{led['name']}}},"
+                   for led in leds]
+        source += ["};", f"const led_table_t dt_led_table = {{.leds = dt_leds, .count = {len(leds)}U}};"]
+    else:
+        source.append("const led_table_t dt_led_table = {.leds = NULL, .count = 0U};")
     source += ["", "const console_t dt_console = {",
                f"    .ops = &{console['binding']['driver']}_console_ops,",
                f"    .device = &dt_{console['name']},", "};", "", "void dt_init(void) {"]

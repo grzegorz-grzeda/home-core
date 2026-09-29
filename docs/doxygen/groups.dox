@@ -36,7 +36,7 @@ The API is grouped by layer. Each header defines one module group.
 | Layer | Modules | Header location |
 | --- | --- | --- |
 | @ref hal | @ref arch, @ref soc, @ref board | `homecore/arch`, `homecore/soc`, `homecore/board` |
-| @ref drivers | @ref console, @ref block | `homecore/drivers` |
+| @ref drivers | @ref console, @ref gpio, @ref led, @ref block | `homecore/drivers` |
 | @ref kernel_services | @ref kernel, @ref user, @ref session | `homecore/kernel`, `homecore/user`, `homecore/session` |
 | @ref subsystems | @ref vfs, @ref filesystems (@ref fat, @ref littlefs), @ref shell | `homecore/vfs`, `homecore/fs`, `homecore/shell` |
 
@@ -63,7 +63,7 @@ this firmware. Its groups are also listed on the **Topics** page.
 
 | Library | Reference | Used by |
 | --- | --- | --- |
-| G2Basic (`external/g2basic`) | <a href="g2basic/index.html">G2Basic API</a>, starting with the @ref api | The `basic` shell command, which registers `millis()` |
+| G2Basic (`external/g2basic`) | <a href="g2basic/index.html">G2Basic API</a>, starting with the @ref api | The `basic` shell command, which registers `millis()`, `led()`, and `ledget()` |
 @endif
 
 @section mainpage_startup Startup order
@@ -96,9 +96,10 @@ interface at configure time through `HOMECORE_BOARD`.
 @brief Device drivers instantiated from the compile-time device description.
 
 `soc.yaml` and `board.yaml` describe the hardware; the generator creates each
-enabled device's configuration and calls its driver from `dt_init()`. Driver
-headers are internal to `src/drivers/`; the public part is the console used by
-the board interface. See the Development guide's "Device description" section.
+enabled device's configuration and calls its driver from `dt_init()`, after
+the devices it references. Driver headers are internal to `src/drivers/`; the
+public parts are the interfaces other code uses: the console, GPIO ports,
+LEDs, and block devices. See the Development guide's "Device description" section.
 */
 
 /**

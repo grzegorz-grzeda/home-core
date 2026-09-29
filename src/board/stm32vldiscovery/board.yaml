@@ -6,4 +6,11 @@ clocks: {cpu: 24000000, apb1: 24000000, apb2: 24000000}
 devices:
   # PA9/PA10; board.c enables the clock and pins. Keeps the /dev/uart0 name.
   usart1: {status: okay, baud: 115200, devname: uart0}
+  # User LEDs on PC9 and PC8, lit when the pin is high (UM0919).
+  gpioc: {status: okay}
+  led0: {compatible: "homecore,gpio-led", gpio: gpioc, pin: 9}  # LD3 green
+  led1: {compatible: "homecore,gpio-led", gpio: gpioc, pin: 8}  # LD4 blue
+  # Console stand-ins for QEMU, which models no GPIO; qemu.yaml swaps them in.
+  qemu_led0: {compatible: "homecore,console-led", devname: led0, status: disabled}
+  qemu_led1: {compatible: "homecore,console-led", devname: led1, status: disabled}
 chosen: {console: usart1}

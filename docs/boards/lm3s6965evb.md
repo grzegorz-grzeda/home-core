@@ -28,6 +28,10 @@ A 32 KB ramdisk holds a littlefs volume mounted at `/ram`, formatted at every
 boot. The QEMU regression exercises it; FAT is not used because FatFs needs at
 least 64 KB, all of this board's RAM.
 
+QEMU's machine has no LED, so `/dev/led0` is a console LED: writing it prints
+`[led0] on` or `[led0] off`. The physical board's status LED (PF0) is not
+supported.
+
 Try `help`, `uptime`, `cat /dev/uptime`, `mem`, file commands (also under
 `/ram`), and `reboot`. Reboot discards RAM files, the `/ram` contents, and the
 session. QEMU success verifies this

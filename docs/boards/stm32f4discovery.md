@@ -48,7 +48,10 @@ Configure the terminal to display LF as a new line; press Enter to submit comman
 After reset, check the HomeCore banner and prompt, then run `help`, `mem`,
 `uptime`, `cat /dev/uptime`, `mkdir /tmp`, `touch /tmp/test`, `ls /tmp`,
 `cp /dev/uptime /ram/boot`, `cat /ram/boot`, `cp /ram/boot /lfs/boot`,
-`ls /ram /lfs`, and `reboot`. Uptime accuracy follows HSI oscillator tolerance. Received bytes are
+`ls /ram /lfs`, `write /dev/led0 on` (LD4 green lights; `cat /dev/led0`
+prints 1), the same for `led1` (LD3 orange), `led2` (LD5 red), and `led3`
+(LD6 blue), `write /dev/led0 toggle`, and `reboot`. The user LEDs on PD12-PD15
+are driven through the GPIOD port; this has not been checked on hardware. Uptime accuracy follows HSI oscillator tolerance. Received bytes are
 buffered by the USART interrupt in a 64-byte ring, so pasted input is no longer
 limited to the one-byte data register; bytes beyond a full ring are dropped.
 This has not yet been checked on hardware.

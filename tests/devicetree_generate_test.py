@@ -201,6 +201,49 @@ class DevicetreeTest(unittest.TestCase):
             with self.subTest(message):
                 self.assert_rejected(message, board=text + mounts)
 
+    def test_gpio_leds(self):
+        soc = SOC + ('  gpioc: {compatible: "st,stm32f1-gpio", reg: 0x40011000, clock-bit: 4, '
+                     'status: disabled}\n')
+        # The LED comes before its port in the description; init order is fixed.
+        leds = BOARD.replace("chosen:", '  led0: {compatible: "homecore,gpio-led", gpio: gpioc, pin: 9}\n'
+                                        '  gpioc: {status: okay}\n'
+                                        '  led1: {compatible: "homecore,console-led"}\nchosen:')
+        status, stderr, out = self.run_generator(soc=soc, board=leds)
+        self.assertEqual(status, 0, stderr)
+        self.assertIn(".port = {.ops = &stm32f1_gpio_gpio_ops, .port = &dt_gpioc},", out["c"])
+        self.assertIn(".active_low = false,", out["c"])
+        self.assertIn('.path = "/dev/led0",', out["c"])
+        self.assertLess(out["c"].index("stm32f1_gpio_init(&dt_gpioc);"),
+                        out["c"].index("gpio_led_init(&dt_led0);"))
+        self.assertLess(out["c"].index("static stm32f1_gpio_t dt_gpioc"),
+                        out["c"].index("static const gpio_led_config_t dt_led0_config"))
+        self.assertIn("{.ops = &gpio_led_led_ops, .device = &dt_led0},\n"
+                      "    {.ops = &console_led_led_ops, .device = &dt_led1},", out["c"])
+        self.assertIn(".count = 2U};", out["c"])
+        self.assertIn("#define DT_LED_COUNT 2U", out["h"])
+        status, stderr, out = self.run_generator()
+        self.assertEqual(status, 0, stderr)
+        self.assertIn("const led_table_t dt_led_table = {.leds = NULL, .count = 0U};", out["c"])
+        cases = {
+            "'gpiod' is not an enabled GPIO port": leds.replace("gpio: gpioc", "gpio: gpiod"),
+            "'usart1' is not an enabled GPIO port": leds.replace("gpio: gpioc", "gpio: usart1"),
+            "must be at most 15": leds.replace("pin: 9", "pin: 16"),
+            "missing required property pin": leds.replace(", pin: 9", ""),
+            "expected a non-empty string": leds.replace("gpio: gpioc", "gpio: 7"),
+            "expected a GPIO port node name": leds.replace("gpio: gpioc", "gpio: Gpio-C"),
+            "also used by led0": leds.replace("led1: {compatible: \"homecore,console-led\"}",
+                                              'led1: {compatible: "homecore,gpio-led", '
+                                              'gpio: gpioc, pin: 9}'),
+            "'/dev/led0' also used by": leds.replace('"homecore,console-led"}',
+                                                     '"homecore,console-led", devname: led0}'),
+        }
+        for message, board in cases.items():
+            with self.subTest(message):
+                self.assert_rejected(message, soc=soc, board=board)
+        # A disabled port is not a valid reference.
+        self.assert_rejected("'gpioc' is not an enabled GPIO port", soc=soc,
+                             board=leds.replace("gpioc: {status: okay}", "gpioc: {status: disabled}"))
+
     def test_repository_descriptions_generate(self):
         for board in ("lm3s6965evb", "stm32f4discovery", "stm32vldiscovery"):
             with self.subTest(board):

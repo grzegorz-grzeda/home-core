@@ -108,10 +108,23 @@ openocd -f board/stm32vldiscovery.cfg \
   -c "program build/stm32vldiscovery/homecore verify reset exit"
 ```
 
+@section board_stm32vldiscovery_leds LEDs
+
+| File | LED | Pin |
+| --- | --- | --- |
+| `/dev/led0` | LD3 green | PC9 |
+| `/dev/led1` | LD4 blue | PC8 |
+
+Both are GPIO LEDs on port C, lit when the pin is high. QEMU models no GPIO,
+so the `stm32vldiscovery-qemu` build's overlay disables them and enables
+console LEDs with the same files, which print `[led0] on` and similar lines.
+See @ref led.
+
 @section board_stm32vldiscovery_validation Hardware validation checklist
 
 Confirm the banner, `uptime` against elapsed time (which checks the 24 MHz
-PLL), `mem`, the file commands, `basic`, and `reboot`, as described in the
+PLL), `mem`, the file commands, `basic`, the LEDs (`write /dev/led0 on`
+lights LD3), and `reboot`, as described in the
 [porting guide](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/porting.md#validation).
 
 The full board guide is

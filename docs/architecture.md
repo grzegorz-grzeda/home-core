@@ -145,5 +145,10 @@ The current-session pointer is global and must become task-local before concurre
 sessions can run. Identity is metadata, without authentication or access checks.
 
 The shell embeds G2BASIC through callbacks and registers `millis()` against
-kernel uptime. Interpreter integration and libc hooks run in the same address
+kernel uptime and `led()`/`ledget()` against the LED API
+(`include/homecore/drivers/led.h`). LEDs come from the device description:
+GPIO LEDs (`homecore,gpio-led`) drive a pin through a GPIO port driver
+(`st,stm32f4-gpio`, `st,stm32f1-gpio`), and console LEDs
+(`homecore,console-led`) stand in on emulators, which model none, by printing
+each change. Interpreter integration and libc hooks run in the same address
 space as the rest of the firmware; these are not SVC-mediated system calls.

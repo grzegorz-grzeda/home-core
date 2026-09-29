@@ -54,6 +54,11 @@ python3 tests/qemu_files_test.py
 The SoC registers `/dev/uart0`, `/dev/uart1`, and `/dev/uart2`. Standard input,
 output, and error use UART0. The other nodes are not additional shell sessions.
 
+QEMU's machine has no LED, so `/dev/led0` is a console LED
+(`homecore,console-led`): each change prints `[led0] on` or `[led0] off`, and
+reads return the last state set. The physical board's status LED on PF0 is not
+supported. See @ref led.
+
 @section board_lm3s6965evb_clock Clock and uptime
 
 `board_cpu_clock_hz()` returns 12.5 MHz, which matches QEMU's Stellaris reset

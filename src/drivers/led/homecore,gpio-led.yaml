@@ -1,0 +1,29 @@
+# Binding for an LED on a GPIO pin.
+compatible: homecore,gpio-led
+description: LED driven by a GPIO output pin, with a readable and writable /dev file.
+driver: gpio_led
+sources: [gpio_led.c]
+led: true
+properties:
+  gpio:
+    type: gpio
+    required: true
+    field: port
+    description: Enabled GPIO port device driving the LED, such as gpiod.
+  pin:
+    type: int
+    required: true
+    maximum: 15
+    unique: true
+    unique-with: gpio
+    field: pin
+    description: Pin number within the port; one LED per pin.
+  active-low:
+    type: bool
+    default: false
+    field: active_low
+    description: The LED lights when the pin is low.
+  devname:
+    type: devpath
+    field: path
+    description: Device file name under /dev; defaults to the node name.

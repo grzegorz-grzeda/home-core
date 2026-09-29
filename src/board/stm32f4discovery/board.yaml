@@ -9,6 +9,12 @@ devices:
   ram0: {compatible: "homecore,ramdisk", size: 64K}
   # 16 KB littlefs disk, formatted at every boot.
   ram1: {compatible: "homecore,ramdisk", size: 16K}
+  # User LEDs on PD12-PD15, lit when the pin is high (UM1472).
+  gpiod: {status: okay}
+  led0: {compatible: "homecore,gpio-led", gpio: gpiod, pin: 12}  # LD4 green
+  led1: {compatible: "homecore,gpio-led", gpio: gpiod, pin: 13}  # LD3 orange
+  led2: {compatible: "homecore,gpio-led", gpio: gpiod, pin: 14}  # LD5 red
+  led3: {compatible: "homecore,gpio-led", gpio: gpiod, pin: 15}  # LD6 blue
 mounts:
   /ram: {device: ram0, fs: fat, format: true}
   /lfs: {device: ram1, fs: littlefs, format: true}

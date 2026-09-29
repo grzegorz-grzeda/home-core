@@ -121,24 +121,33 @@ page compares them.
 Each compatible has a binding next to its driver,
 `src/drivers/<class>/<compatible>.yaml`. It names the driver prefix and sources
 and declares every property: its type (`int`, `string`, `bool`, `clock` for a
-bus name resolved through `clocks`, `size` for a byte count such as `64K`, or
-`devpath` for a `/dev` name that defaults to the node name), whether it is
-required, its default, minimum, and required `multiple` (`size` only),
-whether it must be unique among enabled devices, and the C configuration field
-it fills. A `size` property with `buffer: <field>` also allocates a 4-byte
+bus name resolved through `clocks`, `size` for a byte count such as `64K`,
+`gpio` for the node name of an enabled GPIO port, or `devpath` for a `/dev`
+name that defaults to the node name), whether it is required, its default,
+minimum, `maximum` (`int`), and required `multiple` (`size`), whether it must
+be unique among enabled devices (`unique-with: <property>` makes it unique
+per value of another property, such as a pin per port), and the C
+configuration field it fills. A `gpio` property fills a `gpio_port_t`, and the
+referenced port is initialized before the device that uses it. A `size` property with `buffer: <field>` also allocates a 4-byte
 aligned `.bss` buffer of that size and stores its address in `<field>`.
 Configuration fails, naming the device and property, for an unknown
 compatible or property, a missing required property, a wrong type, a duplicate
 unique value or `/dev` name, an unknown clock, a console that is disabled or
-not console-capable, and a mount on a device that is not an enabled block
-device, is already mounted, or names an unknown filesystem.
+not console-capable, a `gpio` reference to a device that is not an enabled
+GPIO port, and a mount on a device that is not an enabled block device, is
+already mounted, or names an unknown filesystem.
+
+Bindings mark what a driver provides: `console: true` (`<driver>_console_ops`),
+`gpio: true` (`<driver>_gpio_ops`), `block: true` (`<driver>_block_ops`),
+`led: true` (`<driver>_led_ops`, numbered in `dt_led_table`), and `isr: true`
+(`<driver>_isr()`).
 
 `scripts/devicetree_generate.py` writes into the build directory:
 
 | Output | Contents |
 | --- | --- |
-| `include/homecore/devicetree.h` | `DT_BOARD_NAME`, `DT_CPU_CLOCK_HZ`, `DT_CLOCK_SETUP`, `DT_CHOSEN_CONSOLE_PATH`, `DT_DEVICE_COUNT`, `DT_MOUNT_COUNT`, `dt_init()`, `dt_irq_dispatch()`, `dt_mount_all()` |
-| `generated/devicetree.c` | per device a `static const <driver>_config_t` (flash) and a `<driver>_t` instance (RAM), `dt_console`, `dt_init()`, `dt_irq_dispatch()`, a `block_device_t` per mounted device, and `dt_mount_all()` |
+| `include/homecore/devicetree.h` | `DT_BOARD_NAME`, `DT_CPU_CLOCK_HZ`, `DT_CLOCK_SETUP`, `DT_CHOSEN_CONSOLE_PATH`, `DT_DEVICE_COUNT`, `DT_MOUNT_COUNT`, `DT_LED_COUNT`, `dt_init()`, `dt_irq_dispatch()`, `dt_mount_all()` |
+| `generated/devicetree.c` | per device a `static const <driver>_config_t` (flash) and a `<driver>_t` instance (RAM), `dt_console`, `dt_led_table`, `dt_init()`, `dt_irq_dispatch()`, a `block_device_t` per mounted device, and `dt_mount_all()` |
 | `generated/memory.ld` | the linker `MEMORY` block |
 | `generated/devicetree.cmake` | the selected SoC and architecture, linker fragment paths, input files, driver sources and include directories, and the mounted filesystem types |
 
@@ -198,7 +207,7 @@ uses explicit matrix jobs for firmware builds and QEMU regressions.
 ## Validation
 
 Configure the default LM3S build first: host tests include its generated header.
-Run the relevant tests below, or all seven for shared VFS/session changes:
+Run the relevant tests below, or all of them for shared VFS/session changes:
 
 ```bash
 cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include \
@@ -244,6 +253,19 @@ cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include \
   src/subsystems/fs/littlefs/littlefs.c src/drivers/block/ramdisk.c \
   external/littlefs/lfs.c external/littlefs/lfs_util.c -o /tmp/homecore-littlefs-test
 /tmp/homecore-littlefs-test
+
+# LEDs: numbering, API, /dev files, active-low, over a fake GPIO port.
+cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include -Isrc/drivers/led \
+  tests/led_test.c src/drivers/led/led.c src/drivers/led/gpio_led.c \
+  src/drivers/led/console_led.c src/subsystems/vfs/vfs.c -o /tmp/homecore-led-test
+/tmp/homecore-led-test
+
+# STM32 GPIO drivers against fake registers; add -DTEST_STM32F1 with the
+# stm32f1 fake for the F1 driver.
+cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include \
+  -Itests/fakes/stm32f4 -Isrc/drivers/gpio tests/gpio_contract_test.c \
+  -o /tmp/homecore-gpio-test
+/tmp/homecore-gpio-test
 ```
 
 After building the QEMU presets, run the integration regression on each
@@ -257,8 +279,12 @@ python3 tests/qemu_files_test.py --board stm32vldiscovery
 It uses `build/lm3s6965evb/homecore` or `build/stm32vldiscovery-qemu/homecore`
 unless `--firmware` names another ELF. It checks shell/system/file commands,
 sessions, repeated create/remove cycles, BASIC at and just past the board's
-nesting limit, the stack high-water mark from `mem`, and reboot. Host tests exercise portable logic with stubs;
-QEMU tests exercise the LM3S firmware. Neither validates STM32 peripheral behavior.
+nesting limit, the console LEDs through `/dev/ledN`, `write`, and BASIC's
+`led()`/`ledget()`, the littlefs volume at `/ram` (LM3S), the stack high-water
+mark from `mem`, and reboot. Host tests exercise portable logic with stubs,
+including the STM32 GPIO drivers against fake registers; QEMU tests exercise
+the emulated firmware. Neither validates STM32 peripheral behavior or GPIO
+LEDs, which QEMU does not model.
 
 For architecture/linker changes, inspect the ELF and map:
 

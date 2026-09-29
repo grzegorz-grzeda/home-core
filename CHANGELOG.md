@@ -5,6 +5,28 @@ All notable changes to HomeCore are recorded here. The format is based on
 follow [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html) as
 described in [versioning](docs/versioning.md).
 
+## [0.1.3] - 2026-09-29
+
+### Added
+- GPIO port drivers for STM32F4 (`st,stm32f4-gpio`) and STM32F1
+  (`st,stm32f1-gpio`), with the public `gpio_ops_t`/`gpio_port_t` interface;
+  ports GPIOA-I (F407) and GPIOA-E (F100) in the SoC descriptions.
+- LEDs: `homecore,gpio-led` (optionally active-low) and `homecore,console-led`,
+  a stand-in that prints `[ledN] on`/`off` for emulators without LEDs. Each
+  LED has a `/dev/ledN` file (read `0`/`1`; write `on`, `off`, `1`, `0`, or
+  `toggle`) and is numbered in `dt_led_table`; `led_set()`, `led_get()`,
+  `led_toggle()`, and `led_count()` use the numbers.
+- Board LEDs: STM32F4DISCOVERY `led0`-`led3` (PD12-PD15), STM32VLDISCOVERY
+  `led0`/`led1` (PC9/PC8; console LEDs in the QEMU build), LM3S6965EVB a
+  console `led0` (QEMU). GPIO LEDs are not yet checked on hardware.
+- BASIC functions `led(n, state)` and `ledget(n)`.
+- `write path text...` shell command.
+- Device descriptions: the `gpio` property type (a reference to an enabled
+  GPIO port, initialized first), `maximum` for integers, `unique-with`, and
+  `gpio: true`/`led: true` bindings.
+- Snapshot devices with a `write` operation accept write access; reads still
+  return the snapshot taken at open.
+
 ## [0.1.2] - 2026-09-29
 
 ### Added

@@ -11,4 +11,5 @@ int shell_builtin_rmdir(shell_context_t *context, int argc, char **argv);
 int shell_builtin_touch(shell_context_t *context, int argc, char **argv);
 int shell_builtin_rm(shell_context_t *context, int argc, char **argv);
 int shell_builtin_cp(shell_context_t *context, int argc, char **argv);
+int shell_builtin_write(shell_context_t *context, int argc, char **argv);
 #endif

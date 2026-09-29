@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include <string.h>
 
+/* Longest text the write command sends, including the newline. */
+#define SHELL_WRITE_CAPACITY 128U
+
 static int file_error(const char *command, const char *path) {
     printf("%s: %s: %s\n", command, path, strerror(errno));
     return 1;
@@ -228,5 +231,58 @@ int shell_builtin_cp(shell_context_t *context, int argc, char **argv) {
         }
     }
     (void)vfs_close(input);
+    return status;
+}
+
+/* Write all of text; returns 0 or -1 with errno set. */
+static int write_all(int fd, const char *text, size_t length) {
+    size_t offset = 0;
+    while (offset < length) {
+        int written = vfs_write(fd, text + offset, (unsigned)(length - offset));
+        if (written <= 0) {
+            if (written == 0) {
+                errno = EIO;
+            }
+            return -1;
+        }
+        offset += (size_t)written;
+    }
+    return 0;
+}
+
+int shell_builtin_write(shell_context_t *context, int argc, char **argv) {
+    if (argc < 3) {
+        puts("Usage: write path text...");
+        return 1;
+    }
+    /* The words joined by spaces, with a trailing newline, as one write, so
+     * a device such as /dev/led0 receives the whole command at once. */
+    char text[SHELL_WRITE_CAPACITY];
+    size_t length = 0;
+    for (int i = 2; i < argc; i++) {
+        size_t size = strlen(argv[i]);
+        if (length + size + 1U >= sizeof(text)) {
+            errno = E2BIG;
+            return file_error("write", argv[1]);
+        }
+        memcpy(text + length, argv[i], size);
+        length += size;
+        text[length++] = i + 1 < argc ? ' ' : '\n';
+    }
+    char path[VFS_PATH_CAPACITY];
+    if (vfs_resolve_path(context->cwd, argv[1], path) < 0) {
+        return file_error("write", argv[1]);
+    }
+    int fd = vfs_open(path, O_WRONLY | O_CREAT | O_TRUNC);
+    if (fd < 0) {
+        return file_error("write", argv[1]);
+    }
+    int status = 0;
+    if (write_all(fd, text, length) < 0) {
+        status = file_error("write", argv[1]);
+    }
+    if (vfs_close(fd) < 0) {
+        status = file_error("write", argv[1]);
+    }
     return status;
 }

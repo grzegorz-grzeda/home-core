@@ -7,3 +7,8 @@ devices:
   usart1: {compatible: "st,stm32-usart", reg: 0x40013800, irq: 37, bus: apb2, status: disabled}
   usart2: {compatible: "st,stm32-usart", reg: 0x40004400, irq: 38, bus: apb1, status: disabled}
   usart3: {compatible: "st,stm32-usart", reg: 0x40004800, irq: 39, bus: apb1, status: disabled}
+  gpioa: {compatible: "st,stm32f1-gpio", reg: 0x40010800, clock-bit: 2, status: disabled}
+  gpiob: {compatible: "st,stm32f1-gpio", reg: 0x40010C00, clock-bit: 3, status: disabled}
+  gpioc: {compatible: "st,stm32f1-gpio", reg: 0x40011000, clock-bit: 4, status: disabled}
+  gpiod: {compatible: "st,stm32f1-gpio", reg: 0x40011400, clock-bit: 5, status: disabled}
+  gpioe: {compatible: "st,stm32f1-gpio", reg: 0x40011800, clock-bit: 6, status: disabled}

@@ -673,7 +673,9 @@ int vfs_open(const char *name, int flags) {
             errno = EISDIR;
             return -1;
         }
-        if (node->ops.snapshot &&
+        /* Snapshot devices are read-only unless they provide write; then
+         * O_CREAT, O_TRUNC, and O_APPEND are accepted and have no effect. */
+        if (node->ops.snapshot && !node->ops.write &&
             (access != O_RDONLY || (flags & (O_TRUNC | O_APPEND | O_CREAT)))) {
             errno = EACCES;
             return -1;
@@ -860,8 +862,18 @@ int vfs_write(int fd, const void *buf, unsigned len) {
         return (int)len;
     }
     if (file->node->ops.snapshot) {
-        errno = EBADF;
-        return -1;
+        if ((file->flags & O_ACCMODE) == O_RDONLY || !file->node->ops.write) {
+            errno = EBADF;
+            return -1;
+        }
+        if (!len) {
+            return 0;
+        }
+        if (!buf) {
+            errno = EFAULT;
+            return -1;
+        }
+        return file->node->ops.write(file->node, buf, len);
     }
 
     if (file->node->ops.write) {

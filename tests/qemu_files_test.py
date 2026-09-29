@@ -6,13 +6,14 @@ import subprocess
 import time
 
 # QEMU machine, default firmware, console devices the SoC registers, the
-# BASIC nesting limit from the board's defconfig, and the mounted filesystem
-# (None when the board mounts none).
+# BASIC nesting limit from the board's defconfig, the mounted filesystem
+# (None when the board mounts none), and the number of LEDs. QEMU models no
+# LEDs, so both boards use console LEDs that print "[ledN] on/off".
 BOARDS = {
     "lm3s6965evb": ("lm3s6965evb", "build/lm3s6965evb/homecore",
-                    ("uart0", "uart1", "uart2"), 8, "/ram"),
+                    ("uart0", "uart1", "uart2"), 8, "/ram", 1),
     "stm32vldiscovery": ("stm32vldiscovery", "build/stm32vldiscovery-qemu/homecore",
-                         ("uart0",), 4, None),
+                         ("uart0",), 4, None, 2),
 }
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -20,7 +21,7 @@ parser.add_argument("--board", choices=sorted(BOARDS), default="lm3s6965evb",
                     help="board to emulate (default: lm3s6965evb)")
 parser.add_argument("--firmware", help="firmware ELF to test (default: the board's preset build)")
 args = parser.parse_args()
-machine, default_firmware, uarts, nesting, mount = BOARDS[args.board]
+machine, default_firmware, uarts, nesting, mount, leds = BOARDS[args.board]
 
 process = subprocess.Popen(
     ["qemu-system-arm", "-M", machine, "-kernel",
@@ -51,8 +52,19 @@ try:
     prompt()
     assert "dev/\n" in command("ls")
     devices = command("ls /dev")
-    for name in uarts + ("uptime",):
+    for name in uarts + ("uptime",) + tuple(f"led{i}" for i in range(leds)):
         assert name + "\n" in devices, devices
+    assert f"led{leds}\n" not in devices, devices
+    for i in range(leds):
+        assert re.search(r"(?m)^0$", command(f"cat /dev/led{i}"))
+        assert f"[led{i}] on" in command(f"write /dev/led{i} on")
+        assert re.search(r"(?m)^1$", command(f"cat /dev/led{i}"))
+        assert f"[led{i}] off" in command(f"write /dev/led{i} toggle")
+        assert f"[led{i}] on" in command(f"write /dev/led{i} 1")
+        assert re.search(r"(?m)^1$", command(f"cat dev/led{i}"))
+    assert "Invalid argument" in command("write /dev/led0 blink")
+    assert "Usage:" in command("write /dev/led0")
+    assert "No such file" in command("write /missing/file on")
     assert command("mkdir /tmp").endswith("$ ")
     assert "tmp/\n" in command("ls /")
     command("mkdir /tmp/one /tmp/two")
@@ -137,6 +149,15 @@ try:
     assert re.search(r"(?m)^7$", command(calls(nesting), b"> ")), nesting
     assert "expression too deeply nested" in command(calls(nesting + 1), b"> ")
     assert "42" in command("PRINT 6 * 7", b"> ")
+    output = command("PRINT led(0, 0)", b"> ")
+    assert "[led0] off" in output and re.search(r"(?m)^0$", output), output
+    assert re.search(r"(?m)^0$", command("PRINT ledget(0)", b"> "))
+    output = command("PRINT led(0, 5)", b"> ")
+    assert "[led0] on" in output and re.search(r"(?m)^1$", output), output
+    assert re.search(r"(?m)^1$", command("PRINT ledget(0)", b"> "))
+    for text in (f"PRINT led({leds}, 1)", "PRINT led(0.5, 1)", "PRINT led(-1, 1)",
+                 f"PRINT ledget({leds})"):
+        assert re.search(r"(?m)^-1$", command(text, b"> ")), text
     process.stdin.write(b"\x03")
     process.stdin.flush()
     prompt()
@@ -158,13 +179,14 @@ try:
     assert "Rebooting..." in restarted and "HomeCore OS" in restarted, restarted
     assert restarted.endswith("root:/$ "), restarted
     assert "No such file" in command("ls /volatile")
+    assert re.search(r"(?m)^0$", command("cat /dev/led0"))  # LEDs start off
     if mount:
         # The ramdisk is formatted at every boot: the file did not survive.
         assert command(f"ls {mount}").endswith("$ ")
         assert "No such file" in command(f"ls {mount}/kept")
     print(f"PASS: QEMU {args.board} system/file commands, sessions, create/remove cycles, "
-          f"BASIC nesting limit {nesting}, {'filesystem at ' + mount if mount else 'no mounts'} "
-          "and reboot")
+          f"BASIC nesting limit {nesting}, {'filesystem at ' + mount if mount else 'no mounts'}, "
+          f"console LEDs: {leds}, and reboot")
 finally:
     process.terminate()
     process.wait(timeout=3)

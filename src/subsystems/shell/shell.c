@@ -74,6 +74,8 @@ void shell_init(void) {
     shell_register_command("touch", "Create empty files: touch path...", shell_builtin_touch);
     shell_register_command("rm", "Remove files: rm path...", shell_builtin_rm);
     shell_register_command("cp", "Copy a file: cp source target", shell_builtin_cp);
+    shell_register_command(
+        "write", "Write text to a file or device: write path text...", shell_builtin_write);
     shell_register_command("cd", "Change working directory: cd [path]", shell_builtin_cd);
     shell_register_command("pwd", "Print working directory", shell_builtin_pwd);
     shell_register_command("whoami", "Print current user", shell_builtin_whoami);

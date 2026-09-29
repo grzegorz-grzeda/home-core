@@ -2,3 +2,10 @@
 # controller and runs the CPU at a fixed 24 MHz, so board_init() skips clock
 # setup. Not for physical hardware. Used by the stm32vldiscovery-qemu preset.
 clock_setup: false
+# QEMU models neither GPIO nor LEDs: report LED changes on the console instead.
+devices:
+  gpioc: {status: disabled}
+  led0: {status: disabled}
+  led1: {status: disabled}
+  qemu_led0: {status: okay}
+  qemu_led1: {status: okay}

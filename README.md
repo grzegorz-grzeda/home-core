@@ -37,7 +37,8 @@ For STM32 flashing and UART wiring, follow the board guide above.
 Implemented: UART console, shell commands, libc I/O and heap integration,
 RAM files/directories, mounted FAT (FatFs) and littlefs volumes on ramdisks,
 per-session working directories, user identity,
-1 kHz SysTick uptime, and BASIC with `millis()`.
+1 kHz SysTick uptime, GPIO-driven LEDs as `/dev/ledN` files (console
+stand-ins under QEMU), and BASIC with `millis()`, `led()`, and `ledget()`.
 
 Still planned: persistent storage, authentication and permissions, a scheduler
 and working thread switches, synchronization, a protected SVC syscall ABI,

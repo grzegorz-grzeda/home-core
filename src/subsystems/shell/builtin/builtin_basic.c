@@ -24,8 +24,10 @@
 /*---------------------------------------------------------------------------*/
 #include "builtin_basic.h"
 #include "g2basic.h"
+#include "homecore/drivers/led.h"
 #include "homecore/kernel/kernel.h"
 #include "homecore/shell/shell.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <math.h>
 #include <stdint.h>
@@ -105,12 +107,50 @@ static double basic_millis(double args[], int count) {
     return (double)k_uptime_ms();
 }
 
+/* Convert a BASIC number to an LED index; false unless it is a whole number
+ * naming an existing LED. */
+static bool led_index(double value, unsigned *index) {
+    /* The range check makes the conversion defined; the round trip rejects
+     * fractions without libm's floor(), which the firmware does not link. */
+    if (!(value >= 0.0) || value >= (double)led_count()) {
+        return false;
+    }
+    *index = (unsigned)value;
+    return (double)*index == value;
+}
+
+/* led(n, state): light LED n for a nonzero state, turn it off for 0. Returns
+ * the new state, 1 or 0, or -1 for an invalid LED or a driver failure. */
+static double basic_led(double args[], int count) {
+    (void)count;
+    unsigned index;
+    bool on = args[1] != 0.0;
+    if (!led_index(args[0], &index) || led_set(index, on) < 0) {
+        return -1.0;
+    }
+    return on ? 1.0 : 0.0;
+}
+
+/* ledget(n): 1 if LED n is lit, 0 if not, or -1 for an invalid LED or a
+ * driver failure. */
+static double basic_ledget(double args[], int count) {
+    (void)count;
+    unsigned index;
+    bool on;
+    if (!led_index(args[0], &index) || led_get(index, &on) < 0) {
+        return -1.0;
+    }
+    return on ? 1.0 : 0.0;
+}
+
 int shell_builtin_basic(shell_context_t *context, int argc, char **argv) {
     (void)context;
     (void)argc;
     (void)argv;
     g2basic_init(basic_output);
     g2basic_register_function("millis", 0, basic_millis);
+    g2basic_register_function("led", 2, basic_led);
+    g2basic_register_function("ledget", 1, basic_ledget);
     g2basic_set_number_output(basic_output_number);
 
     printf("G2BASIC Interpreter with line numbers. Ctrl-C/Ctrl-D/Ctrl-Z to "

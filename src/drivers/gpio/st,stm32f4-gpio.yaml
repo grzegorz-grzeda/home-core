@@ -1,0 +1,19 @@
+# Binding for STM32F4 GPIO ports.
+compatible: st,stm32f4-gpio
+description: STM32F4 GPIO port with 16 pins; the driver enables the port clock.
+driver: stm32f4_gpio
+sources: [stm32f4_gpio.c]
+gpio: true
+properties:
+  reg:
+    type: int
+    required: true
+    unique: true
+    field: base
+    description: Register block address.
+  clock-bit:
+    type: int
+    required: true
+    maximum: 31
+    field: clock_bit
+    description: The port's enable bit in RCC_AHB1ENR (GPIOA is 0).

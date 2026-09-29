@@ -20,4 +20,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-target_sources(${PROJECT_NAME} PRIVATE console.c)
+target_sources(${PROJECT_NAME} PRIVATE console.c led/led.c)

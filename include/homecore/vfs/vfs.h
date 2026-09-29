@@ -122,12 +122,15 @@ typedef struct {
     int (*lseek)(vfs_node_t *node, int offset, int whence);
 
     /**
-     * Optional read-only snapshot generated at open. Write at most @p capacity
-     * bytes into @p buf and return the length, or -1 if the content does not
-     * fit. The VFS then handles partial reads, end of file, and seeking
-     * independently for each descriptor, and ignores `read`, `write`, and
-     * `lseek`. Snapshot nodes can be opened only with `O_RDONLY` and no
-     * creation, truncation, or append flags.
+     * Optional snapshot generated at open. Write at most @p capacity bytes
+     * into @p buf and return the length, or -1 if the content does not fit.
+     * The VFS then handles partial reads, end of file, and seeking
+     * independently for each descriptor, and ignores `read` and `lseek`.
+     * Without a `write` operation, snapshot nodes can be opened only with
+     * `O_RDONLY` and no creation, truncation, or append flags. With one, they
+     * also accept write access, each vfs_write() is forwarded to `write`, and
+     * `O_CREAT`, `O_TRUNC`, and `O_APPEND` have no effect; the snapshot still
+     * reflects the state at open. The LED files use this.
      */
     int (*snapshot)(vfs_node_t *node, char *buf, unsigned capacity);
 } vfs_ops_t;
@@ -312,7 +315,8 @@ int vfs_list(const char *path, vfs_directory_visitor_t visitor, void *context);
  * @return A descriptor from 0 to `CONFIG_HOMECORE_VFS_MAX_OPEN_FILES - 1`;
  *         a negative result from the node's `open` operation; or -1 with
  *         `errno` set to `EINVAL` (invalid access mode), `EACCES` (`O_TRUNC`
- *         with `O_RDONLY`, or write access to a snapshot device), `EMFILE`,
+ *         with `O_RDONLY`, or write access to a read-only snapshot device),
+ *         `EMFILE`,
  *         `EEXIST`, `EISDIR`, `ENOENT`, `ENOTDIR`, `ENAMETOOLONG`, `ENOSPC`
  *         (`CONFIG_HOMECORE_VFS_MAX_RAM_FILES` files exist), `ENOMEM` (the
  *         descriptor or new file cannot be allocated; nothing is created or
@@ -365,7 +369,7 @@ int vfs_read(int fd, void *buf, unsigned len);
  * @param len Number of bytes to write.
  *
  * @return Bytes written; -1 on failure (`errno` is `EBADF` for a read-only
- *         descriptor or snapshot device, `EFAULT`, `EFBIG` beyond
+ *         descriptor or a snapshot device without `write`, `EFAULT`, `EFBIG` beyond
  *         `CONFIG_HOMECORE_VFS_MAX_FILE_SIZE`, `ENOMEM`, `ENOSPC` when a
  *         mounted filesystem is full, or set by the driver or filesystem); -2
  *         for a closed descriptor.
