@@ -286,6 +286,30 @@ each page header with the `project()` version and short commit, unless
 include-dependency graphs for each header, collaboration graphs for structures,
 and a group hierarchy graph for each module.
 
+### Board pages
+
+The site's **Supported boards** page and one page per board live in
+`docs/doxygen/boards/`. They summarize each board's status, specifications,
+console wiring, and memory map, and link to the full guide in `docs/boards/`.
+When a board's support, pins, clock, memory limits, or validation status
+changes, update both its Markdown guide and its page.
+
+The diagrams are SVG files in `docs/assets/boards/`, inlined with
+`@htmlinclude[block] <file>.svg` (the directory is the Doxyfile's
+`EXAMPLE_PATH`). Each SVG sets light colours as presentation attributes, so it
+also reads correctly when opened on its own, and tags elements with `hc-*`
+classes (`hc-panel`, `hc-accent`, `hc-wire`, `hc-text`, `hc-muted`, and so on)
+that `homecore.css` recolours for light and dark mode. Keep a `<title>` and
+`<desc>` in each file for screen readers, and make their `id` values unique
+across the site.
+
+Doxygen 1.9.8 closes an HTML `<div>` at a blank line or a Markdown table. Inside
+the card and panel layouts (`hc-board-grid`, `hc-card`, `hc-board-header`,
+`hc-spec-panel`), use HTML tables and lists without blank lines. Put Markdown
+tables and code blocks outside them.
+
+### Other ways to build
+
 For a quick check of HomeCore's headers alone, `doxygen Doxyfile` still works
 and needs only the theme submodule. It omits the G2Basic reference and its
 main-page section. Set `HOMECORE_DOCS_VERSION` to show a version.

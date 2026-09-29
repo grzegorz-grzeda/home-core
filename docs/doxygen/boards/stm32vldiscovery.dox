@@ -1,0 +1,114 @@
+/**
+@page board_stm32vldiscovery STM32VLDISCOVERY
+@tableofcontents
+
+<div class="hc-board-header">
+<div>
+The `stm32vldiscovery` target supports ST's STM32VLDISCOVERY board with an
+STM32F100RB. With 8 KB of RAM it is the smallest HomeCore target. It runs the
+shell and VFS over a polling USART1 console with a 1 kHz SysTick.
+<div class="hc-badges"><span class="hc-badge hc-ok">QEMU tested in CI</span><span class="hc-badge hc-pending">Hardware pending</span></div>
+QEMU's `stm32vldiscovery` machine runs this port, so it is the STM32 code path
+covered by the CI regression. The physical-board build, which adds PLL clock
+setup, has not been validated on hardware.
+</div>
+<div class="hc-spec-panel">
+<span class="hc-card-title">At a glance</span>
+<table class="hc-specs">
+<tr><th>SoC</th><td>ST STM32F100RB (`st/stm32f100`)</td></tr>
+<tr><th>Core</th><td>Cortex-M3</td></tr>
+<tr><th>Flash</th><td>128 KB at `0x08000000`</td></tr>
+<tr><th>RAM</th><td>8 KB at `0x20000000`</td></tr>
+<tr><th>Clock</th><td>24 MHz, PLL from HSI/2 &times; 6</td></tr>
+<tr><th>Console</th><td>USART1, PA9 TX / PA10 RX, 115200 8N1</td></tr>
+<tr><th>Presets</th><td>`stm32vldiscovery`, `stm32vldiscovery-qemu`</td></tr>
+</table>
+</div>
+</div>
+
+@section board_stm32vldiscovery_configs Build configurations
+
+| Preset | Defconfig | Clock setup | Use |
+| --- | --- | --- | --- |
+| `stm32vldiscovery` | `configs/stm32vldiscovery_defconfig` | PLL to 24 MHz | Physical board |
+| `stm32vldiscovery-qemu` | `configs/stm32vldiscovery_qemu_defconfig` | Skipped | QEMU only |
+
+```bash
+cmake --preset stm32vldiscovery-qemu -DPython3_EXECUTABLE="$PWD/.venv/bin/python"
+cmake --build --preset stm32vldiscovery-qemu
+bash scripts/run-qemu-stm32vldiscovery.sh
+python3 tests/qemu_files_test.py --board stm32vldiscovery
+```
+
+QEMU maps its first serial port to USART1. Exit the interactive session with
+Ctrl-A, then X.
+
+@warning Do not flash the QEMU build to a physical board. It skips clock setup,
+so the board would run at the 8 MHz reset clock while assuming 24 MHz.
+
+@section board_stm32vldiscovery_clock Clock
+
+With `CONFIG_HOMECORE_BOARD_CLOCK_SETUP` enabled, `board_init()` runs the PLL
+from HSI/2 &times; 6 = 24 MHz, the STM32F100 maximum, with undivided AHB, APB1,
+and APB2 clocks. Each step waits with a bounded iteration budget; a failure
+halts before the console starts, so diagnose it with a debugger.
+
+QEMU does not model the clock controller or GPIO: reads return 0 and writes are
+ignored. Its CPU and SysTick clock is fixed at 24 MHz, so the QEMU defconfig
+disables clock setup and the board reports 24 MHz in both configurations.
+
+@section board_stm32vldiscovery_memory Memory budget
+
+@htmlinclude[block] stm32vldiscovery-memory.svg
+
+Both defconfigs change four defaults to fit 8 KB of RAM:
+
+| Setting | Default | This board |
+| --- | --- | --- |
+| `CONFIG_HOMECORE_KERNEL_MAIN_STACK_SIZE` | 3072 | 2048 |
+| `CONFIG_HOMECORE_SHELL_BASIC_MAX_NESTING` | 8 | 4 |
+| `CONFIG_HOMECORE_VFS_MAX_FILE_SIZE` | 4096 | 1024 |
+| `CONFIG_HOMECORE_KERNEL_STDIO_BUFFERED` | y | n (saves about 2 KB of heap) |
+
+VFS entries and descriptors use heap only while they exist, so the default caps
+of 16 files, 16 directories, and 16 open files are kept. In QEMU, about 450
+bytes of heap are used after boot, and 16 directories plus 16 empty files add
+about 2 KB. File contents, BASIC programs, and variables share the remaining
+heap. When it runs out, creating an entry fails with "Not enough space"
+(`ENOMEM`), which differs from "No space left on device" at a cap.
+
+BASIC lines may nest parentheses, unary signs, function calls, and
+`IF ... THEN` up to 4 levels. Measured stack peaks in QEMU are about 0.9 KB for
+file commands and 1.7 KB for BASIC at the nesting limit, leaving about 380 bytes
+of margin. `mem` reports heap use and the stack high-water mark.
+
+@section board_stm32vldiscovery_console Console wiring (physical board)
+
+@htmlinclude[block] stm32vldiscovery-wiring.svg
+
+| Board pin | Adapter pin |
+| --- | --- |
+| PA9 (USART1 TX) | RX |
+| PA10 (USART1 RX) | TX |
+| GND | GND |
+
+Use a 3.3 V USB-to-UART adapter at 115200 baud, 8N1, no flow control. The
+on-board ST-LINK/V1 has no virtual COM port. OpenOCD provides
+`board/stm32vldiscovery.cfg` for it; on Linux the ST-LINK/V1 needs the
+`usb-storage` quirk `483:3744:i`. These flashing steps have not been checked
+with this port:
+
+```bash
+openocd -f board/stm32vldiscovery.cfg \
+  -c "program build/stm32vldiscovery/homecore verify reset exit"
+```
+
+@section board_stm32vldiscovery_validation Hardware validation checklist
+
+Confirm the banner, `uptime` against elapsed time (which checks the 24 MHz
+PLL), `mem`, the file commands, `basic`, and `reboot`, as described in the
+[porting guide](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/porting.md#validation).
+
+The full board guide is
+[docs/boards/stm32vldiscovery.md](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/boards/stm32vldiscovery.md).
+*/

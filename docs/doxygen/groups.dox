@@ -18,6 +18,16 @@ The source is on [GitHub](https://github.com/grzegorz-grzeda/home-core).
 | [Porting](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/porting.md) | Adding boards, SoCs, and architecture support |
 | [Versioning](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/versioning.md) | SemVer rules, the public interface, and the changelog |
 
+@section mainpage_boards Boards
+
+| Board | Core | Status |
+| --- | --- | --- |
+| @ref board_lm3s6965evb "LM3S6965EVB" | Cortex-M3, 64 KB RAM | QEMU tested in CI |
+| @ref board_stm32f4discovery "STM32F4DISCOVERY" | Cortex-M4F, 128 KB RAM | Builds in CI; hardware validation pending |
+| @ref board_stm32vldiscovery "STM32VLDISCOVERY" | Cortex-M3, 8 KB RAM | QEMU tested in CI; hardware validation pending |
+
+@ref boards compares features, memory, and build presets.
+
 @section mainpage_layers Layers
 
 The API is grouped by layer. Each header defines one module group.

@@ -1,0 +1,79 @@
+/**
+@page board_lm3s6965evb LM3S6965EVB (QEMU)
+@tableofcontents
+
+<div class="hc-board-header">
+<div>
+The `lm3s6965evb` target is the development and regression platform. It runs
+in QEMU's `lm3s6965evb` machine, which emulates TI's Stellaris LM3S6965
+evaluation board. Every CI run builds it and runs the command regression
+against it.
+<div class="hc-badges"><span class="hc-badge hc-ok">QEMU tested in CI</span><span class="hc-badge hc-info">Emulator only</span></div>
+The port relies on QEMU's emulated reset state. It does not configure real
+GPIO, UART baud rates, or a physical oscillator, so physical Stellaris
+bring-up is not covered.
+</div>
+<div class="hc-spec-panel">
+<span class="hc-card-title">At a glance</span>
+<table class="hc-specs">
+<tr><th>SoC</th><td>TI LM3S6965 (`ti/lm3s6965`)</td></tr>
+<tr><th>Core</th><td>Cortex-M3</td></tr>
+<tr><th>Flash</th><td>256 KB at `0x00000000`</td></tr>
+<tr><th>RAM</th><td>64 KB at `0x20000000`</td></tr>
+<tr><th>Clock</th><td>12.5 MHz reported, no clock setup</td></tr>
+<tr><th>Console</th><td>UART0 through QEMU serial</td></tr>
+<tr><th>Presets</th><td>`lm3s6965evb`, `lm3s6965evb-release`</td></tr>
+</table>
+</div>
+</div>
+
+@section board_lm3s6965evb_run Build and run
+
+```bash
+cmake --preset lm3s6965evb -DPython3_EXECUTABLE="$PWD/.venv/bin/python"
+cmake --build --preset lm3s6965evb
+bash scripts/run-qemu-lm3s6965evb.sh
+```
+
+The script boots `build/lm3s6965evb/homecore` with `-nographic`. Exit with
+Ctrl-A, then X. Try `help`, `uptime`, `cat /dev/uptime`, `mem`, the file
+commands, and `reboot`. Reboot discards RAM files and resets the session.
+
+For the non-interactive regression, run:
+
+```bash
+python3 tests/qemu_files_test.py
+```
+
+@section board_lm3s6965evb_console Console and devices
+
+@htmlinclude[block] lm3s6965evb-qemu.svg
+
+The SoC registers `/dev/uart0`, `/dev/uart1`, and `/dev/uart2`. Standard input,
+output, and error use UART0. The other nodes are not additional shell sessions.
+
+@section board_lm3s6965evb_clock Clock and uptime
+
+`board_cpu_clock_hz()` returns 12.5 MHz, which matches QEMU's Stellaris reset
+divider configuration; see the
+[QEMU model](https://github.com/qemu/qemu/blob/master/hw/arm/stellaris.c).
+Uptime follows guest virtual time and stops while emulation is paused. Update
+the clock reporting if clock setup or physical hardware support is added.
+
+@section board_lm3s6965evb_memory Memory
+
+@htmlinclude[block] lm3s6965evb-memory.svg
+
+The main stack uses the default `CONFIG_HOMECORE_KERNEL_MAIN_STACK_SIZE` of
+3 KB. `mem` reports heap use and the stack high-water mark.
+
+@section board_lm3s6965evb_limits Limitations
+
+- QEMU success verifies this emulated target only. It does not verify STM32
+  register programming or UART wiring.
+- The port is not suitable for a physical LM3S6965EVB without clock, GPIO, and
+  UART initialization.
+
+The full board guide is
+[docs/boards/lm3s6965evb.md](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/boards/lm3s6965evb.md).
+*/

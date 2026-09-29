@@ -26,6 +26,9 @@ STM32F407's CCM must not be merged into the contiguous main SRAM region.
 
 Add a configure/build preset with its own output directory and a board guide
 covering flashing, pin wiring, clock/memory choices, limitations, and validation.
+Add the board to the API site as well: a page in `docs/doxygen/boards/`, a card
+and feature-matrix column in `boards.dox`, and a row on the main page in
+`docs/doxygen/groups.dox`. See [board pages](development.md#board-pages).
 A board with little RAM can provide `configs/<board>_defconfig`, which CMake
 uses by default; check the stack high-water mark from `mem` when sizing it.
 

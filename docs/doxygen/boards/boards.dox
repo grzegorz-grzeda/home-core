@@ -95,15 +95,16 @@ cmake --preset <preset> -DPython3_EXECUTABLE="$PWD/.venv/bin/python"
 cmake --build --preset <preset>
 ```
 
-| Preset | Board | Defconfig | Build directory |
-| --- | --- | --- | --- |
-| `lm3s6965evb` | LM3S6965EVB | `configs/homecore_defconfig` | `build/lm3s6965evb` |
-| `lm3s6965evb-release` | LM3S6965EVB, Release | `configs/homecore_defconfig` | `build/lm3s6965evb-release` |
-| `stm32f4discovery` | STM32F4DISCOVERY | `configs/homecore_defconfig` | `build/stm32f4discovery` |
-| `stm32vldiscovery` | STM32VLDISCOVERY | `configs/stm32vldiscovery_defconfig` | `build/stm32vldiscovery` |
-| `stm32vldiscovery-qemu` | STM32VLDISCOVERY in QEMU | `configs/stm32vldiscovery_qemu_defconfig` | `build/stm32vldiscovery-qemu` |
+| Preset | Board | Defconfig |
+| --- | --- | --- |
+| `lm3s6965evb` | LM3S6965EVB | `configs/homecore_defconfig` |
+| `lm3s6965evb-release` | LM3S6965EVB, Release | `configs/homecore_defconfig` |
+| `stm32f4discovery` | STM32F4DISCOVERY | `configs/homecore_defconfig` |
+| `stm32vldiscovery` | STM32VLDISCOVERY | `configs/stm32vldiscovery_defconfig` |
+| `stm32vldiscovery-qemu` | STM32VLDISCOVERY in QEMU | `configs/stm32vldiscovery_qemu_defconfig` |
 
-Each build writes the ELF `homecore` and the raw image `homecore.bin`. A board
+Each preset builds into `build/<preset>/`, writing the ELF `homecore` and the
+raw image `homecore.bin`. A board
 uses `configs/<board>_defconfig` when that file exists and
 `configs/homecore_defconfig` otherwise.
 
