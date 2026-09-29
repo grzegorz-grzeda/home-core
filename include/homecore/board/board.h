@@ -36,26 +36,24 @@ extern "C" {
 #endif
 /*---------------------------------------------------------------------------*/
 #include <stdint.h>
+#include "homecore/devicetree.h"
 /*---------------------------------------------------------------------------*/
 /**
  * @defgroup board Board support
  * @ingroup hal
  * @brief Board-specific clock policy, pin wiring, console, and panic output.
  *
- * Each board implements this interface in `src/board/<name>/board.c`. The
- * board owns the console UART that the kernel opens as `/dev/uart0`.
+ * Each board implements board_init(), board_cpu_clock_hz(), and board_panic()
+ * in `src/board/<name>/board.c`, and describes its hardware in `board.yaml`.
+ * The `board_uart_*` functions are implemented once, in `src/drivers/console.c`,
+ * on the console chosen by the description.
  * @{
  */
 /*---------------------------------------------------------------------------*/
 /** @brief Stringify @p x without macro-expanding it first. */
 #define BOARD_STRINGIFY(x) #x
-/**
- * @brief Intended to hold the board name as a string.
- *
- * @warning Unused. BOARD_STRINGIFY() does not expand its argument, so this
- *          macro yields `"HOMECORE_BOARD_NAME"` rather than the board name.
- */
-#define BOARD BOARD_STRINGIFY(HOMECORE_BOARD_NAME)
+/** @brief Board name string from `board.yaml`, such as `"STM32VLDISCOVERY"`. */
+#define BOARD DT_BOARD_NAME
 /*---------------------------------------------------------------------------*/
 /**
  * @brief Initialize board clocks, pins, and the console UART.

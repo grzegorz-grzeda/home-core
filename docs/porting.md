@@ -9,15 +9,15 @@ while preserving their existing behavior.
 
 Create `src/board/<name>/` with:
 
-- `board.cmake`: set `HOMECORE_SOC` and `HOMECORE_BOARD_LINKER_SCRIPT` using
-  `CMAKE_CURRENT_LIST_DIR`.
-- `board.yaml`: the board's clocks (`cpu` and every bus a device uses), the
-  devices it enables with their properties, and `chosen.console`. Memory comes
-  from the SoC description; override `memory` here only if the board differs.
-  See [device description](development.md#device-description).
-- `CMakeLists.txt`: add board sources and board identity definitions.
+- `board.yaml`: `name` (the `BOARD` string), `soc` (the SoC directory under
+  `src/soc`, such as `st/stm32f100`), the board's clocks (`cpu` and every bus a
+  device uses), the devices it enables with their properties, and
+  `chosen.console`. Memory comes from the SoC description; override `memory`
+  here only if the board differs. `HOMECORE_BOARD=<name>` selects the
+  directory. See [device description](development.md#device-description).
+- `CMakeLists.txt`: add board sources.
 - `board.c`: implement the interface in `include/homecore/board/board.h`.
-- `board.ld`: additional board sections, or an empty commented fragment.
+- `board.ld` (optional): additional board linker sections.
 
 `board_init()` configures clocks, peripheral clock gates, and GPIO alternate
 functions for the enabled devices; the drivers program the devices themselves
@@ -42,13 +42,14 @@ uses by default; check the stack high-water mark from `mem` when sizing it.
 
 ## SoC integration
 
-Create `src/soc/<vendor>/<chip>/` with `soc.cmake`, `CMakeLists.txt`, `soc.c`,
-`soc_cmsis.h`, `soc.yaml`, and a linker fragment. `soc.yaml` gives the flash
-and RAM banks at their real addresses (STM32F407's CCM must not be merged into
+Create `src/soc/<vendor>/<chip>/` with `CMakeLists.txt`, `soc.c`,
+`soc_cmsis.h`, `soc.yaml`, and optionally `soc.ld` for SoC linker sections.
+`soc.yaml` names the architecture (`arch`, a directory under `src/arch` with an
+`arch.cmake`, such as `arm/cortex-m3`) and gives the flash and RAM banks at
+their real addresses (STM32F407's CCM must not be merged into
 the contiguous main SRAM region) and every supported peripheral instance with
 `status: disabled`; add a driver and binding for a new peripheral type as
-described in [extending](extending.md#device-drivers). Set `HOMECORE_ARCH`, `HOMECORE_SOC_ID`, and
-`HOMECORE_SOC_LINKER_SCRIPT`. Make `soc_cmsis.h` expose the chip's CMSIS IRQ/core
+described in [extending](extending.md#device-drivers). Make `soc_cmsis.h` expose the chip's CMSIS IRQ/core
 configuration and peripheral definitions to the shared architecture sources.
 Pin vendor sources and retain their license and provenance.
 

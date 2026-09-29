@@ -25,10 +25,13 @@ the implementation before relying on them.
 
 ## Build selection
 
-`HOMECORE_BOARD` selects `src/board/<name>/board.cmake`, which sets
-`HOMECORE_SOC`. The SoC's `soc.cmake` selects `HOMECORE_ARCH`. The
-architecture's `arch.cmake` supplies CPU identity and linker sections. The
-corresponding CMake subdirectories add sources and include paths.
+Selection is data: `HOMECORE_BOARD` names `src/board/<name>/`, whose
+`board.yaml` names the SoC (`soc: st/stm32f100`), whose `soc.yaml` names the
+architecture (`arch: arm/cortex-m3`). The generator resolves the chain and
+reports it to CMake as `HOMECORE_SOC`, `HOMECORE_ARCH`, and the optional
+`soc.ld`/`board.ld` linker fragments. The architecture's `arch.cmake` supplies
+CPU identity and linker sections, and the corresponding CMake subdirectories
+add sources and include paths.
 
 Hardware is described in data, not code: `soc.yaml` lists the chip's memory
 and peripheral instances (all disabled), `board.yaml` enables devices and sets

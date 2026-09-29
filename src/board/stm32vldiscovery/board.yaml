@@ -1,5 +1,7 @@
 # STM32VLDISCOVERY: 24 MHz PLL with undivided AHB/APB clocks (see board.c);
 # QEMU's machine also runs at 24 MHz.
+name: STM32VLDISCOVERY
+soc: st/stm32f100
 clocks: {cpu: 24000000, apb1: 24000000, apb2: 24000000}
 devices:
   # PA9/PA10; board.c enables the clock and pins. Keeps the /dev/uart0 name.

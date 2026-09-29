@@ -5,6 +5,21 @@ All notable changes to HomeCore are recorded here. The format is based on
 follow [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html) as
 described in [versioning](docs/versioning.md).
 
+## [0.0.7] - 2026-09-29
+
+### Changed
+- Target selection is part of the device description: `board.yaml` names the
+  SoC (`soc:`) and `soc.yaml` names the architecture (`arch:`). The per-board
+  `board.cmake` and per-SoC `soc.cmake` files are removed, `soc.ld` and
+  `board.ld` are optional, and the unused `HOMECORE_SOC_ID` is gone.
+- A layer that sets a key it does not own, such as `arch` in a board, is
+  rejected at configure time.
+
+### Fixed
+- The `BOARD` macro yields the board name from `board.yaml` (`DT_BOARD_NAME`)
+  instead of the literal `"HOMECORE_BOARD_NAME"`. The per-board
+  `HOMECORE_BOARD_NAME` and `HOMECORE_BOARD` compile definitions are removed.
+
 ## [0.0.6] - 2026-09-29
 
 ### Added

@@ -1,4 +1,6 @@
 # LM3S6965EVB in QEMU. The clock is QEMU's reset configuration (200 MHz / 16).
+name: LM3S6965EVB
+soc: ti/lm3s6965
 clocks: {cpu: 12500000}
 devices:
   uart0: {status: okay}

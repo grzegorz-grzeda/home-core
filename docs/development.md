@@ -71,9 +71,14 @@ key:
 
 | Layer | File | Contents |
 | --- | --- | --- |
-| SoC | `src/soc/<vendor>/<chip>/soc.yaml` | `memory` (flash and RAM base and size) and every peripheral instance, `status: disabled` |
-| Board | `src/board/<board>/board.yaml` | `clocks` (`cpu` plus named buses), enabled devices and their properties, `chosen.console` |
-| Overlays | files in `HOMECORE_DT_OVERLAYS` | build-specific changes, for example `-DHOMECORE_DT_OVERLAYS=path/to/debug.yaml` |
+| SoC | `src/soc/<vendor>/<chip>/soc.yaml` | `arch`, `memory` (flash and RAM base and size), and every peripheral instance, `status: disabled` |
+| Board | `src/board/<board>/board.yaml` | `name`, `soc`, `clocks` (`cpu` plus named buses), enabled devices and their properties, `memory` overrides, `chosen.console` |
+| Overlays | files in `HOMECORE_DT_OVERLAYS` | changes to `memory`, `clocks`, `devices`, or `chosen`, for example `-DHOMECORE_DT_OVERLAYS=path/to/debug.yaml` |
+
+The board selects the SoC and the SoC selects the architecture; a layer that
+sets a key it does not own (`arch` in a board, `clocks` in a SoC, `soc` in an
+overlay) is rejected. `name` defaults to the board directory name and becomes
+`DT_BOARD_NAME` and the `BOARD` macro.
 
 ```yaml
 # soc.yaml
@@ -103,10 +108,10 @@ or not console-capable.
 
 | Output | Contents |
 | --- | --- |
-| `include/homecore/devicetree.h` | `DT_CPU_CLOCK_HZ`, `DT_CHOSEN_CONSOLE_PATH`, `DT_DEVICE_COUNT`, `dt_init()` |
+| `include/homecore/devicetree.h` | `DT_BOARD_NAME`, `DT_CPU_CLOCK_HZ`, `DT_CHOSEN_CONSOLE_PATH`, `DT_DEVICE_COUNT`, `dt_init()` |
 | `generated/devicetree.c` | per device a `static const <driver>_config_t` (flash) and a `<driver>_t` instance (RAM), `dt_console`, and `dt_init()` |
 | `generated/memory.ld` | the linker `MEMORY` block |
-| `generated/devicetree.cmake` | driver sources and include directories to compile |
+| `generated/devicetree.cmake` | the selected SoC and architecture, linker fragment paths, input files, and driver sources and include directories |
 
 Only drivers with an enabled device are compiled. Editing a description,
 binding, or the generator reruns configuration on the next build. Driver

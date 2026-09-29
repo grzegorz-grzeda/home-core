@@ -28,7 +28,3 @@ target_compile_options(${PROJECT_NAME} PRIVATE
     -ffreestanding
     -fno-builtin
 )
-
-target_compile_definitions(${PROJECT_NAME} PUBLIC
-    HOMECORE_BOARD=LM3S6965EVB
-)

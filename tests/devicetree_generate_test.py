@@ -15,6 +15,7 @@ generator = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(generator)
 
 SOC = """
+arch: test/cpu
 memory:
   flash: {base: 0x08000000, size: 128K}
   ram: {base: 0x20000000, size: 8K}
@@ -23,6 +24,7 @@ devices:
   usart2: {compatible: "st,stm32-usart", reg: 0x40004400, irq: 38, bus: apb1, status: disabled}
 """
 BOARD = """
+soc: test/chip
 clocks: {cpu: 24000000, apb1: 24000000, apb2: 24000000}
 devices:
   usart1: {status: okay, devname: uart0}
@@ -31,21 +33,33 @@ chosen: {console: usart1}
 
 
 class DevicetreeTest(unittest.TestCase):
-    def run_generator(self, soc=SOC, board=BOARD, overlays=()):
-        """Returns (exit status, stderr, outputs by name)."""
+    def run_generator(self, soc=SOC, board=BOARD, overlays=(), board_ld=False, real_board=None):
+        """Returns (exit status, stderr, outputs by name). real_board runs a repository board."""
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            files = {"soc": soc, "board": board}
-            files.update({f"overlay{i}": text for i, text in enumerate(overlays)})
-            for name, text in files.items():
-                (root / f"{name}.yaml").write_text(textwrap.dedent(text))
+            soc_root, arch_root = root / "soc", root / "arch"
+            (soc_root / "test/chip").mkdir(parents=True)
+            (soc_root / "test/chip/soc.yaml").write_text(textwrap.dedent(soc))
+            (arch_root / "test/cpu").mkdir(parents=True)
+            (arch_root / "test/cpu/arch.cmake").write_text("")
+            board_path = root / "myboard/board.yaml"
+            board_path.parent.mkdir()
+            board_path.write_text(textwrap.dedent(board))
+            if board_ld:
+                (board_path.parent / "board.ld").write_text("/* board */\n")
+            if real_board:
+                board_path = ROOT / f"src/board/{real_board}/board.yaml"
+                soc_root, arch_root = ROOT / "src/soc", ROOT / "src/arch"
             outputs = {name: root / "out" / name for name in ("h", "c", "ld", "cmake")}
-            argv = ["devicetree_generate.py", "--soc", str(root / "soc.yaml"),
-                    "--board", str(root / "board.yaml"), "--bindings", str(ROOT / "src/drivers"),
+            argv = ["devicetree_generate.py", "--board", str(board_path),
+                    "--soc-root", str(soc_root), "--arch-root", str(arch_root),
+                    "--bindings", str(ROOT / "src/drivers"),
                     "--header", str(outputs["h"]), "--source", str(outputs["c"]),
                     "--memory", str(outputs["ld"]), "--cmake", str(outputs["cmake"])]
-            for i in range(len(overlays)):
-                argv += ["--overlay", str(root / f"overlay{i}.yaml")]
+            for i, text in enumerate(overlays):
+                overlay = root / f"overlay{i}.yaml"
+                overlay.write_text(textwrap.dedent(text))
+                argv += ["--overlay", str(overlay)]
             stderr = io.StringIO()
             with patch("sys.argv", argv), redirect_stderr(stderr):
                 status = generator.main()
@@ -68,6 +82,26 @@ class DevicetreeTest(unittest.TestCase):
         self.assertNotIn("usart2", out["c"])       # disabled: no instance
         self.assertIn("RAM (rwx) : ORIGIN = 0x20000000, LENGTH = 8192", out["ld"])
         self.assertIn("stm32_usart.c", out["cmake"])
+        self.assertIn('set(HOMECORE_SOC "test/chip")', out["cmake"])
+        self.assertIn('set(HOMECORE_ARCH "test/cpu")', out["cmake"])
+        self.assertIn('#define DT_BOARD_NAME "myboard"', out["h"])  # directory name default
+        self.assertIn("empty.ld", out["cmake"])  # no soc.ld or board.ld
+
+    def test_selection(self):
+        status, stderr, out = self.run_generator(board="name: MY_BOARD\n" + BOARD, board_ld=True)
+        self.assertEqual(status, 0, stderr)
+        self.assertIn('#define DT_BOARD_NAME "MY_BOARD"', out["h"])
+        self.assertRegex(out["cmake"], r'HOMECORE_BOARD_LINKER_SCRIPT ".*myboard/board.ld"')
+        self.assert_rejected("unknown SoC 'test/other'", board=BOARD.replace("test/chip", "test/other"))
+        self.assert_rejected("'soc' must name a SoC", board=BOARD.replace("soc: test/chip\n", ""))
+        self.assert_rejected("'soc' must name a SoC", board=BOARD.replace("test/chip", "../chip"))
+        self.assert_rejected("unknown architecture 'test/gpu'", soc=SOC.replace("test/cpu", "test/gpu"))
+        self.assert_rejected("not allowed in a board description: arch",
+                             board="arch: test/cpu\n" + BOARD)
+        self.assert_rejected("not allowed in a soc description: clocks",
+                             soc="clocks: {cpu: 1}\n" + SOC)
+        self.assert_rejected("not allowed in a overlay description: soc",
+                             overlays=["soc: test/chip"])
 
     def test_overlay_applies_last(self):
         status, stderr, out = self.run_generator(overlays=["devices: {usart1: {baud: 9600}}"])
@@ -116,14 +150,11 @@ class DevicetreeTest(unittest.TestCase):
         self.assert_rejected("memory.ram.size", soc=SOC.replace("size: 8K", "size: 8X"))
 
     def test_repository_descriptions_generate(self):
-        boards = {"lm3s6965evb": "ti/lm3s6965", "stm32f4discovery": "st/stm32f407",
-                  "stm32vldiscovery": "st/stm32f100"}
-        for board, soc in boards.items():
+        for board in ("lm3s6965evb", "stm32f4discovery", "stm32vldiscovery"):
             with self.subTest(board):
-                status, stderr, _ = self.run_generator(
-                    soc=(ROOT / f"src/soc/{soc}/soc.yaml").read_text(),
-                    board=(ROOT / f"src/board/{board}/board.yaml").read_text())
+                status, stderr, out = self.run_generator(real_board=board)
                 self.assertEqual(status, 0, stderr)
+                self.assertIn(f'#define DT_BOARD_NAME "{board.upper()}"', out["h"])
 
 
 if __name__ == "__main__":

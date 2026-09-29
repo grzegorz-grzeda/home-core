@@ -1,5 +1,6 @@
 # STM32F407: memory and peripherals, all disabled until a board enables them.
 # The 64 KB CCM RAM is a separate bank and is not described yet.
+arch: arm/cortex-m4
 memory:
   flash: {base: 0x08000000, size: 1024K}
   ram: {base: 0x20000000, size: 128K}

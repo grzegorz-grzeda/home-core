@@ -3,11 +3,11 @@ if(NOT DEFINED HOMECORE_BOARD_MEMORY)
 endif()
 
 if(NOT DEFINED HOMECORE_BOARD_LINKER_SCRIPT)
-    message(FATAL_ERROR "HOMECORE_BOARD_LINKER_SCRIPT is not defined by board")
+    message(FATAL_ERROR "HOMECORE_BOARD_LINKER_SCRIPT is not set by the device description")
 endif()
 
 if(NOT DEFINED HOMECORE_SOC_LINKER_SCRIPT)
-    message(FATAL_ERROR "HOMECORE_SOC_LINKER_SCRIPT is not defined by soc")
+    message(FATAL_ERROR "HOMECORE_SOC_LINKER_SCRIPT is not set by the device description")
 endif()
 
 if(NOT DEFINED HOMECORE_ARCH_LINKER_SCRIPT)

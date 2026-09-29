@@ -1,2 +1,1 @@
 target_sources(${PROJECT_NAME} PRIVATE board.c)
-target_compile_definitions(${PROJECT_NAME} PRIVATE HOMECORE_BOARD_NAME=STM32F4DISCOVERY)
