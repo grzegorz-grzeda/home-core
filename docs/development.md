@@ -48,15 +48,13 @@ cmake --build build/stm32f4discovery-release
 
 `Kconfig` includes subsystem definitions under `src/`. The default input is
 `configs/<board>_defconfig` when the board provides one, otherwise
-`configs/homecore_defconfig`. The `stm32vldiscovery-qemu` preset selects
-`configs/stm32vldiscovery_qemu_defconfig`. To use another input, copy a
+`configs/homecore_defconfig`. To use another input, copy a
 defconfig, edit its `CONFIG_...` settings, and configure with
 `-DHOMECORE_DEFCONFIG=/absolute/path`. The choice is cached per build directory.
 Rerun configuration after changing Kconfig or defconfig; generation happens at
 configure time. Editing build-directory `.config` does not persist changes.
 
-Useful settings include main stack size, stdio buffering, board clock setup
-(`CONFIG_HOMECORE_BOARD_CLOCK_SETUP`, disabled only for emulators), shell input/argument limits and prompt
+Useful settings include main stack size, stdio buffering, shell input/argument limits and prompt
 suffix, VFS open-file/directory/file limits, and maximum RAM-file size.
 Use the Kconfig files for current defaults and ranges. Disabling shell or VFS
 is not a validated minimal-system configuration: startup references them directly.
@@ -74,6 +72,11 @@ key:
 | SoC | `src/soc/<vendor>/<chip>/soc.yaml` | `arch`, `memory` (flash and RAM base and size), and every peripheral instance, `status: disabled` |
 | Board | `src/board/<board>/board.yaml` | `name`, `soc`, `clocks` (`cpu` plus named buses), enabled devices and their properties, `memory` overrides, `chosen.console` |
 | Overlays | files in `HOMECORE_DT_OVERLAYS` | changes to `memory`, `clocks`, `devices`, or `chosen`, for example `-DHOMECORE_DT_OVERLAYS=path/to/debug.yaml` |
+
+The board may also set `clock_setup: false` (usually from an overlay) for
+emulators that do not model the clock controller; boards then skip their
+clock setup (`DT_CLOCK_SETUP` is 0). The `stm32vldiscovery-qemu` preset applies
+`src/board/stm32vldiscovery/qemu.yaml` this way.
 
 The board selects the SoC and the SoC selects the architecture; a layer that
 sets a key it does not own (`arch` in a board, `clocks` in a SoC, `soc` in an
@@ -108,8 +111,8 @@ or not console-capable.
 
 | Output | Contents |
 | --- | --- |
-| `include/homecore/devicetree.h` | `DT_BOARD_NAME`, `DT_CPU_CLOCK_HZ`, `DT_CHOSEN_CONSOLE_PATH`, `DT_DEVICE_COUNT`, `dt_init()` |
-| `generated/devicetree.c` | per device a `static const <driver>_config_t` (flash) and a `<driver>_t` instance (RAM), `dt_console`, and `dt_init()` |
+| `include/homecore/devicetree.h` | `DT_BOARD_NAME`, `DT_CPU_CLOCK_HZ`, `DT_CLOCK_SETUP`, `DT_CHOSEN_CONSOLE_PATH`, `DT_DEVICE_COUNT`, `dt_init()`, `dt_irq_dispatch()` |
+| `generated/devicetree.c` | per device a `static const <driver>_config_t` (flash) and a `<driver>_t` instance (RAM), `dt_console`, `dt_init()`, and `dt_irq_dispatch()` |
 | `generated/memory.ld` | the linker `MEMORY` block |
 | `generated/devicetree.cmake` | the selected SoC and architecture, linker fragment paths, input files, and driver sources and include directories |
 

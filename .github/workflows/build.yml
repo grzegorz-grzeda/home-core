@@ -108,7 +108,7 @@ jobs:
       matrix:
         target: [lm3s6965evb, stm32f4discovery, stm32vldiscovery, stm32vldiscovery-qemu]
         build_type: [Debug, Release]
-        # Board, optional defconfig (default: the board's), and QEMU test board.
+        # Board, optional device-description overlay, and QEMU test board.
         include:
           - target: lm3s6965evb
             board: lm3s6965evb
@@ -119,11 +119,11 @@ jobs:
             board: stm32vldiscovery
           - target: stm32vldiscovery-qemu
             board: stm32vldiscovery
-            defconfig: configs/stm32vldiscovery_qemu_defconfig
+            overlay: src/board/stm32vldiscovery/qemu.yaml
             qemu_board: stm32vldiscovery
     env:
       TARGET_BOARD: ${{ matrix.board }}
-      TARGET_DEFCONFIG: ${{ matrix.defconfig }}
+      TARGET_OVERLAY: ${{ matrix.overlay }}
       BUILD_TYPE: ${{ matrix.build_type }}
       BUILD_DIR: build/ci/${{ matrix.target }}/${{ matrix.build_type }}
 
@@ -152,7 +152,7 @@ jobs:
             -DHOMECORE_BOARD="$TARGET_BOARD" \
             -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
             -DPython3_EXECUTABLE="$PWD/.venv/bin/python" \
-            ${TARGET_DEFCONFIG:+-DHOMECORE_DEFCONFIG="$PWD/$TARGET_DEFCONFIG"} \
+            ${TARGET_OVERLAY:+-DHOMECORE_DT_OVERLAYS="$PWD/$TARGET_OVERLAY"} \
             -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
 
       - name: Build firmware

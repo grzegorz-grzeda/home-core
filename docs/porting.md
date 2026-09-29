@@ -26,8 +26,8 @@ in `dt_init()`. `board_cpu_clock_hz()` must return `DT_CPU_CLOCK_HZ`, and
 `_Static_assert` against `DT_CPU_CLOCK_HZ` keeps them in step, as in the STM32
 boards. If an
 emulator runs the board but does not model its clock controller, put the clock
-setup under `CONFIG_HOMECORE_BOARD_CLOCK_SETUP` and provide an emulator
-defconfig that disables it, as `stm32vldiscovery` does.
+setup under `#if DT_CLOCK_SETUP` and provide an emulator overlay with
+`clock_setup: false`, as `stm32vldiscovery` does with `qemu.yaml`.
 Implement `board_panic()`: print through `board_uart_putc()` only when
 `console_ready()`, then `console_flush()` and halt. The `board_uart_*`
 functions are provided by `src/drivers/console.c` for the chosen console.
@@ -61,7 +61,8 @@ instantiates them after `board_init()`. The kernel opens the chosen console
 
 Provide the chip's peripheral vector entries in `.isr_vector.soc`, immediately
 after the 16 `.isr_vector.arch` entries. Preserve reserved slots and IRQ order;
-use safe default handlers for unimplemented interrupts. Do not link a second
+point every implemented peripheral vector at `arch_irq_entry()`, which
+dispatches through the device description; interrupts no device claims panic. Do not link a second
 vendor reset handler/vector table alongside HomeCore's shared startup.
 
 ## Architecture and linker integration
@@ -99,4 +100,4 @@ shared `arch.ld` for the current contract.
 
 A booting shell does not validate scheduling: SVC/PendSV are currently panic
 handlers. Peripheral interrupt drivers and thread support require additional
-implementation and tests beyond this polling-console bring-up.
+implementation and tests beyond this console bring-up.

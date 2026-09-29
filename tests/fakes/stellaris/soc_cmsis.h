@@ -7,5 +7,7 @@
 typedef struct {
     volatile uint32_t DR;
     volatile uint32_t FR;
+    volatile uint32_t IM;
+    volatile uint32_t ICR;
 } UART0_Type;
 #endif

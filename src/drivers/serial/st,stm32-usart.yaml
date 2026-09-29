@@ -1,9 +1,10 @@
-# Binding for STM32F1/F4 USARTs in polling mode.
+# Binding for STM32F1/F4 USARTs with interrupt-driven receive.
 compatible: st,stm32-usart
-description: STM32 USART, 8N1, polling. Board code enables its clock and pins.
+description: STM32 USART, 8N1, interrupt-driven receive, polled transmit. Board code enables its clock and pins.
 driver: stm32_usart
 sources: [stm32_usart.c]
 console: true
+isr: true
 properties:
   reg:
     type: int
@@ -15,7 +16,8 @@ properties:
     type: int
     required: true
     unique: true
-    description: NVIC interrupt number; checked but unused while the driver polls.
+    field: irq
+    description: NVIC interrupt number of the receive interrupt.
   bus:
     type: clock
     required: true

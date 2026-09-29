@@ -11,7 +11,7 @@
 /**
  * @defgroup console Console
  * @ingroup drivers
- * @brief Polling access to the device named by `chosen.console`.
+ * @brief Direct access, outside the VFS, to the device named by `chosen.console`.
  *
  * The generated device description defines #dt_console, which pairs a driver's
  * console operations with the chosen device instance. The board interface's
@@ -21,13 +21,14 @@
  * @{
  */
 
-/** @brief Polling console operations a serial driver provides. */
+/** @brief Console operations a serial driver provides. */
 typedef struct {
-    /** Write one byte, waiting while the transmitter is busy. */
+    /** Write one byte, polling while the transmitter is busy. Usable with interrupts masked. */
     void (*putc)(void *device, char c);
-    /** Read one byte, waiting until one arrives; returns 0 to 255. */
+    /** Read one byte from the receive buffer, sleeping until one arrives; returns 0 to 255.
+     * Needs interrupts enabled, because the receive interrupt fills the buffer. */
     int (*getc)(void *device);
-    /** Return nonzero if a received byte is waiting. */
+    /** Return nonzero if a received byte is buffered. */
     int (*has_data)(void *device);
     /** Wait until every written byte has left the transmitter. */
     void (*flush)(void *device);

@@ -64,7 +64,7 @@ console wiring, memory limits, and how each board is validated.
 | --- | --- | --- | --- |
 | Shell, sessions, RAM files, G2BASIC | Yes | Yes | Yes (BASIC nesting 4, files up to 1 KB) |
 | 1 kHz SysTick uptime | Yes, guest time | Yes, HSI accuracy | Yes |
-| Console | UART0 (polling) | USART2 (polling) | USART1 (polling) |
+| Console | UART0 (IRQ receive) | USART2 (IRQ receive) | USART1 (IRQ receive) |
 | VFS device nodes | `/dev/uart0` to `/dev/uart2` | `/dev/uart0` | `/dev/uart0` |
 | Clock setup | None (QEMU reset state) | HSI, 16 MHz | PLL to 24 MHz (skipped in the QEMU build) |
 | Main stack | 3 KB | 3 KB | 2 KB |
@@ -101,7 +101,7 @@ cmake --build --preset <preset>
 | `lm3s6965evb-release` | LM3S6965EVB, Release | `configs/homecore_defconfig` |
 | `stm32f4discovery` | STM32F4DISCOVERY | `configs/homecore_defconfig` |
 | `stm32vldiscovery` | STM32VLDISCOVERY | `configs/stm32vldiscovery_defconfig` |
-| `stm32vldiscovery-qemu` | STM32VLDISCOVERY in QEMU | `configs/stm32vldiscovery_qemu_defconfig` |
+| `stm32vldiscovery-qemu` | STM32VLDISCOVERY in QEMU | `configs/stm32vldiscovery_defconfig` + overlay `src/board/stm32vldiscovery/qemu.yaml` |
 
 Each preset builds into `build/<preset>/`, writing the ELF `homecore` and the
 raw image `homecore.bin`. A board

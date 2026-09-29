@@ -154,8 +154,12 @@ A driver serves one compatible and lives in `src/drivers/<class>/`, for example
    field is `const <driver>_config_t *config`), `void <driver>_init(<driver>_t *)`,
    and `extern const console_ops_t <driver>_console_ops` for console-capable
    drivers.
-3. **Source**: `<driver>_init()` programs the hardware and registers a VFS node
-   named by the `devpath` property. It runs from `dt_init()`, after
+3. **Source**: `<driver>_init()` programs the hardware, enables its interrupt
+   with `arch_irq_enable()` if it uses one, and registers a VFS node named by
+   the `devpath` property. With `isr: true` in the binding and an `irq`
+   property, the generated `dt_irq_dispatch()` calls `<driver>_isr(<driver>_t *)`
+   for that interrupt. Keep it short and bounded; `rx_ring.h` is the
+   interrupt-to-reader buffer the serial drivers share. It runs from `dt_init()`, after
    `board_init()` has enabled clocks and configured pins, and must not print.
 4. **SoC description**: add the instances to `soc.yaml` with `status: disabled`;
    boards enable them in `board.yaml`.

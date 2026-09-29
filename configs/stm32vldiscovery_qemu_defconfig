@@ -1,9 +1,0 @@
-# STM32VLDISCOVERY in QEMU: the limits of stm32vldiscovery_defconfig, but QEMU
-# does not model the clock controller, so the board skips clock setup and
-# relies on QEMU's fixed 24 MHz CPU clock. Not for physical hardware.
-CONFIG_HOMECORE_SHELL=y
-CONFIG_HOMECORE_KERNEL_MAIN_STACK_SIZE=2048
-CONFIG_HOMECORE_SHELL_BASIC_MAX_NESTING=4
-CONFIG_HOMECORE_VFS_MAX_FILE_SIZE=1024
-# CONFIG_HOMECORE_KERNEL_STDIO_BUFFERED is not set
-# CONFIG_HOMECORE_BOARD_CLOCK_SETUP is not set

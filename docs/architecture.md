@@ -102,8 +102,14 @@ Hardware FPU context preservation is not implemented.
 The usual output path is `printf` → newlib `_write` → VFS descriptor → serial
 driver node (`st,stm32-usart` or `ti,stellaris-uart`) → peripheral. The board
 interface's `board_uart_*` functions, used by panic paths, go through
-`dt_console` to the same driver. Polling reads block until a character
-arrives. `/dev/console` is not currently an alias.
+`dt_console` to the same driver. Receive is interrupt-driven: the UART
+interrupt fills a 64-byte ring per device, and a read waits with WFI until a
+byte arrives; bytes beyond a full ring are dropped and counted. Transmit polls.
+
+Every peripheral interrupt vector enters `arch_irq_entry()`, which reads the
+active interrupt number and calls the generated `dt_irq_dispatch()`. That runs
+the interrupt handler of the device owning the number in the description, or
+panics with "Unexpected interrupt". `/dev/console` is not currently an alias.
 
 The VFS allocates RAM directories, RAM files, and open descriptors from the heap
 on demand and frees them on removal or close, so unused capacity costs no RAM.

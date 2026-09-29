@@ -1,177 +1,90 @@
 // SPDX-License-Identifier: MIT
-#include "soc_cmsis.h"
+#include "homecore/arch/arch.h"
 
-void Default_IRQHandler(void) {
-    __disable_irq();
-    for (;;) {
-        __WFI();
-    }
-}
-
-void WWDG_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void PVD_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void TAMP_STAMP_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void RTC_WKUP_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void FLASH_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void RCC_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void EXTI0_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void EXTI1_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void EXTI2_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void EXTI3_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void EXTI4_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void DMA1_Stream0_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void DMA1_Stream1_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void DMA1_Stream2_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void DMA1_Stream3_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void DMA1_Stream4_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void DMA1_Stream5_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void DMA1_Stream6_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void ADC_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void CAN1_TX_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void CAN1_RX0_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void CAN1_RX1_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void CAN1_SCE_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void EXTI9_5_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void TIM1_BRK_TIM9_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void TIM1_UP_TIM10_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void TIM1_TRG_COM_TIM11_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void TIM1_CC_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void TIM2_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void TIM3_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void TIM4_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void I2C1_EV_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void I2C1_ER_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void I2C2_EV_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void I2C2_ER_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void SPI1_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void SPI2_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void USART1_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void USART2_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void USART3_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void EXTI15_10_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void RTC_Alarm_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void OTG_FS_WKUP_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void TIM8_BRK_TIM12_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void TIM8_UP_TIM13_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void TIM8_TRG_COM_TIM14_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void TIM8_CC_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void DMA1_Stream7_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void FSMC_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void SDIO_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void TIM5_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void SPI3_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void UART4_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void UART5_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void TIM6_DAC_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void TIM7_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void DMA2_Stream0_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void DMA2_Stream1_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void DMA2_Stream2_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void DMA2_Stream3_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void DMA2_Stream4_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void ETH_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void ETH_WKUP_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void CAN2_TX_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void CAN2_RX0_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void CAN2_RX1_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void CAN2_SCE_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void OTG_FS_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void DMA2_Stream5_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void DMA2_Stream6_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void DMA2_Stream7_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void USART6_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void I2C3_EV_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void I2C3_ER_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void OTG_HS_EP1_OUT_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void OTG_HS_EP1_IN_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void OTG_HS_WKUP_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void OTG_HS_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void DCMI_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void HASH_RNG_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-void FPU_IRQHandler(void) __attribute__((weak, alias("Default_IRQHandler")));
-
-/* IRQ slots 0..81, immediately after the 16 architectural vectors. */
+/* STM32F407 peripheral vectors 0-81, generated from the CMSIS IRQn_Type enum.
+ * Every implemented interrupt enters arch_irq_entry(), which dispatches to the
+ * owning device through the device description. Zero entries are reserved. */
 __attribute__((used, section(".isr_vector.soc"), aligned(4))) void (*const soc_vectors[])(void) = {
-    WWDG_IRQHandler,
-    PVD_IRQHandler,
-    TAMP_STAMP_IRQHandler,
-    RTC_WKUP_IRQHandler,
-    FLASH_IRQHandler,
-    RCC_IRQHandler,
-    EXTI0_IRQHandler,
-    EXTI1_IRQHandler,
-    EXTI2_IRQHandler,
-    EXTI3_IRQHandler,
-    EXTI4_IRQHandler,
-    DMA1_Stream0_IRQHandler,
-    DMA1_Stream1_IRQHandler,
-    DMA1_Stream2_IRQHandler,
-    DMA1_Stream3_IRQHandler,
-    DMA1_Stream4_IRQHandler,
-    DMA1_Stream5_IRQHandler,
-    DMA1_Stream6_IRQHandler,
-    ADC_IRQHandler,
-    CAN1_TX_IRQHandler,
-    CAN1_RX0_IRQHandler,
-    CAN1_RX1_IRQHandler,
-    CAN1_SCE_IRQHandler,
-    EXTI9_5_IRQHandler,
-    TIM1_BRK_TIM9_IRQHandler,
-    TIM1_UP_TIM10_IRQHandler,
-    TIM1_TRG_COM_TIM11_IRQHandler,
-    TIM1_CC_IRQHandler,
-    TIM2_IRQHandler,
-    TIM3_IRQHandler,
-    TIM4_IRQHandler,
-    I2C1_EV_IRQHandler,
-    I2C1_ER_IRQHandler,
-    I2C2_EV_IRQHandler,
-    I2C2_ER_IRQHandler,
-    SPI1_IRQHandler,
-    SPI2_IRQHandler,
-    USART1_IRQHandler,
-    USART2_IRQHandler,
-    USART3_IRQHandler,
-    EXTI15_10_IRQHandler,
-    RTC_Alarm_IRQHandler,
-    OTG_FS_WKUP_IRQHandler,
-    TIM8_BRK_TIM12_IRQHandler,
-    TIM8_UP_TIM13_IRQHandler,
-    TIM8_TRG_COM_TIM14_IRQHandler,
-    TIM8_CC_IRQHandler,
-    DMA1_Stream7_IRQHandler,
-    FSMC_IRQHandler,
-    SDIO_IRQHandler,
-    TIM5_IRQHandler,
-    SPI3_IRQHandler,
-    UART4_IRQHandler,
-    UART5_IRQHandler,
-    TIM6_DAC_IRQHandler,
-    TIM7_IRQHandler,
-    DMA2_Stream0_IRQHandler,
-    DMA2_Stream1_IRQHandler,
-    DMA2_Stream2_IRQHandler,
-    DMA2_Stream3_IRQHandler,
-    DMA2_Stream4_IRQHandler,
-    ETH_IRQHandler,
-    ETH_WKUP_IRQHandler,
-    CAN2_TX_IRQHandler,
-    CAN2_RX0_IRQHandler,
-    CAN2_RX1_IRQHandler,
-    CAN2_SCE_IRQHandler,
-    OTG_FS_IRQHandler,
-    DMA2_Stream5_IRQHandler,
-    DMA2_Stream6_IRQHandler,
-    DMA2_Stream7_IRQHandler,
-    USART6_IRQHandler,
-    I2C3_EV_IRQHandler,
-    I2C3_ER_IRQHandler,
-    OTG_HS_EP1_OUT_IRQHandler,
-    OTG_HS_EP1_IN_IRQHandler,
-    OTG_HS_WKUP_IRQHandler,
-    OTG_HS_IRQHandler,
-    DCMI_IRQHandler,
-    0,
-    HASH_RNG_IRQHandler,
-    FPU_IRQHandler,
+    arch_irq_entry, /*  0 WWDG */
+    arch_irq_entry, /*  1 PVD */
+    arch_irq_entry, /*  2 TAMP_STAMP */
+    arch_irq_entry, /*  3 RTC_WKUP */
+    arch_irq_entry, /*  4 FLASH */
+    arch_irq_entry, /*  5 RCC */
+    arch_irq_entry, /*  6 EXTI0 */
+    arch_irq_entry, /*  7 EXTI1 */
+    arch_irq_entry, /*  8 EXTI2 */
+    arch_irq_entry, /*  9 EXTI3 */
+    arch_irq_entry, /* 10 EXTI4 */
+    arch_irq_entry, /* 11 DMA1_Stream0 */
+    arch_irq_entry, /* 12 DMA1_Stream1 */
+    arch_irq_entry, /* 13 DMA1_Stream2 */
+    arch_irq_entry, /* 14 DMA1_Stream3 */
+    arch_irq_entry, /* 15 DMA1_Stream4 */
+    arch_irq_entry, /* 16 DMA1_Stream5 */
+    arch_irq_entry, /* 17 DMA1_Stream6 */
+    arch_irq_entry, /* 18 ADC */
+    arch_irq_entry, /* 19 CAN1_TX */
+    arch_irq_entry, /* 20 CAN1_RX0 */
+    arch_irq_entry, /* 21 CAN1_RX1 */
+    arch_irq_entry, /* 22 CAN1_SCE */
+    arch_irq_entry, /* 23 EXTI9_5 */
+    arch_irq_entry, /* 24 TIM1_BRK_TIM9 */
+    arch_irq_entry, /* 25 TIM1_UP_TIM10 */
+    arch_irq_entry, /* 26 TIM1_TRG_COM_TIM11 */
+    arch_irq_entry, /* 27 TIM1_CC */
+    arch_irq_entry, /* 28 TIM2 */
+    arch_irq_entry, /* 29 TIM3 */
+    arch_irq_entry, /* 30 TIM4 */
+    arch_irq_entry, /* 31 I2C1_EV */
+    arch_irq_entry, /* 32 I2C1_ER */
+    arch_irq_entry, /* 33 I2C2_EV */
+    arch_irq_entry, /* 34 I2C2_ER */
+    arch_irq_entry, /* 35 SPI1 */
+    arch_irq_entry, /* 36 SPI2 */
+    arch_irq_entry, /* 37 USART1 */
+    arch_irq_entry, /* 38 USART2 */
+    arch_irq_entry, /* 39 USART3 */
+    arch_irq_entry, /* 40 EXTI15_10 */
+    arch_irq_entry, /* 41 RTC_Alarm */
+    arch_irq_entry, /* 42 OTG_FS_WKUP */
+    arch_irq_entry, /* 43 TIM8_BRK_TIM12 */
+    arch_irq_entry, /* 44 TIM8_UP_TIM13 */
+    arch_irq_entry, /* 45 TIM8_TRG_COM_TIM14 */
+    arch_irq_entry, /* 46 TIM8_CC */
+    arch_irq_entry, /* 47 DMA1_Stream7 */
+    arch_irq_entry, /* 48 FSMC */
+    arch_irq_entry, /* 49 SDIO */
+    arch_irq_entry, /* 50 TIM5 */
+    arch_irq_entry, /* 51 SPI3 */
+    arch_irq_entry, /* 52 UART4 */
+    arch_irq_entry, /* 53 UART5 */
+    arch_irq_entry, /* 54 TIM6_DAC */
+    arch_irq_entry, /* 55 TIM7 */
+    arch_irq_entry, /* 56 DMA2_Stream0 */
+    arch_irq_entry, /* 57 DMA2_Stream1 */
+    arch_irq_entry, /* 58 DMA2_Stream2 */
+    arch_irq_entry, /* 59 DMA2_Stream3 */
+    arch_irq_entry, /* 60 DMA2_Stream4 */
+    arch_irq_entry, /* 61 ETH */
+    arch_irq_entry, /* 62 ETH_WKUP */
+    arch_irq_entry, /* 63 CAN2_TX */
+    arch_irq_entry, /* 64 CAN2_RX0 */
+    arch_irq_entry, /* 65 CAN2_RX1 */
+    arch_irq_entry, /* 66 CAN2_SCE */
+    arch_irq_entry, /* 67 OTG_FS */
+    arch_irq_entry, /* 68 DMA2_Stream5 */
+    arch_irq_entry, /* 69 DMA2_Stream6 */
+    arch_irq_entry, /* 70 DMA2_Stream7 */
+    arch_irq_entry, /* 71 USART6 */
+    arch_irq_entry, /* 72 I2C3_EV */
+    arch_irq_entry, /* 73 I2C3_ER */
+    arch_irq_entry, /* 74 OTG_HS_EP1_OUT */
+    arch_irq_entry, /* 75 OTG_HS_EP1_IN */
+    arch_irq_entry, /* 76 OTG_HS_WKUP */
+    arch_irq_entry, /* 77 OTG_HS */
+    arch_irq_entry, /* 78 DCMI */
+    0,              /* 79 reserved */
+    arch_irq_entry, /* 80 RNG */
+    arch_irq_entry, /* 81 FPU */
 };

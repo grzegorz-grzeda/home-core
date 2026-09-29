@@ -18,13 +18,14 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 FORMAT_VERSION = "19.1.7"
 CHECKS = ("format", "headers", "build", "host", "qemu")
-# Build targets: name -> (board, defconfig relative to the root, or None for the
-# board's default from configs/<board>_defconfig or configs/homecore_defconfig).
+# Build targets: name -> (board, device-description overlay relative to the
+# root, or None). Each board uses its default defconfig, configs/<board>_defconfig
+# or configs/homecore_defconfig.
 TARGETS = {
     "lm3s6965evb": ("lm3s6965evb", None),
     "stm32f4discovery": ("stm32f4discovery", None),
     "stm32vldiscovery": ("stm32vldiscovery", None),
-    "stm32vldiscovery-qemu": ("stm32vldiscovery", "configs/stm32vldiscovery_qemu_defconfig"),
+    "stm32vldiscovery-qemu": ("stm32vldiscovery", "src/board/stm32vldiscovery/qemu.yaml"),
 }
 # QEMU regressions: target -> board name passed to tests/qemu_files_test.py.
 QEMU_TARGETS = {"lm3s6965evb": "lm3s6965evb", "stm32vldiscovery-qemu": "stm32vldiscovery"}
@@ -138,12 +139,13 @@ class QualityRunner:
     def configure(self, target, configuration):
         key = (target, configuration)
         if key not in self.configured:
-            board, defconfig = TARGETS[target]
-            # Always pass the defconfig, so a reused build directory cannot keep
-            # a stale cached value.
-            defconfig = self.root / (defconfig or f"configs/{board}_defconfig")
+            board, overlay = TARGETS[target]
+            # Always pass the defconfig and overlays, so a reused build
+            # directory cannot keep stale cached values.
+            defconfig = self.root / f"configs/{board}_defconfig"
             if not defconfig.exists():
                 defconfig = self.root / "configs/homecore_defconfig"
+            overlays = str(self.root / overlay) if overlay else ""
             self.configured[key] = self.command(
                 f"configure {target} {configuration}",
                 [
@@ -152,6 +154,7 @@ class QualityRunner:
                     f"-DHOMECORE_BOARD={board}", f"-DCMAKE_BUILD_TYPE={configuration}",
                     f"-DPython3_EXECUTABLE={self.args.python}",
                     f"-DHOMECORE_DEFCONFIG={defconfig}",
+                    f"-DHOMECORE_DT_OVERLAYS={overlays}",
                     "-DCMAKE_COMPILE_WARNING_AS_ERROR=ON",
                 ],
             )

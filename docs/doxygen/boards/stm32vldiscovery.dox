@@ -6,7 +6,7 @@
 <div>
 The `stm32vldiscovery` target supports ST's STM32VLDISCOVERY board with an
 STM32F100RB. With 8 KB of RAM it is the smallest HomeCore target. It runs the
-shell and VFS over a polling USART1 console with a 1 kHz SysTick.
+shell and VFS over a USART1 console (interrupt-driven receive) with a 1 kHz SysTick.
 <div class="hc-badges"><span class="hc-badge hc-ok">QEMU tested in CI</span><span class="hc-badge hc-pending">Hardware pending</span></div>
 QEMU's `stm32vldiscovery` machine runs this port, so it is the STM32 code path
 covered by the CI regression. The physical-board build, which adds PLL clock
@@ -28,10 +28,10 @@ setup, has not been validated on hardware.
 
 @section board_stm32vldiscovery_configs Build configurations
 
-| Preset | Defconfig | Clock setup | Use |
+| Preset | Configuration | Clock setup | Use |
 | --- | --- | --- | --- |
 | `stm32vldiscovery` | `configs/stm32vldiscovery_defconfig` | PLL to 24 MHz | Physical board |
-| `stm32vldiscovery-qemu` | `configs/stm32vldiscovery_qemu_defconfig` | Skipped | QEMU only |
+| `stm32vldiscovery-qemu` | same defconfig + overlay `src/board/stm32vldiscovery/qemu.yaml` | Skipped | QEMU only |
 
 ```bash
 cmake --preset stm32vldiscovery-qemu -DPython3_EXECUTABLE="$PWD/.venv/bin/python"
@@ -48,14 +48,15 @@ so the board would run at the 8 MHz reset clock while assuming 24 MHz.
 
 @section board_stm32vldiscovery_clock Clock
 
-With `CONFIG_HOMECORE_BOARD_CLOCK_SETUP` enabled, `board_init()` runs the PLL
+With `clock_setup` true (the default in `board.yaml`), `board_init()` runs the PLL
 from HSI/2 &times; 6 = 24 MHz, the STM32F100 maximum, with undivided AHB, APB1,
 and APB2 clocks. Each step waits with a bounded iteration budget; a failure
 halts before the console starts, so diagnose it with a debugger.
 
 QEMU does not model the clock controller or GPIO: reads return 0 and writes are
-ignored. Its CPU and SysTick clock is fixed at 24 MHz, so the QEMU defconfig
-disables clock setup and the board reports 24 MHz in both configurations.
+ignored. Its CPU and SysTick clock is fixed at 24 MHz, so the QEMU overlay
+(`qemu.yaml`, `clock_setup: false`) skips clock setup and the board reports
+24 MHz in both configurations.
 
 @section board_stm32vldiscovery_memory Memory budget
 

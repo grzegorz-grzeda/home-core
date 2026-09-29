@@ -2,16 +2,16 @@
 
 The `stm32vldiscovery` target supports ST's STM32VLDISCOVERY board with an
 STM32F100RB: Cortex-M3, 128 KB flash at `0x08000000`, and **8 KB RAM** at
-`0x20000000`. It has a polling USART1 console, the shell and VFS, and a 1 kHz
+`0x20000000`. It has a USART1 console (interrupt-driven receive), the shell and VFS, and a 1 kHz
 SysTick. It runs in QEMU's `stm32vldiscovery` machine, which makes it the STM32
 code path covered by CI. Physical hardware has not been validated.
 
 ## Build configurations
 
-| Preset | Defconfig | Clock setup | Use |
+| Preset | Configuration | Clock setup | Use |
 | --- | --- | --- | --- |
 | `stm32vldiscovery` | `configs/stm32vldiscovery_defconfig` | PLL to 24 MHz | Physical board |
-| `stm32vldiscovery-qemu` | `configs/stm32vldiscovery_qemu_defconfig` | Skipped | QEMU only |
+| `stm32vldiscovery-qemu` | same defconfig + overlay `src/board/stm32vldiscovery/qemu.yaml` | Skipped | QEMU only |
 
 ```bash
 cmake --preset stm32vldiscovery-qemu -DPython3_EXECUTABLE="$PWD/.venv/bin/python"
@@ -25,7 +25,7 @@ Ctrl-A, then X.
 
 ## Clock
 
-With `CONFIG_HOMECORE_BOARD_CLOCK_SETUP` enabled, `board_init()` runs the PLL
+With `clock_setup` true (the default in `board.yaml`), `board_init()` runs the PLL
 from HSI/2 × 6 = 24 MHz, the STM32F100 maximum, with undivided AHB, APB1, and
 APB2 clocks. The value line has no flash wait states to configure. Each step
 waits with a bounded iteration budget; a failure halts silently before the
@@ -33,8 +33,8 @@ console starts, so diagnose it with a debugger.
 
 QEMU does not model the clock controller (RCC) or GPIO: reads return 0 and
 writes are ignored. Its CPU and SysTick clock is fixed at 24 MHz. The QEMU
-defconfig therefore disables clock setup, and the board reports 24 MHz in both
-configurations. The GPIO and USART setup runs in both; QEMU ignores the GPIO
+overlay (`qemu.yaml`, `clock_setup: false`) therefore skips clock setup, and the
+board reports 24 MHz in both configurations. The GPIO and USART setup runs in both; QEMU ignores the GPIO
 writes. Do not flash the QEMU build to a physical board: it would run at the
 8 MHz reset clock while assuming 24 MHz.
 

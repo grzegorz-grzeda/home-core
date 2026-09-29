@@ -127,6 +127,16 @@ void arch_irq_unlock(arch_irq_key_t key);
 bool arch_irq_is_locked(void);
 /*---------------------------------------------------------------------------*/
 /**
+ * @brief Common entry for every peripheral interrupt.
+ *
+ * The SoC vector tables point each implemented peripheral vector here. It
+ * reads the active interrupt number and calls the generated
+ * dt_irq_dispatch(), which runs the handler of the device that owns the
+ * interrupt in the device description. Runs in interrupt context.
+ */
+void arch_irq_entry(void);
+/*---------------------------------------------------------------------------*/
+/**
  * @brief Enable a peripheral interrupt in the interrupt controller.
  *
  * @param irq Device IRQ number from the SoC's CMSIS header. Negative numbers

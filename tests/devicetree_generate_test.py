@@ -82,9 +82,12 @@ class DevicetreeTest(unittest.TestCase):
         self.assertNotIn("usart2", out["c"])       # disabled: no instance
         self.assertIn("RAM (rwx) : ORIGIN = 0x20000000, LENGTH = 8192", out["ld"])
         self.assertIn("stm32_usart.c", out["cmake"])
+        self.assertIn("case 37U:\n        stm32_usart_isr(&dt_usart1);", out["c"])
+        self.assertIn('board_panic("Unexpected interrupt");', out["c"])
         self.assertIn('set(HOMECORE_SOC "test/chip")', out["cmake"])
         self.assertIn('set(HOMECORE_ARCH "test/cpu")', out["cmake"])
         self.assertIn('#define DT_BOARD_NAME "myboard"', out["h"])  # directory name default
+        self.assertIn("#define DT_CLOCK_SETUP 1", out["h"])
         self.assertIn("empty.ld", out["cmake"])  # no soc.ld or board.ld
 
     def test_selection(self):
@@ -104,9 +107,14 @@ class DevicetreeTest(unittest.TestCase):
                              overlays=["soc: test/chip"])
 
     def test_overlay_applies_last(self):
-        status, stderr, out = self.run_generator(overlays=["devices: {usart1: {baud: 9600}}"])
+        status, stderr, out = self.run_generator(overlays=["devices: {usart1: {baud: 9600}}",
+                                                           "clock_setup: false"])
         self.assertEqual(status, 0, stderr)
         self.assertIn(".baud = 9600U", out["c"])
+        self.assertIn("#define DT_CLOCK_SETUP 0", out["h"])
+        self.assert_rejected("clock_setup: expected true or false", overlays=["clock_setup: 0"])
+        # clock_setup is not a clock: a device cannot name it as its bus.
+        self.assert_rejected("clock '_setup'", board=BOARD.replace("devname: uart0", "bus: _setup"))
 
     def test_disabled_devices_compile_no_driver(self):
         soc = SOC + '  uart9: {compatible: "ti,stellaris-uart", reg: 0x4000C000, irq: 5, status: disabled}\n'

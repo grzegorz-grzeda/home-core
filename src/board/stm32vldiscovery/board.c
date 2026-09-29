@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 #include "homecore/board/board.h"
-#include "homecore/autoconf.h"
 #include "homecore/devicetree.h"
 #include "homecore/drivers/console.h"
 #include "soc_cmsis.h"
@@ -20,7 +19,7 @@ _Static_assert(DT_CPU_CLOCK_HZ == 24000000U, "board.yaml clocks must match the P
 /* RCC->CFGR fields set by the PLL configuration. */
 #define CFGR_PLL_AND_BUS_FIELDS                                                                    \
     (RCC_CFGR_PLLSRC | RCC_CFGR_PLLMULL | RCC_CFGR_HPRE | RCC_CFGR_PPRE1 | RCC_CFGR_PPRE2)
-#if defined(CONFIG_HOMECORE_BOARD_CLOCK_SETUP)
+#if DT_CLOCK_SETUP
 static bool wait_clock(volatile const uint32_t *reg, uint32_t mask, uint32_t value) {
     for (uint32_t attempt = 0; attempt < CLOCK_WAIT_LIMIT; ++attempt) {
         if ((*reg & mask) == value) {
@@ -70,10 +69,11 @@ uint32_t board_cpu_clock_hz(void) {
 }
 
 void board_init(void) {
-#if defined(CONFIG_HOMECORE_BOARD_CLOCK_SETUP)
+#if DT_CLOCK_SETUP
     configure_clock();
 #else
-    /* Emulator build: QEMU does not model RCC and runs the CPU at DT_CPU_CLOCK_HZ. */
+    /* Emulator build (clock_setup: false in qemu.yaml): QEMU does not model RCC
+     * and runs the CPU at DT_CPU_CLOCK_HZ. */
 #endif
 
     RCC->APB2ENR |= RCC_APB2ENR_IOPAEN | RCC_APB2ENR_AFIOEN | RCC_APB2ENR_USART1EN;

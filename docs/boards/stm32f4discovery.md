@@ -1,7 +1,7 @@
 # STM32F4DISCOVERY
 
-The `stm32f4discovery` target supports the STM32F407VGT6 board with a polling
-USART2 console, shell/VFS, and 1 kHz SysTick. It uses the 16 MHz internal HSI
+The `stm32f4discovery` target supports the STM32F407VGT6 board with a
+USART2 console (interrupt-driven receive, polled transmit), shell/VFS, and 1 kHz SysTick. It uses the 16 MHz internal HSI
 clock, software floating point, 1 MB flash, and 128 KB main SRAM. The separate
 64 KB CCM RAM is unused. USB, audio, sensors, and hardware FPU context switching
 are not implemented. SVC/PendSV remain the existing panic handlers.
@@ -44,9 +44,10 @@ Configure the terminal to display LF as a new line; press Enter to submit comman
 
 After reset, check the HomeCore banner and prompt, then run `help`, `mem`,
 `uptime`, `cat /dev/uptime`, `mkdir /tmp`, `touch /tmp/test`, `ls /tmp`, and
-`reboot`. Uptime accuracy follows HSI oscillator tolerance. Polling RX can lose
-characters during lengthy commands; send input interactively rather than
-pasting large programs at full serial speed.
+`reboot`. Uptime accuracy follows HSI oscillator tolerance. Received bytes are
+buffered by the USART interrupt in a 64-byte ring, so pasted input is no longer
+limited to the one-byte data register; bytes beyond a full ring are dropped.
+This has not yet been checked on hardware.
 
 This port has been cross-compiled and its linked layout checked. The existing
 LM3S6965EVB QEMU command regression passes; STM32 hardware validation is still

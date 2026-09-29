@@ -20,8 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-target_sources(${PROJECT_NAME} 
-    PRIVATE soc.c
+target_sources(${PROJECT_NAME}
+    PRIVATE soc.c interrupts.c
 )
 
 target_include_directories(${PROJECT_NAME} 

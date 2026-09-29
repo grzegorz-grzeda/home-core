@@ -24,7 +24,7 @@
 /*---------------------------------------------------------------------------*/
 /**
  * @file
- * @brief Board interface: clocks, pins, the polling console UART, and the
+ * @brief Board interface: clocks, pins, the console UART, and the
  *        fatal panic path.
  */
 /*---------------------------------------------------------------------------*/

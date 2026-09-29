@@ -59,7 +59,7 @@
             "inherits": "stm32vldiscovery",
             "binaryDir": "${sourceDir}/build/stm32vldiscovery-qemu",
             "cacheVariables": {
-                "HOMECORE_DEFCONFIG": "${sourceDir}/configs/stm32vldiscovery_qemu_defconfig"
+                "HOMECORE_DT_OVERLAYS": "${sourceDir}/src/board/stm32vldiscovery/qemu.yaml"
             }
         }
     ],

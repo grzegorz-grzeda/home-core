@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "stm32_usart.h"
+#include "homecore/arch/arch.h"
 #include "soc_cmsis.h"
 #include <errno.h>
 #include <limits.h>
@@ -18,22 +19,38 @@ static void poll_out(void *device, char c) {
     usart->DR = (uint8_t)c;
 }
 
+void stm32_usart_isr(stm32_usart_t *dev) {
+    USART_TypeDef *usart = regs(dev);
+    uint32_t status = usart->SR;
+    if (status & (USART_SR_RXNE | RX_ERRORS)) {
+        /* Reading SR then DR clears the request and receive errors, including
+         * overrun. Bytes with noise, framing, or parity errors are discarded. */
+        uint32_t data = usart->DR;
+        if ((status & USART_SR_RXNE) && !(status & (USART_SR_NE | USART_SR_FE | USART_SR_PE))) {
+            rx_ring_push(&dev->rx, (uint8_t)(data & 0xffU));
+        }
+    }
+}
+
+/* Blocking read from the receive ring. Interrupts are masked while checking,
+ * so a byte arriving between the check and WFI still wakes the core. */
 static int poll_in(void *device) {
-    USART_TypeDef *usart = regs(device);
+    stm32_usart_t *dev = device;
     for (;;) {
-        uint32_t status = usart->SR;
-        if (status & (USART_SR_RXNE | RX_ERRORS)) {
-            /* Reading SR then DR clears receive errors, including overrun. */
-            uint32_t data = usart->DR;
-            if ((status & USART_SR_RXNE) && !(status & (USART_SR_NE | USART_SR_FE | USART_SR_PE))) {
-                return (int)(data & 0xffU);
-            }
+        arch_irq_key_t key = arch_irq_lock();
+        int byte = rx_ring_pop(&dev->rx);
+        if (byte < 0) {
+            arch_cpu_idle();
+        }
+        arch_irq_unlock(key);
+        if (byte >= 0) {
+            return byte;
         }
     }
 }
 
 static int has_data(void *device) {
-    return (regs(device)->SR & USART_SR_RXNE) != 0;
+    return !rx_ring_empty(&((stm32_usart_t *)device)->rx);
 }
 
 static void flush(void *device) {
@@ -92,7 +109,8 @@ void stm32_usart_init(stm32_usart_t *dev) {
     usart->BRR = (config->clock_hz + config->baud / 2U) / config->baud;
     usart->CR2 = 0;
     usart->CR3 = 0;
-    usart->CR1 = USART_CR1_UE | USART_CR1_TE | USART_CR1_RE;
+    usart->CR1 = USART_CR1_UE | USART_CR1_TE | USART_CR1_RE | USART_CR1_RXNEIE;
+    arch_irq_enable((int)config->irq);
     dev->node = (vfs_node_t){
         .name = config->path,
         .ops = {.read = usart_read, .write = usart_write},

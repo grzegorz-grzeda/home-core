@@ -1,3 +1,2 @@
-rsource "board/Kconfig"
 rsource "kernel/Kconfig"
 rsource "subsystems/Kconfig"

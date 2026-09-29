@@ -5,6 +5,29 @@ All notable changes to HomeCore are recorded here. The format is based on
 follow [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html) as
 described in [versioning](docs/versioning.md).
 
+## [0.1.0] - 2026-09-29
+
+### Added
+- Interrupt-driven UART receive: each serial device's interrupt fills a
+  64-byte ring, and reads sleep with WFI until a byte arrives. Bytes beyond a
+  full ring are dropped and counted. On STM32 this removes the one-byte receive
+  window that lost pasted input (not yet checked on hardware).
+- Peripheral interrupt dispatch through the device description: every vector
+  enters `arch_irq_entry()`, and the generated `dt_irq_dispatch()` calls the
+  owning driver's interrupt handler or panics with "Unexpected interrupt".
+- A peripheral vector table for LM3S6965, which had none.
+- `clock_setup` in board descriptions and overlays (`DT_CLOCK_SETUP`), and the
+  overlay `src/board/stm32vldiscovery/qemu.yaml`.
+
+### Removed
+- **Breaking:** `CONFIG_HOMECORE_BOARD_CLOCK_SETUP` and
+  `configs/stm32vldiscovery_qemu_defconfig`. The `stm32vldiscovery-qemu` preset
+  now uses the board's defconfig with the `qemu.yaml` overlay. Reconfigure an
+  existing `build/stm32vldiscovery-qemu` with `cmake --preset
+  stm32vldiscovery-qemu --fresh`, because it caches the removed defconfig.
+- Weak per-peripheral `*_IRQHandler` names in the STM32 vector tables; drivers
+  receive interrupts through the device description instead.
+
 ## [0.0.7] - 2026-09-29
 
 ### Changed

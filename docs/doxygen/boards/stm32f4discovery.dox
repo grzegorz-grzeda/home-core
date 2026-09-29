@@ -5,7 +5,7 @@
 <div class="hc-board-header">
 <div>
 The `stm32f4discovery` target supports ST's STM32F4DISCOVERY board with an
-STM32F407VGT6. It runs the shell and VFS over a polling USART2 console with a
+STM32F407VGT6. It runs the shell and VFS over a USART2 console (interrupt-driven receive) with a
 1 kHz SysTick, clocked from the 16 MHz internal HSI oscillator.
 <div class="hc-badges"><span class="hc-badge hc-ok">Builds in CI</span><span class="hc-badge hc-pending">Hardware pending</span></div>
 The port is cross-compiled in CI and its linked layout has been checked. QEMU
@@ -81,8 +81,8 @@ oscillator tolerance.
 
 - USB, audio, the on-board sensors, and hardware FPU context switching are not
   implemented.
-- Polling RX can lose characters during long commands. Type input
-  interactively rather than pasting large programs at full serial speed.
+- Received bytes are buffered by the USART interrupt in a 64-byte ring; bytes
+  beyond a full ring are dropped. Pasting has not been checked on hardware.
 - Clock startup waits use a finite iteration budget because SysTick is not
   running yet. An HSI readiness or clock-switch failure halts before the UART
   starts, so diagnose a silent board with a debugger.

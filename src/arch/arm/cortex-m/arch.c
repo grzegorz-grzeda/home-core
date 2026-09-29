@@ -23,6 +23,7 @@
  */
 /*---------------------------------------------------------------------------*/
 #include "homecore/arch/arch.h"
+#include "homecore/devicetree.h"
 #include "soc_cmsis.h"
 
 /*---------------------------------------------------------------------------*/
@@ -79,6 +80,11 @@ void arch_irq_unlock(arch_irq_key_t key) {
     if ((key & 1U) == 0U) {
         __enable_irq();
     }
+}
+/*---------------------------------------------------------------------------*/
+void arch_irq_entry(void) {
+    /* IPSR holds the exception number; peripheral IRQ 0 is exception 16. */
+    dt_irq_dispatch(__get_IPSR() - 16U);
 }
 /*---------------------------------------------------------------------------*/
 void arch_irq_enable(int irq) {
