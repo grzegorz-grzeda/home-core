@@ -31,7 +31,9 @@ TARGETS = {
 QEMU_TARGETS = {"lm3s6965evb": "lm3s6965evb", "stm32vldiscovery-qemu": "stm32vldiscovery"}
 CONFIGURATIONS = ("Debug", "Release")
 # Vendor-generated SVD/CMSIS definitions live outside external/ in the legacy port.
-VENDOR_HEADERS = {Path("src/soc/ti/lm3s6965/soc_cmsis.h")}
+# Files kept in their upstream layout: a vendored header and FatFs's
+# configuration file, a modified copy of upstream ffconf.h.
+VENDOR_HEADERS = {Path("src/soc/ti/lm3s6965/soc_cmsis.h"), Path("src/subsystems/fs/fat/ffconf.h")}
 
 
 def source_files(root):
@@ -210,6 +212,11 @@ class QualityRunner:
             ("allocation-failures",
              ["tests/vfs_alloc_failure_test.c", "src/subsystems/vfs/vfs.c"],
              ["-Wl,--wrap=calloc"]),
+            ("fat", [
+                "tests/fat_test.c", "src/subsystems/vfs/vfs.c", "src/subsystems/fs/fat/fat.c",
+                "src/subsystems/fs/fat/diskio.c", "src/drivers/block/ramdisk.c",
+                "external/fatfs/ff.c", "external/fatfs/ffsystem.c", "external/fatfs/ffunicode.c",
+            ], ["-Isrc/subsystems/fs/fat", "-Iexternal/fatfs", "-Isrc/drivers/block"]),
             ("sessions", [
                 "tests/session_test.c", "src/kernel/session.c", "src/subsystems/vfs/vfs.c",
                 "src/subsystems/shell/shell.c", "src/subsystems/shell/builtin/builtin_files.c",

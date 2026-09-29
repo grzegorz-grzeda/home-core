@@ -70,8 +70,8 @@ key:
 | Layer | File | Contents |
 | --- | --- | --- |
 | SoC | `src/soc/<vendor>/<chip>/soc.yaml` | `arch`, `memory` (flash and RAM base and size), and every peripheral instance, `status: disabled` |
-| Board | `src/board/<board>/board.yaml` | `name`, `soc`, `clocks` (`cpu` plus named buses), enabled devices and their properties, `memory` overrides, `chosen.console` |
-| Overlays | files in `HOMECORE_DT_OVERLAYS` | changes to `memory`, `clocks`, `devices`, or `chosen`, for example `-DHOMECORE_DT_OVERLAYS=path/to/debug.yaml` |
+| Board | `src/board/<board>/board.yaml` | `name`, `soc`, `clocks` (`cpu` plus named buses), enabled devices and their properties, `memory` overrides, `chosen.console`, `mounts` |
+| Overlays | files in `HOMECORE_DT_OVERLAYS` | changes to `memory`, `clocks`, `devices`, `chosen`, or `mounts`, for example `-DHOMECORE_DT_OVERLAYS=path/to/debug.yaml` |
 
 The board may also set `clock_setup: false` (usually from an overlay) for
 emulators that do not model the clock controller; boards then skip their
@@ -96,25 +96,46 @@ chosen: {console: usart1}
 
 Quote `compatible` strings inside `{...}`: YAML reads the comma as a separator.
 
+A board can also define devices that are not SoC peripherals, such as a
+ramdisk, and mount filesystems on block devices. Each `mounts` entry is a
+top-level path; `format: true` creates a volume when the device has none
+(default `false`, so an SD card is never reformatted by accident):
+
+```yaml
+devices:
+  ram0: {compatible: "homecore,ramdisk", size: 64K}
+mounts:
+  /ram: {device: ram0, fs: fat, format: true}
+```
+
+The generated `dt_mount_all()`, called by `main()` after `k_init()`, mounts
+them in order and prints `mount <path>: <error>` for a failure instead of
+stopping. FatFs is compiled only when a board mounts a `fat` volume; FAT
+volumes need at least 128 sectors (64 KB).
+
 Each compatible has a binding next to its driver,
 `src/drivers/<class>/<compatible>.yaml`. It names the driver prefix and sources
 and declares every property: its type (`int`, `string`, `bool`, `clock` for a
-bus name resolved through `clocks`, or `devpath` for a `/dev` name that
-defaults to the node name), whether it is required, its default and minimum,
+bus name resolved through `clocks`, `size` for a byte count such as `64K`, or
+`devpath` for a `/dev` name that defaults to the node name), whether it is
+required, its default, minimum, and required `multiple` (`size` only),
 whether it must be unique among enabled devices, and the C configuration field
-it fills. Configuration fails, naming the device and property, for an unknown
+it fills. A `size` property with `buffer: <field>` also allocates a 4-byte
+aligned `.bss` buffer of that size and stores its address in `<field>`.
+Configuration fails, naming the device and property, for an unknown
 compatible or property, a missing required property, a wrong type, a duplicate
-unique value or `/dev` name, an unknown clock, and a console that is disabled
-or not console-capable.
+unique value or `/dev` name, an unknown clock, a console that is disabled or
+not console-capable, and a mount on a device that is not an enabled block
+device, is already mounted, or names an unknown filesystem.
 
 `scripts/devicetree_generate.py` writes into the build directory:
 
 | Output | Contents |
 | --- | --- |
-| `include/homecore/devicetree.h` | `DT_BOARD_NAME`, `DT_CPU_CLOCK_HZ`, `DT_CLOCK_SETUP`, `DT_CHOSEN_CONSOLE_PATH`, `DT_DEVICE_COUNT`, `dt_init()`, `dt_irq_dispatch()` |
-| `generated/devicetree.c` | per device a `static const <driver>_config_t` (flash) and a `<driver>_t` instance (RAM), `dt_console`, `dt_init()`, and `dt_irq_dispatch()` |
+| `include/homecore/devicetree.h` | `DT_BOARD_NAME`, `DT_CPU_CLOCK_HZ`, `DT_CLOCK_SETUP`, `DT_CHOSEN_CONSOLE_PATH`, `DT_DEVICE_COUNT`, `DT_MOUNT_COUNT`, `dt_init()`, `dt_irq_dispatch()`, `dt_mount_all()` |
+| `generated/devicetree.c` | per device a `static const <driver>_config_t` (flash) and a `<driver>_t` instance (RAM), `dt_console`, `dt_init()`, `dt_irq_dispatch()`, a `block_device_t` per mounted device, and `dt_mount_all()` |
 | `generated/memory.ld` | the linker `MEMORY` block |
-| `generated/devicetree.cmake` | the selected SoC and architecture, linker fragment paths, input files, and driver sources and include directories |
+| `generated/devicetree.cmake` | the selected SoC and architecture, linker fragment paths, input files, driver sources and include directories, and the mounted filesystem types |
 
 Only drivers with an enabled device are compiled. Editing a description,
 binding, or the generator reruns configuration on the next build. Driver
@@ -172,7 +193,7 @@ uses explicit matrix jobs for firmware builds and QEMU regressions.
 ## Validation
 
 Configure the default LM3S build first: host tests include its generated header.
-Run the relevant tests below, or all five for shared VFS/session changes:
+Run the relevant tests below, or all six for shared VFS/session changes:
 
 ```bash
 cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include \
@@ -199,6 +220,15 @@ cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include \
   src/subsystems/shell/builtin/builtin_session.c \
   src/subsystems/shell/builtin/builtin_system.c -o /tmp/homecore-session-test
 /tmp/homecore-session-test
+
+# FAT volumes on ramdisks through the VFS, with the vendored FatFs.
+cc -Wall -Wextra -Werror -Iinclude -Ibuild/lm3s6965evb/include \
+  -Isrc/subsystems/fs/fat -Iexternal/fatfs -Isrc/drivers/block \
+  tests/fat_test.c src/subsystems/vfs/vfs.c src/subsystems/fs/fat/fat.c \
+  src/subsystems/fs/fat/diskio.c src/drivers/block/ramdisk.c \
+  external/fatfs/ff.c external/fatfs/ffsystem.c external/fatfs/ffunicode.c \
+  -o /tmp/homecore-fat-test
+/tmp/homecore-fat-test
 ```
 
 After building the QEMU presets, run the integration regression on each

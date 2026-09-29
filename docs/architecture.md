@@ -114,9 +114,21 @@ panics with "Unexpected interrupt". `/dev/console` is not currently an alias.
 The VFS allocates RAM directories, RAM files, and open descriptors from the heap
 on demand and frees them on removal or close, so unused capacity costs no RAM.
 Kconfig maxima cap their numbers. Only a table of descriptor pointers is static.
-Files disappear on reset. Snapshot devices such as `/dev/uptime` capture content
+RAM files disappear on reset. Snapshot devices such as `/dev/uptime` capture content
 at open; each descriptor has its own position and snapshot. A live UART does
 not provide file EOF.
+
+Filesystems attach at mount points with `vfs_mount()` and own every path below
+them; those paths have no node, and `vfs_stat()`/`vfs_fstat()` report their
+type and size. Up to `CONFIG_HOMECORE_VFS_MAX_MOUNTS` mounts exist; they cannot
+be nested, removed, or unmounted. The board's `mounts` section generates the
+mount calls in `dt_mount_all()`. FAT volumes use ChaN's FatFs R0.16
+(`external/fatfs`, configured by `src/subsystems/fs/fat/ffconf.h`) on block
+devices (`include/homecore/drivers/block.h`); FatFs structures, open files, and
+long-name buffers are allocated from the heap. STM32F4DISCOVERY mounts a 64 KB
+ramdisk at `/ram`, formatted at every boot, so its contents are lost on reset
+like RAM files. LM3S6965EVB and STM32VLDISCOVERY have no mounted filesystem:
+their RAM cannot hold the 64 KB FatFs minimum.
 
 A session holds a user pointer, working directory, and last command status.
 The default user is root. Shell commands receive context explicitly; libc path

@@ -20,6 +20,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-add_subdirectory(fs)
-add_subdirectory(shell)
-add_subdirectory(vfs)
+#
+# Filesystems are compiled only when the device description mounts one.
+if("fat" IN_LIST HOMECORE_DT_FILESYSTEMS)
+    set(HOMECORE_FATFS_DIR ${HOMECORE_ROOT}/external/fatfs)
+    set(HOMECORE_FATFS_SOURCES
+        ${HOMECORE_FATFS_DIR}/ff.c
+        ${HOMECORE_FATFS_DIR}/ffsystem.c
+        ${HOMECORE_FATFS_DIR}/ffunicode.c
+    )
+    target_sources(${PROJECT_NAME} PRIVATE fat/fat.c fat/diskio.c ${HOMECORE_FATFS_SOURCES})
+    # fat/ provides ffconf.h, which ff.h includes by name.
+    target_include_directories(${PROJECT_NAME} PRIVATE fat ${HOMECORE_FATFS_DIR})
+endif()

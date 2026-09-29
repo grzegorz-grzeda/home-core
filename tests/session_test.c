@@ -3,6 +3,7 @@
 #include "homecore/kernel/kernel.h"
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -60,6 +61,17 @@ int main(void) {
     assert(run(&a, "touch file") == 0 && vfs_find_node("/alice/child/file"));
     assert(run(&a, "touch file") == 0);
     assert(run(&a, "rm file") == 0 && !vfs_find_node("/alice/child/file"));
+    int fd = vfs_open("/alice/child/source", O_CREAT | O_WRONLY);
+    assert(fd >= 0 && vfs_write(fd, "copied", 6) == 6 && vfs_close(fd) == 0);
+    assert(run(&a, "cp source copy") == 0);
+    assert(run(&a, "cp source /bob") == 0);
+    assert(run(&a, "cp source .") == 1 && run(&a, "cp source") == 1);
+    assert(run(&a, "cp missing copy") == 1 && run(&a, "cp /bob copy") == 1);
+    char copied[8] = {0};
+    fd = vfs_open("/bob/source", O_RDONLY);
+    assert(fd >= 0 && vfs_read(fd, copied, sizeof(copied)) == 6 && vfs_close(fd) == 0);
+    assert(strcmp(copied, "copied") == 0 && vfs_find_node("/alice/child/copy")->size == 6);
+    assert(run(&a, "rm source copy /bob/source") == 0);
     assert(run(&a, "cd ..") == 0 && strcmp(a.cwd, "/alice") == 0);
     assert(run(&a, "cd /") == 0 && strcmp(a.cwd, "/") == 0);
     assert(run(&a, "cd") == 0 && strcmp(a.cwd, "/alice") == 0);

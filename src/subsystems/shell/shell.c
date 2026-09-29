@@ -70,17 +70,17 @@ void shell_init(void) {
     shell_register_command("uptime", "Show elapsed time since startup", shell_builtin_uptime);
     shell_register_command("clear", "Clear terminal", shell_builtin_clear);
     shell_register_command("reboot", "Reset the board", shell_builtin_reboot);
-    shell_register_command(
-        "rmdir", "Remove empty RAM directories: rmdir path...", shell_builtin_rmdir);
-    shell_register_command("touch", "Create empty RAM files: touch path...", shell_builtin_touch);
-    shell_register_command("rm", "Remove RAM files: rm path...", shell_builtin_rm);
+    shell_register_command("rmdir", "Remove empty directories: rmdir path...", shell_builtin_rmdir);
+    shell_register_command("touch", "Create empty files: touch path...", shell_builtin_touch);
+    shell_register_command("rm", "Remove files: rm path...", shell_builtin_rm);
+    shell_register_command("cp", "Copy a file: cp source target", shell_builtin_cp);
     shell_register_command("cd", "Change working directory: cd [path]", shell_builtin_cd);
     shell_register_command("pwd", "Print working directory", shell_builtin_pwd);
     shell_register_command("whoami", "Print current user", shell_builtin_whoami);
     shell_register_command("id", "Print user and group IDs", shell_builtin_id);
     shell_register_command("help", "Display this help message", shell_print_help);
     shell_register_command("ls", "List directory entries: ls [path]", shell_builtin_ls);
-    shell_register_command("mkdir", "Create RAM directories: mkdir path...", shell_builtin_mkdir);
+    shell_register_command("mkdir", "Create directories: mkdir path...", shell_builtin_mkdir);
     shell_register_command("cat", "Print file contents: cat path...", shell_builtin_cat);
     shell_register_command("basic", "BASIC language interpreter", shell_builtin_basic);
 }

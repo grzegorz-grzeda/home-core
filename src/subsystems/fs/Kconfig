@@ -1,0 +1,26 @@
+menu "Filesystems"
+
+config HOMECORE_FS_FAT_VOLUMES
+    int "Maximum number of mounted FAT volumes"
+    default 2
+    range 1 4
+    help
+        FAT volumes that can be mounted at once, for example a ramdisk and an
+        SD card. Board descriptions mount volumes in their mounts section.
+
+config HOMECORE_FS_FAT_LFN
+    bool "Long file names on FAT volumes"
+    default y
+    help
+        Support names beyond the 8.3 format. Adds about 3 KB of code and a
+        512-byte heap buffer during each file-name operation. Without it, only
+        8.3 names can be created or opened.
+
+config HOMECORE_FS_FAT_TINY
+    bool "Share one sector buffer per FAT volume"
+    default n
+    help
+        Save about 512 bytes of heap per open FAT file at some speed cost.
+        Useful on small-RAM boards.
+
+endmenu

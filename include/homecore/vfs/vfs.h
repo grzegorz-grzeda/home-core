@@ -373,9 +373,109 @@ int vfs_lseek(int fd, int offset, int whence);
  *
  * @param fd Descriptor to inspect.
  *
- * @return The node, or `NULL` with `errno` set to `EBADF`.
+ * Descriptors on mounted filesystems have no node; use vfs_fstat() for them.
+ *
+ * @return The node, or `NULL` with `errno` set to `EBADF` for a closed or
+ *         out-of-range descriptor, or `ENOTSUP` for a file on a mounted
+ *         filesystem.
  */
 vfs_node_t *vfs_fd_node(int fd);
+/*---------------------------------------------------------------------------*/
+/** @brief File type and size reported by vfs_stat() and vfs_fstat(). */
+typedef struct {
+    /** The path is a directory, including a mount point. */
+    bool is_directory;
+    /** The path is a regular file: a RAM file or a file on a mounted filesystem. */
+    bool is_regular;
+    /** File length in bytes; 0 for directories and devices. */
+    unsigned size;
+} vfs_stat_t;
+/*---------------------------------------------------------------------------*/
+/**
+ * @brief Report the type and size of a path.
+ *
+ * Works for nodes and for paths inside mounted filesystems, which have no
+ * node. A path that is neither a directory nor a regular file is a device.
+ *
+ * @param path      Path to inspect, resolved from `/`.
+ * @param[out] stat Result. Must not be `NULL`.
+ *
+ * @retval 0  @p stat is filled in.
+ * @retval -1 `errno` is `ENOENT`, `ENOTDIR`, `ENAMETOOLONG`, or set by the
+ *            mounted filesystem.
+ */
+int vfs_stat(const char *path, vfs_stat_t *stat);
+/*---------------------------------------------------------------------------*/
+/**
+ * @brief Report the type and size of an open descriptor.
+ *
+ * @param fd        Open descriptor.
+ * @param[out] stat Result. Must not be `NULL`.
+ *
+ * @return 0 on success; -1 with `errno` set to `EBADF` for a closed or
+ *         out-of-range descriptor, or set by the mounted filesystem.
+ */
+int vfs_fstat(int fd, vfs_stat_t *stat);
+/** @} */
+/*---------------------------------------------------------------------------*/
+/**
+ * @name Mounted filesystems
+ *
+ * A mounted filesystem owns everything below its mount point. Paths passed to
+ * its operations are relative to the mount point and always start with `/`
+ * (the mount point itself is `/`). Operations return 0 or a byte count on
+ * success and -1 with `errno` set on failure, like the corresponding `vfs_*`
+ * functions. The VFS resolves `.` and `..`, rejects reads and writes the
+ * access mode forbids, zero-length transfers, and `NULL` buffers, and allocates
+ * the descriptor; the filesystem handles `O_CREAT`, `O_EXCL`, `O_TRUNC`, and
+ * `O_APPEND`. Descriptors on mounted files do not support vfs_ioctl()
+ * (`ENOTTY`).
+ * @{
+ */
+/** @brief Operations a mounted filesystem provides; every one is required. */
+typedef struct {
+    /** Open @p path with `open()` flags; store the file handle in @p file. */
+    int (*open)(void *fs, const char *path, int flags, void **file);
+    /** Close and free a file handle. */
+    int (*close)(void *fs, void *file);
+    /** Read up to @p len bytes; 0 at end of file. */
+    int (*read)(void *fs, void *file, void *buf, unsigned len);
+    /** Write @p len bytes; a short count means the filesystem is full. */
+    int (*write)(void *fs, void *file, const void *buf, unsigned len);
+    /** Move the file position; return the new position. */
+    int (*lseek)(void *fs, void *file, int offset, int whence);
+    /** Report an open file's type and size. */
+    int (*fstat)(void *fs, void *file, vfs_stat_t *stat);
+    /** Report a path's type and size; `ENOENT` if it does not exist. */
+    int (*stat)(void *fs, const char *path, vfs_stat_t *stat);
+    /** Create a directory whose parent exists. */
+    int (*mkdir)(void *fs, const char *path);
+    /** Remove an empty directory. */
+    int (*rmdir)(void *fs, const char *path);
+    /** Remove a closed regular file. */
+    int (*unlink)(void *fs, const char *path);
+    /** Call @p visitor for each entry of a directory, as vfs_list() does. */
+    int (*list)(void *fs, const char *path, vfs_directory_visitor_t visitor, void *context);
+} vfs_fs_ops_t;
+/*---------------------------------------------------------------------------*/
+/**
+ * @brief Attach a filesystem at a new mount point.
+ *
+ * Creates @p path as a directory node owned by the filesystem. Mount points
+ * cannot be removed or nested, and there is no unmount yet.
+ *
+ * @param path Absolute path of the mount point. Its parent must exist and the
+ *             path must not. The string is copied.
+ * @param ops  Filesystem operations. Must remain valid for the rest of the
+ *             program.
+ * @param fs   Filesystem instance passed to every operation.
+ *
+ * @retval 0  The filesystem is mounted.
+ * @retval -1 `errno` is `EINVAL` (missing argument), `EEXIST`, `ENOENT`,
+ *            `ENOTDIR`, `ENAMETOOLONG`, `EBUSY` (inside another mount), or
+ *            `ENOSPC` when `CONFIG_HOMECORE_VFS_MAX_MOUNTS` mounts exist.
+ */
+int vfs_mount(const char *path, const vfs_fs_ops_t *ops, void *fs);
 /** @} */
 /*---------------------------------------------------------------------------*/
 /** @} */

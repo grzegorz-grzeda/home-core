@@ -30,6 +30,14 @@ config HOMECORE_VFS_MAX_FILE_SIZE
     default 4096
     range 1 32768
 
+config HOMECORE_VFS_MAX_MOUNTS
+    int "Maximum number of mounted filesystems"
+    default 2
+    range 1 8
+    help
+        Mount points, such as /ram and /sd, that can exist at once. Each costs
+        a small static entry.
+
 config HOMECORE_VFS_MAX_OPEN_FILES
     int "Maximum number of open files"
     default 16

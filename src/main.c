@@ -40,6 +40,7 @@ int main(void) {
     board_init();
     dt_init();
     k_init();
+    dt_mount_all();
     shell_init();
 
     printf("\nHomeCore OS\n");

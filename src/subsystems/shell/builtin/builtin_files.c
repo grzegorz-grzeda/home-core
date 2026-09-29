@@ -26,12 +26,12 @@ int shell_builtin_ls(shell_context_t *context, int argc, char **argv) {
     if (vfs_resolve_path(context->cwd, path, resolved) < 0) {
         return file_error("ls", path);
     }
-    vfs_node_t *node = vfs_find_node(resolved);
-    if (!node) {
+    vfs_stat_t stat;
+    if (vfs_stat(resolved, &stat) < 0) {
         return file_error("ls", path);
     }
-    if (!node->is_directory) {
-        return print_entry(strrchr(node->name, '/') + 1, false, NULL);
+    if (!stat.is_directory) {
+        return print_entry(strrchr(resolved, '/') + 1, false, NULL);
     }
     if (vfs_list(resolved, print_entry, NULL) < 0) {
         return file_error("ls", path);
@@ -129,10 +129,10 @@ int shell_builtin_touch(shell_context_t *context, int argc, char **argv) {
             status = file_error("touch", argv[i]);
             continue;
         }
-        vfs_node_t *node = vfs_find_node(path);
-        if (node) {
-            if (!node->is_regular) {
-                errno = node->is_directory ? EISDIR : EPERM;
+        vfs_stat_t stat;
+        if (vfs_stat(path, &stat) == 0) {
+            if (!stat.is_regular) {
+                errno = stat.is_directory ? EISDIR : EPERM;
                 status = file_error("touch", argv[i]);
             }
             continue; /* No timestamps yet; preserve existing contents. */
@@ -159,5 +159,74 @@ int shell_builtin_rm(shell_context_t *context, int argc, char **argv) {
             status = file_error("rm", argv[i]);
         }
     }
+    return status;
+}
+
+/* Copy every byte of source to target; returns 0 or -1 with errno set. */
+static int copy_file(int source, int target) {
+    char buffer[128];
+    int length;
+    while ((length = vfs_read(source, buffer, sizeof(buffer))) > 0) {
+        int offset = 0;
+        while (offset < length) {
+            int written = vfs_write(target, buffer + offset, (unsigned)(length - offset));
+            if (written <= 0) {
+                if (written == 0) {
+                    errno = EIO;
+                }
+                return -1;
+            }
+            offset += written;
+        }
+    }
+    return length < 0 ? -1 : 0;
+}
+
+int shell_builtin_cp(shell_context_t *context, int argc, char **argv) {
+    if (argc != 3) {
+        puts("Usage: cp source target");
+        return 1;
+    }
+    char source[VFS_PATH_CAPACITY];
+    char target[VFS_PATH_CAPACITY];
+    if (vfs_resolve_path(context->cwd, argv[1], source) < 0) {
+        return file_error("cp", argv[1]);
+    }
+    if (vfs_resolve_path(context->cwd, argv[2], target) < 0) {
+        return file_error("cp", argv[2]);
+    }
+    vfs_stat_t stat;
+    if (vfs_stat(target, &stat) == 0 && stat.is_directory) {
+        /* Copy into the directory under the source's name. */
+        const char *name = strrchr(source, '/') + 1;
+        size_t length = strlen(target);
+        const char *separator = target[length - 1] == '/' ? "" : "/";
+        int written = snprintf(target + length, sizeof(target) - length, "%s%s", separator, name);
+        if (written < 0 || (size_t)written >= sizeof(target) - length) {
+            errno = ENAMETOOLONG;
+            return file_error("cp", argv[2]);
+        }
+    }
+    if (strcmp(source, target) == 0) {
+        errno = EINVAL;
+        return file_error("cp", argv[2]);
+    }
+    int input = vfs_open(source, O_RDONLY);
+    if (input < 0) {
+        return file_error("cp", argv[1]);
+    }
+    int status = 0;
+    int output = vfs_open(target, O_WRONLY | O_CREAT | O_TRUNC);
+    if (output < 0) {
+        status = file_error("cp", argv[2]);
+    } else {
+        if (copy_file(input, output) < 0) {
+            status = file_error("cp", argv[2]);
+        }
+        if (vfs_close(output) < 0) {
+            status = file_error("cp", argv[2]);
+        }
+    }
+    (void)vfs_close(input);
     return status;
 }

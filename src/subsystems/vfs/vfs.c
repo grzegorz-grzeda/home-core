@@ -23,6 +23,7 @@
  */
 /*---------------------------------------------------------------------------*/
 #include "homecore/vfs/vfs.h"
+#include <limits.h>
 #include <stdint.h>
 #include <string.h>
 #include <fcntl.h>
@@ -32,10 +33,13 @@
 #include "homecore/autoconf.h"
 /*---------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
+typedef struct vfs_mount vfs_mount_t;
 /* Allocated by vfs_open() and freed by vfs_close(). Descriptors on snapshot
  * nodes carry VFS_SNAPSHOT_CAPACITY bytes of snapshot storage; others none. */
 typedef struct vfs_file_descriptor {
-    vfs_node_t *node;
+    vfs_node_t *node;   /* NULL for files on a mounted filesystem */
+    vfs_mount_t *mount; /* Set for files on a mounted filesystem */
+    void *handle;       /* The mounted filesystem's file handle */
     int flags;
     unsigned snapshot_length;
     unsigned position;
@@ -52,9 +56,17 @@ typedef struct vfs_entry {
 static vfs_node_t dev_directory = {.name = "/dev", .is_directory = true};
 static vfs_node_t root_directory = {.name = "/", .is_directory = true, .next = &dev_directory};
 static vfs_node_t *vfs_root = &root_directory;
+/* A mounted filesystem: its mount-point node and path, allocated in one block. */
+struct vfs_mount {
+    vfs_node_t node;
+    const vfs_fs_ops_t *ops;
+    void *fs;
+    char path[];
+};
 /* Live entries, capped by the Kconfig maxima. */
 static unsigned directory_count;
 static unsigned ram_file_count;
+static vfs_mount_t *mounts[CONFIG_HOMECORE_VFS_MAX_MOUNTS];
 /*---------------------------------------------------------------------------*/
 static vfs_file_descriptor_t *vfs_fd_table[CONFIG_HOMECORE_VFS_MAX_OPEN_FILES];
 /*---------------------------------------------------------------------------*/
@@ -82,6 +94,45 @@ static vfs_node_t *find_exact(const char *path) {
         }
     }
     return NULL;
+}
+
+/* The mount containing a canonical path, or NULL. *relative receives the part
+ * below the mount point, or "/" for the mount point itself. */
+static vfs_mount_t *find_mount(const char *path, const char **relative) {
+    for (unsigned i = 0; i < CONFIG_HOMECORE_VFS_MAX_MOUNTS; i++) {
+        vfs_mount_t *mount = mounts[i];
+        if (!mount) {
+            continue;
+        }
+        size_t length = strlen(mount->path);
+        if (strncmp(path, mount->path, length) == 0 &&
+            (path[length] == '\0' || path[length] == '/')) {
+            *relative = path[length] ? path + length : "/";
+            return mount;
+        }
+    }
+    return NULL;
+}
+
+/* Whether a canonical path is a directory: 1 yes, 0 exists but is not, -1
+ * missing or unreadable (errno set). Consults the mounted filesystem for paths
+ * below a mount point, which have no node. */
+static int directory_status(const char *path) {
+    vfs_node_t *node = find_exact(path);
+    if (node) {
+        return node->is_directory ? 1 : 0;
+    }
+    const char *relative;
+    vfs_mount_t *mount = find_mount(path, &relative);
+    if (!mount) {
+        errno = ENOENT;
+        return -1;
+    }
+    vfs_stat_t stat;
+    if (mount->ops->stat(mount->fs, relative, &stat) < 0) {
+        return -1;
+    }
+    return stat.is_directory ? 1 : 0;
 }
 
 /* Resolve components while checking intermediate directories, so paths such
@@ -135,12 +186,11 @@ static int resolve_path(const char *path, char result[VFS_PATH_CAPACITY]) {
             while (*rest == '/') {
                 rest++;
             }
-            vfs_node_t *node = find_exact(result);
-            if (!node && *rest) {
-                errno = ENOENT;
+            int status = directory_status(result);
+            if (status < 0 && *rest) {
                 return -1;
             }
-            if (node && !node->is_directory) {
+            if (status == 0) {
                 errno = ENOTDIR;
                 return -1;
             }
@@ -165,9 +215,11 @@ int vfs_resolve_path(const char *base, const char *path, char result[VFS_PATH_CA
     if (resolve_path(base, directory) < 0) {
         return -1;
     }
-    vfs_node_t *node = find_exact(directory);
-    if (!node || !node->is_directory) {
-        errno = node ? ENOTDIR : ENOENT;
+    int status = directory_status(directory);
+    if (status <= 0) {
+        if (status == 0) {
+            errno = ENOTDIR;
+        }
         return -1;
     }
     size_t base_length = strlen(directory);
@@ -234,6 +286,11 @@ int vfs_mkdir(const char *name) {
         errno = EEXIST;
         return -1;
     }
+    const char *relative;
+    vfs_mount_t *mount = find_mount(path, &relative);
+    if (mount) {
+        return mount->ops->mkdir(mount->fs, relative);
+    }
     char parent[VFS_PATH_CAPACITY];
     strcpy(parent, path);
     char *slash = strrchr(parent, '/');
@@ -259,8 +316,22 @@ int vfs_mkdir(const char *name) {
 }
 
 int vfs_rmdir(const char *path) {
-    vfs_node_t *node = vfs_find_node(path);
+    char resolved[VFS_PATH_CAPACITY];
+    if (resolve_path(path, resolved) < 0) {
+        return -1;
+    }
+    const char *relative;
+    vfs_mount_t *mount = find_mount(resolved, &relative);
+    if (mount) {
+        if (strcmp(relative, "/") == 0) {
+            errno = EBUSY; /* Mount points cannot be removed. */
+            return -1;
+        }
+        return mount->ops->rmdir(mount->fs, relative);
+    }
+    vfs_node_t *node = find_exact(resolved);
     if (!node) {
+        errno = ENOENT;
         return -1;
     }
     if (!node->is_directory) {
@@ -288,8 +359,22 @@ int vfs_rmdir(const char *path) {
 }
 
 int vfs_unlink(const char *path) {
-    vfs_node_t *node = vfs_find_node(path);
+    char resolved[VFS_PATH_CAPACITY];
+    if (resolve_path(path, resolved) < 0) {
+        return -1;
+    }
+    const char *relative;
+    vfs_mount_t *mount = find_mount(resolved, &relative);
+    if (mount) {
+        if (strcmp(relative, "/") == 0) {
+            errno = EISDIR;
+            return -1;
+        }
+        return mount->ops->unlink(mount->fs, relative);
+    }
+    vfs_node_t *node = find_exact(resolved);
     if (!node) {
+        errno = ENOENT;
         return -1;
     }
     if (node->is_directory) {
@@ -351,7 +436,93 @@ vfs_node_t *vfs_fd_node(int fd) {
         errno = EBADF;
         return NULL;
     }
+    if (vfs_fd_table[fd]->mount) {
+        errno = ENOTSUP;
+        return NULL;
+    }
     return vfs_fd_table[fd]->node;
+}
+
+static void stat_node(const vfs_node_t *node, vfs_stat_t *stat) {
+    *stat = (vfs_stat_t){
+        .is_directory = node->is_directory,
+        .is_regular = node->is_regular,
+        .size = node->is_regular ? node->size : 0U,
+    };
+}
+
+int vfs_stat(const char *path, vfs_stat_t *stat) {
+    char resolved[VFS_PATH_CAPACITY];
+    if (resolve_path(path, resolved) < 0) {
+        return -1;
+    }
+    vfs_node_t *node = find_exact(resolved);
+    if (node) {
+        stat_node(node, stat);
+        return 0;
+    }
+    const char *relative;
+    vfs_mount_t *mount = find_mount(resolved, &relative);
+    if (!mount) {
+        errno = ENOENT;
+        return -1;
+    }
+    return mount->ops->stat(mount->fs, relative, stat);
+}
+
+int vfs_mount(const char *path, const vfs_fs_ops_t *ops, void *fs) {
+    if (!path || !ops) {
+        errno = EINVAL;
+        return -1;
+    }
+    char resolved[VFS_PATH_CAPACITY];
+    if (resolve_path(path, resolved) < 0) {
+        return -1;
+    }
+    const char *relative;
+    if (find_mount(resolved, &relative)) {
+        errno = EBUSY; /* Mounts do not nest. */
+        return -1;
+    }
+    if (find_exact(resolved)) {
+        errno = EEXIST;
+        return -1;
+    }
+    char parent[VFS_PATH_CAPACITY];
+    strcpy(parent, resolved);
+    char *slash = strrchr(parent, '/');
+    if (slash == parent) {
+        slash[1] = 0;
+    } else {
+        *slash = 0;
+    }
+    vfs_node_t *directory = find_exact(parent);
+    if (!directory || !directory->is_directory) {
+        errno = directory ? ENOTDIR : ENOENT;
+        return -1;
+    }
+    unsigned slot = 0;
+    while (slot < CONFIG_HOMECORE_VFS_MAX_MOUNTS && mounts[slot]) {
+        slot++;
+    }
+    if (slot == CONFIG_HOMECORE_VFS_MAX_MOUNTS) {
+        errno = ENOSPC;
+        return -1;
+    }
+    size_t size = strlen(resolved) + 1;
+    vfs_mount_t *mount = calloc(1, sizeof(*mount) + size);
+    if (!mount) {
+        errno = ENOMEM;
+        return -1;
+    }
+    memcpy(mount->path, resolved, size);
+    mount->ops = ops;
+    mount->fs = fs;
+    mount->node.name = mount->path;
+    mount->node.is_directory = true;
+    vfs_register_node(&mount->node);
+    mounts[slot] = mount;
+    return 0;
 }
 
 int vfs_list(const char *path, vfs_directory_visitor_t visitor, void *context) {
@@ -359,8 +530,18 @@ int vfs_list(const char *path, vfs_directory_visitor_t visitor, void *context) {
         errno = EINVAL;
         return -1;
     }
-    vfs_node_t *directory = vfs_find_node(path);
+    char resolved[VFS_PATH_CAPACITY];
+    if (resolve_path(path, resolved) < 0) {
+        return -1;
+    }
+    const char *relative;
+    vfs_mount_t *mount = find_mount(resolved, &relative);
+    if (mount) {
+        return mount->ops->list(mount->fs, relative, visitor, context);
+    }
+    vfs_node_t *directory = find_exact(resolved);
     if (!directory) {
+        errno = ENOENT;
         return -1;
     }
     if (!directory->is_directory) {
@@ -417,6 +598,24 @@ static vfs_file_descriptor_t *allocate_descriptor(vfs_node_t *node, int flags) {
     return file;
 }
 
+/* Open a file below a mount point into free descriptor slot fd. The
+ * filesystem handles O_CREAT, O_EXCL, O_TRUNC, and O_APPEND. */
+static int open_mounted(int fd, vfs_mount_t *mount, const char *relative, int flags) {
+    vfs_file_descriptor_t *file = allocate_descriptor(NULL, flags);
+    if (!file) {
+        return -1;
+    }
+    if (mount->ops->open(mount->fs, relative, flags, &file->handle) < 0) {
+        int error = errno;
+        free(file);
+        errno = error;
+        return -1;
+    }
+    file->mount = mount;
+    vfs_fd_table[fd] = file;
+    return fd;
+}
+
 int vfs_open(const char *name, int flags) {
     int access = flags & O_ACCMODE;
     if (access != O_RDONLY && access != O_WRONLY && access != O_RDWR) {
@@ -434,6 +633,15 @@ int vfs_open(const char *name, int flags) {
     if (fd == CONFIG_HOMECORE_VFS_MAX_OPEN_FILES) {
         errno = EMFILE;
         return -1;
+    }
+    char path[VFS_PATH_CAPACITY];
+    if (resolve_path(name, path) < 0) {
+        return -1;
+    }
+    const char *relative;
+    vfs_mount_t *mount = find_mount(path, &relative);
+    if (mount && strcmp(relative, "/") != 0) {
+        return open_mounted(fd, mount, relative, flags);
     }
     vfs_node_t *node = vfs_find_node(name);
     if (node && (flags & O_CREAT) && (flags & O_EXCL)) {
@@ -512,7 +720,9 @@ int vfs_close(int fd) {
     }
 
     int result = 0;
-    if (file->node->ops.close) {
+    if (file->mount) {
+        result = file->mount->ops->close(file->mount->fs, file->handle);
+    } else if (file->node->ops.close) {
         result = file->node->ops.close(file->node);
     }
 
@@ -528,6 +738,20 @@ int vfs_read(int fd, void *buf, unsigned len) {
         return status;
     }
 
+    if (file->mount) {
+        if ((file->flags & O_ACCMODE) == O_WRONLY) {
+            errno = EBADF;
+            return -1;
+        }
+        if (!len) {
+            return 0;
+        }
+        if (!buf) {
+            errno = EFAULT;
+            return -1;
+        }
+        return file->mount->ops->read(file->mount->fs, file->handle, buf, len);
+    }
     if (file->node->is_regular) {
         if ((file->flags & O_ACCMODE) == O_WRONLY) {
             errno = EBADF;
@@ -582,6 +806,24 @@ int vfs_write(int fd, const void *buf, unsigned len) {
         return status;
     }
 
+    if (file->mount) {
+        if ((file->flags & O_ACCMODE) == O_RDONLY) {
+            errno = EBADF;
+            return -1;
+        }
+        if (!len) {
+            return 0;
+        }
+        if (!buf) {
+            errno = EFAULT;
+            return -1;
+        }
+        if (len > INT_MAX) {
+            errno = EOVERFLOW;
+            return -1;
+        }
+        return file->mount->ops->write(file->mount->fs, file->handle, buf, len);
+    }
     if (file->node->is_regular) {
         vfs_node_t *node = file->node;
         if ((file->flags & O_ACCMODE) == O_RDONLY) {
@@ -636,6 +878,10 @@ int vfs_ioctl(int fd, unsigned request, void *arg) {
         return status;
     }
 
+    if (file->mount) {
+        errno = ENOTTY;
+        return -1;
+    }
     if (file->node->ops.ioctl) {
         return file->node->ops.ioctl(file->node, request, arg);
     }
@@ -650,6 +896,9 @@ int vfs_lseek(int fd, int offset, int whence) {
         return status;
     }
 
+    if (file->mount) {
+        return file->mount->ops->lseek(file->mount->fs, file->handle, offset, whence);
+    }
     if (file->node->is_regular) {
         int64_t position = offset;
         if (whence == SEEK_CUR) {
@@ -688,5 +937,19 @@ int vfs_lseek(int fd, int offset, int whence) {
     }
 
     return -1;
+}
+/*---------------------------------------------------------------------------*/
+int vfs_fstat(int fd, vfs_stat_t *stat) {
+    int status;
+    vfs_file_descriptor_t *file = descriptor(fd, &status);
+    if (!file) {
+        errno = EBADF;
+        return -1;
+    }
+    if (file->mount) {
+        return file->mount->ops->fstat(file->mount->fs, file->handle, stat);
+    }
+    stat_node(file->node, stat);
+    return 0;
 }
 /*---------------------------------------------------------------------------*/

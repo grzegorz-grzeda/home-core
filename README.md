@@ -35,7 +35,8 @@ For STM32 flashing and UART wiring, follow the board guide above.
 ## Current scope
 
 Implemented: UART console, shell commands, libc I/O and heap integration,
-RAM files/directories, per-session working directories, user identity,
+RAM files/directories, mountable filesystems with FAT (FatFs) on a ramdisk
+(STM32F4DISCOVERY `/ram`), per-session working directories, user identity,
 1 kHz SysTick uptime, and BASIC with `millis()`.
 
 Still planned: persistent storage, authentication and permissions, a scheduler
@@ -54,8 +55,8 @@ RAM files and session state are lost on reset.
   published from `main` by CI, with the bundled G2Basic reference. [Generate them locally](docs/development.md#api-documentation)
   with `bash scripts/build_docs.sh`.
 - [Porting](docs/porting.md): adding boards, SoCs, and architecture support.
-- [Shell and system services](docs/shell.md): commands, sessions, RAM files, and uptime.
-- [Extending](docs/extending.md): adding shell commands and VFS device nodes.
+- [Shell and system services](docs/shell.md): commands, sessions, files, and uptime.
+- [Extending](docs/extending.md): adding shell commands, VFS device nodes, drivers, and filesystems.
 - [Versioning](docs/versioning.md) and [changelog](CHANGELOG.md): SemVer 2.0.0 rules and release history.
 - [Contributor and agent instructions](AGENTS.md): repository working conventions
   ([CLAUDE.md](CLAUDE.md) imports them for Claude Code).
@@ -66,4 +67,5 @@ HomeCore is MIT licensed; see [LICENSE](LICENSE). Created by Grzegorz Grzęda.
 Board photos in `docs/assets/boards` are CC BY-SA; see
 [photo credits](docs/assets/boards/PHOTOS.md).
 External dependencies retain their own licenses, including the vendored
-[STM32 device headers](external/stm32f4/README.md).
+[STM32 device headers](external/stm32f4/README.md) and
+[FatFs](external/fatfs/README.md) (ChaN's BSD-style one-clause license).

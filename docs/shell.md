@@ -61,6 +61,23 @@ directories, configured by `CONFIG_HOMECORE_VFS_MAX_DIRECTORIES`.
 Paths allow up to 127 bytes and support repeated slashes, `.` and `..`.
 Shell paths resolve relative to the session working directory. There is no
 persistent file storage yet.
+
+On boards with a mounted filesystem, such as `/ram` on STM32F4DISCOVERY, the
+file commands work the same below the mount point, and `cp` copies between
+filesystems:
+
+```text
+cd /ram
+mkdir notes
+touch notes/todo.txt
+cp /dev/uptime boot-time
+ls
+```
+
+FAT names are case-insensitive, and names longer than 8.3 need
+`CONFIG_HOMECORE_FS_FAT_LFN` (enabled by default). `/ram` cannot be removed,
+and a FAT volume that runs out of space fails writes with "No space left on
+device".
 `mkdir -p` and other command options are not implemented.
 
 `cat path...` copies existing readable VFS nodes to the console until EOF.
@@ -102,7 +119,7 @@ become task-local when scheduling is added. This is identity and session state,
 not authentication or access control: there are no passwords, ownership checks,
 or privilege separation yet.
 
-## System commands and RAM files
+## System commands and files
 
 | Command | Behavior |
 | --- | --- |
@@ -111,8 +128,9 @@ or privilege separation yet.
 | `clear` | Clear an ANSI terminal and move the cursor home |
 | `reboot` | Reset the board; RAM files, directories and session state are lost |
 | `rmdir path...` | Remove empty user-created directories and free their memory |
-| `touch path...` | Create empty RAM files, preserving existing file contents |
-| `rm path...` | Remove closed RAM files and free their memory |
+| `touch path...` | Create empty files, preserving existing file contents |
+| `rm path...` | Remove closed files and free their memory |
+| `cp source target` | Copy a readable file or snapshot device to a new or truncated file; a directory target keeps the source's name |
 
 `mem` reports the heap region, excluding static RAM and reserved stack space.
 Its last line, `Stack: used N of M bytes`, is the deepest main-stack use since
@@ -121,7 +139,7 @@ exhausted and has probably overwritten heap memory.
 Allocated bytes include allocator overhead; available bytes combine reusable
 allocator blocks and unclaimed heap space, not necessarily one contiguous block.
 
-`rmdir` rejects `/`, `/dev`, non-empty directories, and the calling shell's CWD.
+`rmdir` rejects `/`, `/dev`, mount points, non-empty directories, and the calling shell's CWD.
 `rm` rejects directories, device nodes and files that still have open descriptors.
 There are no recursive-removal flags. `touch` does not maintain timestamps yet.
 

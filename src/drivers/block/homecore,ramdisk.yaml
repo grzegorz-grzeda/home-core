@@ -1,0 +1,15 @@
+# Binding for a RAM-backed block device.
+compatible: homecore,ramdisk
+description: Block device backed by a RAM buffer allocated at build time; contents are lost at reset.
+driver: ramdisk
+sources: [ramdisk.c]
+block: true
+properties:
+  size:
+    type: size
+    required: true
+    minimum: 512
+    multiple: 512
+    field: size
+    buffer: data
+    description: Disk size in bytes, such as 64K; a multiple of 512. The buffer is placed in .bss.

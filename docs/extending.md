@@ -24,7 +24,7 @@ registers them. To add one:
    `builtin_<area>.c`/`.h` pair and list the source in
    `src/subsystems/shell/builtin/CMakeLists.txt`.
 2. Register it in `shell_init()` with a one-line help text that shows the usage,
-   for example `"Remove RAM files: rm path..."`.
+   for example `"Remove files: rm path..."`.
 3. Document it in [shell](shell.md) and add a command check to
    `tests/qemu_files_test.py` when its behavior is observable on the console.
 
@@ -168,3 +168,27 @@ A driver is compiled only when a board enables one of its devices. Access
 registers through the SoC's CMSIS types (`soc_cmsis.h`); host tests substitute
 a stand-in header from `tests/fakes/`, as `tests/uart_contract_test.c` does.
 Add generator cases for new property rules to `tests/devicetree_generate_test.py`.
+
+### Block devices
+
+A block driver sets `block: true` in its binding and exports
+`const block_ops_t <driver>_block_ops` (`include/homecore/drivers/block.h`):
+sector read, write, sync, and sector count, with 512-byte sectors. It
+registers no VFS node; a board's `mounts` entry attaches a filesystem, and the
+generator builds the `block_device_t`. The ramdisk
+(`src/drivers/block/ramdisk.c`, compatible `homecore,ramdisk`) is the
+reference and shows the `size` property with a generated `buffer`.
+
+## Mounted filesystems
+
+A filesystem implements every operation of `vfs_fs_ops_t`
+(`include/homecore/vfs/vfs.h`) and attaches itself with `vfs_mount()`. The VFS
+resolves `.` and `..`, checks access modes, allocates descriptors, and passes
+paths relative to the mount point (`/` is the mount point itself); the
+filesystem handles `O_CREAT`, `O_EXCL`, `O_TRUNC`, and `O_APPEND` and returns
+the same errno values as RAM files. Paths below a mount point have no
+`vfs_node_t`, so code that needs a type or size uses `vfs_stat()` or
+`vfs_fstat()` rather than `vfs_find_node()`. The FAT glue in
+`src/subsystems/fs/fat/fat.c` is the reference; add the filesystem's type and
+mount function to `FILESYSTEMS` in `scripts/devicetree_generate.py` so boards
+can name it.

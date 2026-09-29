@@ -16,11 +16,11 @@ int session_chdir(session_t *session, const char *path) {
     if (vfs_resolve_path(session->cwd, path, resolved) < 0) {
         return -1;
     }
-    vfs_node_t *node = vfs_find_node(resolved);
-    if (!node) {
+    vfs_stat_t stat;
+    if (vfs_stat(resolved, &stat) < 0) {
         return -1;
     }
-    if (!node->is_directory) {
+    if (!stat.is_directory) {
         errno = ENOTDIR;
         return -1;
     }

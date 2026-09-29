@@ -104,23 +104,30 @@ int _close(int fd) {
 }
 /*---------------------------------------------------------------------------*/
 int _fstat(int fd, struct stat *st) {
-    vfs_node_t *node = vfs_fd_node(fd);
-    if (!node) {
-        return -1;
-    }
     if (!st) {
         errno = EFAULT;
         return -1;
     }
+    vfs_stat_t info;
+    if (vfs_fstat(fd, &info) < 0) {
+        return -1;
+    }
     memset(st, 0, sizeof(*st));
-    st->st_mode = node->is_regular ? S_IFREG : S_IFCHR;
-    st->st_size = node->size;
+    if (info.is_directory) {
+        st->st_mode = S_IFDIR;
+    } else {
+        st->st_mode = info.is_regular ? S_IFREG : S_IFCHR;
+    }
+    st->st_size = (off_t)info.size;
     return 0;
 }
 /*---------------------------------------------------------------------------*/
 int _isatty(int fd) {
     vfs_node_t *node = vfs_fd_node(fd);
     if (!node) {
+        if (errno == ENOTSUP) {
+            errno = ENOTTY; /* A file on a mounted filesystem. */
+        }
         return 0;
     }
     if (node->is_regular || node->ops.snapshot) {

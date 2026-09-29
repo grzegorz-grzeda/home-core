@@ -157,6 +157,46 @@ class DevicetreeTest(unittest.TestCase):
                              soc=SOC.replace("base: 0x20000000", 'base: "0x20000000"'))
         self.assert_rejected("memory.ram.size", soc=SOC.replace("size: 8K", "size: 8X"))
 
+    def test_mounts(self):
+        board = BOARD.replace("chosen:", '  ram0: {compatible: "homecore,ramdisk", size: 64K}\nchosen:')
+        mount = "mounts:\n  /ram: {device: ram0, fs: fat, format: true}\n"
+        status, stderr, out = self.run_generator(board=board + mount)
+        self.assertEqual(status, 0, stderr)
+        self.assertIn("static uint8_t dt_ram0_data[65536] __attribute__((aligned(4)));", out["c"])
+        self.assertIn(".data = dt_ram0_data,", out["c"])
+        self.assertIn(".size = 65536U,", out["c"])
+        self.assertIn(".ops = &ramdisk_block_ops,", out["c"])
+        self.assertIn('fs_fat_mount(&dt_ram0_block, "/ram", true) < 0', out["c"])
+        self.assertIn('#include "homecore/fs/fat.h"', out["c"])
+        self.assertIn("#define DT_MOUNT_COUNT 1U", out["h"])
+        self.assertIn('set(HOMECORE_DT_FILESYSTEMS "fat")', out["cmake"])
+        self.assertIn("ramdisk.c", out["cmake"])
+        # Overlays can add mounts; no mounts compile no filesystem.
+        status, stderr, out = self.run_generator(board=board, overlays=[mount])
+        self.assertEqual(status, 0, stderr)
+        self.assertIn('"/ram", true', out["c"])
+        status, stderr, out = self.run_generator()
+        self.assertEqual(status, 0, stderr)
+        self.assertIn('set(HOMECORE_DT_FILESYSTEMS "")', out["cmake"])
+        self.assertIn("void dt_mount_all(void) {\n}", out["c"])
+        cases = {
+            "must be a multiple of 512": (board.replace("64K", "1000"), mount),
+            "must be at least 512": (board.replace("64K", "0"), mount),
+            "invalid size": (board.replace("64K", "true"), mount),
+            "'usart1' is not an enabled block device": (board, mount.replace("ram0", "usart1")),
+            "'ram9' is not an enabled block device": (board, mount.replace("ram0", "ram9")),
+            "mounts./a/b: mount points are top-level": (board, mount.replace("/ram", "/a/b")),
+            "mounts./dev: mount points": (board, mount.replace("/ram", "/dev")),
+            "fs: expected one of fat": (board, mount.replace("fs: fat", "fs: ext4")),
+            "format: expected true or false": (board, mount.replace("true", "1")),
+            "allowed keys are": (board, mount.replace("format", "mode")),
+            "'ram0' is already mounted": (board, mount + "  /two: {device: ram0, fs: fat}\n"),
+            "expected a mapping of mount-point paths": (board, "mounts: [/ram]\n"),
+        }
+        for message, (text, mounts) in cases.items():
+            with self.subTest(message):
+                self.assert_rejected(message, board=text + mounts)
+
     def test_repository_descriptions_generate(self):
         for board in ("lm3s6965evb", "stm32f4discovery", "stm32vldiscovery"):
             with self.subTest(board):

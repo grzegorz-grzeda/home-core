@@ -5,6 +5,30 @@ All notable changes to HomeCore are recorded here. The format is based on
 follow [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html) as
 described in [versioning](docs/versioning.md).
 
+## [0.1.1] - 2026-09-29
+
+### Added
+- Mounted filesystems in the VFS: `vfs_mount()`, `vfs_stat()`, `vfs_fstat()`,
+  and `vfs_fs_ops_t`, with `CONFIG_HOMECORE_VFS_MAX_MOUNTS` (default 2).
+- Block devices (`include/homecore/drivers/block.h`) and a ramdisk driver
+  (`homecore,ramdisk`).
+- FAT volumes through ChaN's FatFs R0.16, vendored in `external/fatfs`, with
+  `fs_fat_mount()` and the Kconfig options `CONFIG_HOMECORE_FS_FAT_VOLUMES`,
+  `CONFIG_HOMECORE_FS_FAT_LFN`, and `CONFIG_HOMECORE_FS_FAT_TINY`. FatFs is
+  compiled only for boards that mount a FAT volume.
+- Device descriptions: a `mounts` section in boards and overlays, a `size`
+  property type with generated `buffer`s, `block: true` bindings, and the
+  generated `dt_mount_all()` that `main()` calls after `k_init()`.
+- STM32F4DISCOVERY mounts a 64 KB FAT ramdisk at `/ram`, formatted at every
+  boot (covered by host tests; not yet run on hardware).
+- `cp source target` shell command.
+
+### Changed
+- `ls`, `touch`, `cd`, and newlib's `fstat()`/`isatty()` use `vfs_stat()` and
+  `vfs_fstat()`, so they work below mount points, where paths have no node.
+  `vfs_fd_node()` fails with `ENOTSUP` for files on mounted filesystems.
+- File command help no longer says "RAM" files and directories.
+
 ## [0.1.0] - 2026-09-29
 
 ### Added
