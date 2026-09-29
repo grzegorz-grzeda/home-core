@@ -18,6 +18,7 @@
  * `board_uart_*` functions and panic paths use it, so boards contain no UART
  * code. Every operation is valid only after dt_init() has initialized the
  * device; check console_ready() on paths that can run earlier.
+ * @see @ref driver_serial for the drivers, their configuration, and tests.
  * @{
  */
 

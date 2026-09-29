@@ -1,0 +1,52 @@
+/**
+@page driver_block Block devices
+@brief Sector storage for filesystems, and the ramdisk driver.
+
+@tableofcontents
+
+A block device stores 512-byte sectors and has no `/dev` file: a board's
+`mounts` section attaches a filesystem to it, and the generator builds the
+::block_device_t that the filesystem receives. The interface is documented in
+@ref block; how filesystems use it is in @ref storage.
+
+| Compatible | Storage | Boards |
+| --- | --- | --- |
+| @ref binding_homecore_ramdisk "homecore,ramdisk" | A `.bss` buffer; lost at reset | LM3S6965EVB (32 KB, littlefs), STM32F4DISCOVERY (64 KB FAT, 16 KB littlefs) |
+
+@section driver_block_contract Operations
+
+| Operation | Contract |
+| --- | --- |
+| `read(device, sector, buf, count)` | Copy `count` whole sectors into `buf`; 0, or -1 with `errno` |
+| `write(device, sector, buf, count)` | Store `count` whole sectors; 0, or -1 with `errno` |
+| `sync(device)` | Finish pending writes |
+| `sector_count(device)` | The device size in sectors |
+
+A range past the end of the device fails with `EIO` and transfers nothing;
+a `NULL` buffer fails with `EFAULT`. Operations run in thread context only.
+There is no erase: current devices overwrite in place, and littlefs's erase
+callback does nothing.
+
+@section driver_block_ramdisk Ramdisk
+
+@code{.yaml}
+devices:
+  ram0: {compatible: "homecore,ramdisk", size: 32K}
+mounts:
+  /ram: {device: ram0, fs: littlefs, format: true}
+@endcode
+
+The `size` property, a multiple of 512, sizes a 4-byte-aligned buffer that the
+generator places in `.bss`, so it counts as static RAM in the linker map and
+reduces the heap by the same amount. The buffer starts zeroed, which holds no
+filesystem, so a ramdisk mount uses `format: true`. Transfers are `memcpy`
+calls; the ramdisk has no interrupts or hardware.
+
+@section driver_block_tests Tests and validation
+
+`tests/fat_test.c` and `tests/littlefs_test.c` run the filesystems on
+ramdisks, up to a full volume, and `tests/littlefs_test.c` wraps the ramdisk in
+a device that fails writes to simulate resets. The ramdisk's own range and
+buffer checks have no dedicated test. The QEMU regression uses the LM3S6965EVB ramdisk through
+littlefs.
+*/

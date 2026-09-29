@@ -13,6 +13,8 @@ The source is on [GitHub](https://github.com/grzegorz-grzeda/home-core).
 | [Architecture](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/architecture.md) | Layers, startup, memory, and runtime contracts |
 | [Development](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/development.md) | Setup, builds, configuration, tests, and debugging |
 | [C coding standard](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/coding-standard.md) | Language, style, memory, and interrupt rules |
+| @ref drivers_guide "Drivers" | Device descriptions, bindings, initialization, interrupts, and each driver |
+| @ref bindings "Device bindings" | Generated reference of every compatible, its properties, and the boards using it |
 | @ref storage "Files and storage" | The VFS, mounted filesystems (FAT, littlefs), and block devices |
 | [Shell and system services](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/shell.md) | Commands, sessions, files, and uptime |
 | [Extending](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/extending.md) | Adding shell commands and VFS device nodes |
@@ -99,7 +101,11 @@ interface at configure time through `HOMECORE_BOARD`.
 enabled device's configuration and calls its driver from `dt_init()`, after
 the devices it references. Driver headers are internal to `src/drivers/`; the
 public parts are the interfaces other code uses: the console, GPIO ports,
-LEDs, and block devices. See the Development guide's "Device description" section.
+LEDs, and block devices.
+
+@ref drivers_guide explains the model and links a page per driver class:
+@ref driver_serial, @ref driver_gpio, @ref driver_led, and @ref driver_block.
+@ref bindings lists every compatible. See the Development guide's "Device description" section.
 */
 
 /**

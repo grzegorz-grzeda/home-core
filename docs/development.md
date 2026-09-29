@@ -336,7 +336,7 @@ so a quality failure does not hide build results. CI build output is under
 `build/ci/<target>/<configuration>`.
 
 The `API documentation` job fetches the theme and G2Basic submodules (not
-CMSIS), installs Doxygen and Graphviz, and runs `scripts/build_docs.sh`. It
+CMSIS), installs Doxygen, Graphviz, and PyYAML, and runs `scripts/build_docs.sh`. It
 fails on any documentation warning in either project. It uploads the HTML
 as a `github-pages` artifact, which pull-request runs keep as a downloadable
 preview. On pushes to the default branch, `Publish API documentation` deploys
@@ -397,13 +397,22 @@ defines one module group, and each module belongs to a layer group:
 | Layer group | Modules |
 | --- | --- |
 | Hardware abstraction (`hal`) | `arch`, `soc`, `board` |
+| Drivers (`drivers`) | `console`, `gpio`, `led`, `block` |
 | Kernel services (`kernel_services`) | `kernel`, `user`, `session` |
-| Subsystems (`subsystems`) | `vfs`, `shell` |
+| Subsystems (`subsystems`) | `vfs`, `filesystems` (`fat`, `littlefs`), `shell` |
 
 The layer groups and the main page are defined in `docs/doxygen/groups.dox`.
+Guide pages live next to it: `storage.dox` (files and storage), `boards/`
+(one page per board), and `drivers/` (the driver guide and a page per driver
+class). The "Device bindings" page is generated at build time by
+`scripts/bindings_doc.py` from the binding YAML files and board descriptions,
+so it always matches the tree; it needs PyYAML (the project venv, or
+`python3-yaml`), selected by the `PYTHON` variable or `.venv/bin/python` when
+present. The generator fails if a binding's text contains `*/`, which would
+end the page's comment.
 The configuration is the repository [`Doxyfile`](../Doxyfile). It requires
 Doxygen 1.9.8 or later, Graphviz `dot`, and the submodules. On Ubuntu, install
-the tools with `sudo apt-get install doxygen graphviz`. Build the full site,
+the tools with `sudo apt-get install doxygen graphviz python3-yaml`. Build the full site,
 including the bundled G2Basic reference, from the repository root:
 
 ```bash

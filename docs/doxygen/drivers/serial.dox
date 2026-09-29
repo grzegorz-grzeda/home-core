@@ -1,0 +1,100 @@
+/**
+@page driver_serial Serial ports
+@brief UART drivers: the console, `/dev/uartN` files, and interrupt-driven receive.
+
+@tableofcontents
+
+Every serial device registers a `/dev` file, and the one named by the board's
+`chosen.console` also serves as the console: `k_init()` opens it as standard
+input, output, and error, and the board interface's `board_uart_*()`
+functions and panic output reach it through `dt_console` (see @ref console).
+
+| Compatible | Hardware | Boards |
+| --- | --- | --- |
+| @ref binding_st_stm32_usart "st,stm32-usart" | STM32F1 and STM32F4 USARTs | STM32F4DISCOVERY (USART2), STM32VLDISCOVERY (USART1) |
+| @ref binding_ti_stellaris_uart "ti,stellaris-uart" | Stellaris (LM3S) UARTs, as QEMU emulates them | LM3S6965EVB (UART0 to UART2) |
+
+@section driver_serial_data Data path
+
+@dot
+digraph serial {
+    rankdir=LR;
+    node [shape=box, style="rounded,filled", fillcolor="#e6f2f0", fontname="Helvetica", fontsize=10];
+    edge [fontname="Helvetica", fontsize=9];
+    line [label="RX line"];
+    isr [label="<driver>_isr()\nbounded, per interrupt"];
+    ring [label="64-byte receive ring\none per device", fillcolor="#d6eef1"];
+    reader [label="getc / vfs_read()\nsleeps with WFI"];
+    writer [label="putc / vfs_write()"];
+    tx [label="TX register\npolled"];
+    line -> isr -> ring -> reader;
+    writer -> tx;
+}
+@enddot
+
+- **Receive** is interrupt-driven. The handler moves received bytes into a
+  64-byte ring per device, discarding bytes the hardware flags with a noise,
+  framing, or parity error. When the ring is full, further bytes are dropped
+  and counted in the instance; the count is not reported anywhere yet.
+- **Reads** take one byte from the ring. With the ring empty, the reader masks
+  interrupts, checks again, and sleeps with WFI, so a byte arriving between the
+  check and the sleep still wakes it. A read of `/dev/uartN` returns one byte
+  per call and blocks until one arrives; the file has no end.
+- **Writes** poll the transmitter for every byte, so they can run with
+  interrupts masked, as panic output does. `console_flush()` waits until the
+  last byte has left the shift register.
+
+The ring has one producer, the interrupt handler, and one consumer, the
+reader; `src/drivers/serial/rx_ring.h` documents the protocol.
+
+@section driver_serial_stm32 STM32 USART
+
+| Step | Registers |
+| --- | --- |
+| Baud rate | `BRR` = bus clock / baud, rounded, with 16x oversampling; the bus clock comes from the `bus` property through the board's `clocks` |
+| Frame | `CR2` = `CR3` = 0: 8 data bits, no parity, 1 stop bit, no flow control |
+| Enable | `CR1` = `UE` + `TE` + `RE` + `RXNEIE`, then the NVIC interrupt named by `irq` |
+| Receive | The handler reads `SR`, then `DR`, which clears the request and any overrun; bytes with `NE`, `FE`, or `PE` are dropped |
+| Transmit | Waits for `TXE` before each byte; flush waits for `TC` |
+
+The board enables the USART's clock and configures its pins in
+`board_init()`, which runs before the driver: the pin and clock routing are
+board wiring, not part of the driver. The same driver serves the F1 and F4
+families, whose USART register layouts match.
+
+@section driver_serial_stellaris Stellaris UART
+
+The driver uses the UART's reset line configuration, which QEMU's
+`lm3s6965evb` machine provides ready to use; it sets no baud rate, pins, or
+clocks, so physical Stellaris boards are not supported. It enables the receive
+and receive-timeout interrupts (`IM`). The handler clears them (`ICR`) and
+drains at most 16 bytes, the FIFO depth, dropping bytes whose error bits
+(`DR` bits 8 to 11) are set. Transmission waits while `TXFF` is set; flush
+waits while `BUSY` is set.
+
+@section driver_serial_config Board configuration
+
+@code{.yaml}
+# soc.yaml: every instance, disabled
+usart2: {compatible: "st,stm32-usart", reg: 0x40004400, irq: 38, bus: apb1, status: disabled}
+# board.yaml: enable, name the file, and choose the console
+clocks: {cpu: 16000000, apb1: 16000000, apb2: 16000000}
+devices:
+  usart2: {status: okay, baud: 115200, devname: uart0}
+chosen: {console: usart2}
+@endcode
+
+The console must be an enabled device whose binding has `console: true`.
+Boards keep the console at `/dev/uart0` with `devname`, whatever the
+peripheral's number.
+
+@section driver_serial_tests Tests and validation
+
+`tests/uart_contract_test.c`, built once per driver against the fake registers
+in `tests/fakes/`, checks initialization, argument errors, receive through the
+handler, error discarding, ring overflow, and the console operations.
+`tests/console_io_test.c` covers the console descriptors that `k_init()` opens,
+and the QEMU regression drives the shell over the console on both emulated
+boards, which also exercises the sleeping read. The STM32 USART has not been checked
+on hardware.
+*/

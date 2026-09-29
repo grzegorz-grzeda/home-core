@@ -55,10 +55,24 @@ export G2BASIC_DOCS_VERSION="${G2BASIC_DOCS_VERSION:-$(project_version "$g2basic
     } | "$doxygen" -
 )
 
+# The binding reference is generated from the driver bindings; it needs
+# PyYAML, from the project venv when present.
+python="${PYTHON:-}"
+if [[ -z "$python" ]]; then
+    if [[ -x "$root/.venv/bin/python" ]]; then
+        python="$root/.venv/bin/python"
+    else
+        python=python3
+    fi
+fi
+generated="$(dirname "$output")/doxygen-generated"
+"$python" -B "$root/scripts/bindings_doc.py" --output "$generated/bindings.dox"
+
 (
     cd "$root"
     {
         cat Doxyfile
+        echo "INPUT += \"$generated\""
         echo "OUTPUT_DIRECTORY = \"$(dirname "$output")\""
         echo "HTML_OUTPUT = \"$(basename "$output")\""
         echo "TAGFILES = \"$tagfile=g2basic\""

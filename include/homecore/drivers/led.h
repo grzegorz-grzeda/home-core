@@ -40,6 +40,7 @@
  * @endcode
  *
  * The functions below are for thread context, like the VFS.
+ * @see @ref driver_led for the drivers, their configuration, and tests.
  * @{
  */
 

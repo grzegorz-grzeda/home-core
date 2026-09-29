@@ -51,6 +51,7 @@ set(HOMECORE_DOCS_DIR ${CMAKE_CURRENT_BINARY_DIR}/docs)
 add_custom_target(docs
     COMMAND ${CMAKE_COMMAND} -E env
         DOXYGEN=${DOXYGEN_EXECUTABLE}
+        PYTHON=${Python3_EXECUTABLE}
         --modify PATH=path_list_prepend:${HOMECORE_DOT_DIR}
         bash ${HOMECORE_ROOT}/scripts/build_docs.sh ${HOMECORE_DOCS_DIR}
     WORKING_DIRECTORY ${HOMECORE_ROOT}

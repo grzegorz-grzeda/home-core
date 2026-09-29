@@ -27,6 +27,7 @@
  * | --- | --- | --- |
  * | STM32F4 | `st,stm32f4-gpio` | 16 |
  * | STM32F1 | `st,stm32f1-gpio` | 16 |
+ * @see @ref driver_gpio for the drivers, their configuration, and tests.
  * @{
  */
 

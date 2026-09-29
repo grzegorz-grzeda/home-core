@@ -59,10 +59,11 @@ jobs:
           git submodule update --init --depth 1 external/doxygen-awesome-css external/g2basic
           git -C external/g2basic submodule update --init --depth 1 external/doxygen-awesome-css
 
-      - name: Install Doxygen and Graphviz
+      # PyYAML lets scripts/bindings_doc.py generate the binding reference.
+      - name: Install Doxygen, Graphviz, and PyYAML
         run: |
           sudo apt-get update
-          sudo apt-get install -y doxygen graphviz
+          sudo apt-get install -y doxygen graphviz python3-yaml
 
       # Builds the G2Basic reference into build/docs/g2basic, then HomeCore's,
       # linked through a tag file. Both Doxyfiles set WARN_AS_ERROR, and page

@@ -1,0 +1,100 @@
+/**
+@page driver_led LEDs
+@brief Numbered LEDs: GPIO LEDs, console stand-ins, `/dev/ledN`, the API, and BASIC.
+
+@tableofcontents
+
+Every enabled device whose binding has `led: true` is an LED. The generator
+numbers them in description order into `dt_led_table`, and each registers a
+device file, by default `/dev/` plus its node name, so boards name the nodes
+`led0`, `led1`, and so on. Three ways reach the same LEDs:
+
+| From | Set | Read |
+| --- | --- | --- |
+| Shell | `write /dev/led0 on` | `cat /dev/led0` |
+| BASIC | `PRINT led(0, 1)` | `PRINT ledget(0)` |
+| C | `led_set(0, true)` | `led_get(0, &on)` |
+
+The C interface is documented in @ref led.
+
+@section driver_led_drivers Drivers
+
+| Compatible | Behavior |
+| --- | --- |
+| @ref binding_homecore_gpio_led "homecore,gpio-led" | Drives a pin of a GPIO port: high lights the LED, or low with `active-low: true`. Reads return the pin level. |
+| @ref binding_homecore_console_led "homecore,console-led" | For emulators without LEDs: keeps the state in RAM and prints `[led0] on` or `[led0] off` on the console for every set request, changed or not. |
+
+A GPIO LED drives the "off" level before switching the pin to an output, so
+the LED does not flash at startup, and panics at init if the port rejects the
+pin. The generator already limits pins to 0 to 15 and allows one LED per pin
+of a port. Console LEDs start off and print nothing at init, because the
+console is not open yet.
+
+@section driver_led_files Device files
+
+| Operation | Result |
+| --- | --- |
+| Read | `1\n` if lit, `0\n` if not, captured when the file is opened, then end of file |
+| Write `1` or `on` | Lights the LED |
+| Write `0` or `off` | Turns it off |
+| Write `toggle` | Inverts it |
+| Write anything else | Fails with `EINVAL`; the LED is unchanged |
+
+Each write is one command; whitespace around it, such as the newline `write`
+adds, is ignored. The files accept `O_CREAT`, `O_TRUNC`, and `O_APPEND`, so
+`fopen(path, "w")` works, and they cannot be removed. A descriptor opened
+for reading and writing keeps the state captured at open; reopen it to see a
+change.
+
+@section driver_led_basic BASIC
+
+| Function | Result |
+| --- | --- |
+| `led(n, state)` | Lights LED `n` for a nonzero `state`, turns it off for 0; returns the new state, 1 or 0 |
+| `ledget(n)` | 1 if LED `n` is lit, 0 if not |
+
+Both return -1 when `n` is not a whole number naming an LED, or the driver
+fails.
+
+@section driver_led_boards Boards
+
+| Board | File | LED | Driver |
+| --- | --- | --- | --- |
+| STM32F4DISCOVERY | `/dev/led0` | LD4 green, PD12 | GPIO |
+| STM32F4DISCOVERY | `/dev/led1` | LD3 orange, PD13 | GPIO |
+| STM32F4DISCOVERY | `/dev/led2` | LD5 red, PD14 | GPIO |
+| STM32F4DISCOVERY | `/dev/led3` | LD6 blue, PD15 | GPIO |
+| STM32VLDISCOVERY | `/dev/led0` | LD3 green, PC9 | GPIO; console in QEMU |
+| STM32VLDISCOVERY | `/dev/led1` | LD4 blue, PC8 | GPIO; console in QEMU |
+| LM3S6965EVB | `/dev/led0` | None in QEMU | Console |
+
+@section driver_led_emulators Emulator stand-ins
+
+QEMU models no LEDs on these machines, and none of the STM32F100's GPIO. A
+board that also runs in an emulator describes both variants and lets an
+overlay choose, keeping the same files and numbers:
+
+@code{.yaml}
+# board.yaml: GPIO LEDs enabled, console stand-ins disabled
+devices:
+  gpioc: {status: okay}
+  led0: {compatible: "homecore,gpio-led", gpio: gpioc, pin: 9}
+  qemu_led0: {compatible: "homecore,console-led", devname: led0, status: disabled}
+# qemu.yaml overlay: swap them
+devices:
+  gpioc: {status: disabled}
+  led0: {status: disabled}
+  qemu_led0: {status: okay}
+@endcode
+
+`src/board/stm32vldiscovery/qemu.yaml` does this for the
+`stm32vldiscovery-qemu` preset.
+
+@section driver_led_tests Tests and validation
+
+`tests/led_test.c` runs both drivers over a fake GPIO port: initialization,
+active-low wiring, the invalid-pin panic, the `led_*()` API and its `ENODEV`
+errors, and the device files, including every rejected command. The QEMU
+regression exercises the console LEDs through the files, `write`, and BASIC on
+both emulated boards. GPIO LEDs have not been checked on hardware.
+*/

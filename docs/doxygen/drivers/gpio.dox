@@ -1,0 +1,94 @@
+/**
+@page driver_gpio GPIO ports
+@brief STM32 GPIO port drivers: pin modes, outputs, and inputs.
+
+@tableofcontents
+
+A GPIO port is a device in `soc.yaml`, disabled until a board enables it. Other
+drivers use a port through a `gpio` property, which gives them a ::gpio_port_t:
+the port driver's ::gpio_ops_t and the port instance. The interface is
+documented in @ref gpio.
+
+| Compatible | Ports | Clock enable | Boards |
+| --- | --- | --- | --- |
+| @ref binding_st_stm32f4_gpio "st,stm32f4-gpio" | STM32F407 GPIOA to GPIOI | `RCC->AHB1ENR`, bits 0 to 8 | STM32F4DISCOVERY (GPIOD) |
+| @ref binding_st_stm32f1_gpio "st,stm32f1-gpio" | STM32F100 GPIOA to GPIOE | `RCC->APB2ENR`, bits 2 to 6 | STM32VLDISCOVERY (GPIOC) |
+
+@section driver_gpio_use Using a port
+
+@code{.yaml}
+# soc.yaml lists every port, disabled, with its clock-enable bit
+gpiod: {compatible: "st,stm32f4-gpio", reg: 0x40020C00, clock-bit: 3, status: disabled}
+# board.yaml enables the port and names it from the devices that use it
+devices:
+  gpiod: {status: okay}
+  led0: {compatible: "homecore,gpio-led", gpio: gpiod, pin: 12}
+@endcode
+
+The generator rejects a `gpio` property that names a disabled device or one
+that is not a GPIO port, and initializes the port before its users. In C:
+
+@code{.c}
+const gpio_port_t *port = &config->port;
+if (port->ops->configure(port->port, 12, GPIO_OUTPUT) < 0) {
+    /* errno is EINVAL: no such pin or mode */
+}
+port->ops->set(port->port, 12, true);
+bool high;
+port->ops->get(port->port, 12, &high);
+@endcode
+
+@section driver_gpio_behavior Behavior
+
+- **Init** enables the port's clock (`clock-bit` in the family's enable
+  register) and reads the register back, so the first port access happens only
+  after the clock runs. Pins keep their reset configuration until configured.
+- **configure** changes only the given pin's fields.
+- **set** writes `BSRR`, which sets or resets one pin in a single write without
+  read-modify-write, so it cannot disturb other pins.
+- **get** reads `IDR`, the pin level. An output pin reads back the level it
+  drives, because the input buffer stays enabled in output mode.
+- Pins 0 to 15 are valid; any other pin, or an unknown mode, fails with
+  `EINVAL` and changes nothing.
+
+`configure` is a read-modify-write of shared configuration registers without
+masking interrupts, so it is for thread context only; no interrupt handler
+configures pins.
+
+@section driver_gpio_f4 STM32F4 register use
+
+| Mode | `MODER` (2 bits) | `PUPDR` (2 bits) | Other |
+| --- | --- | --- | --- |
+| `GPIO_INPUT` | 00 input | 00 none | — |
+| `GPIO_INPUT_PULL_UP` | 00 input | 01 pull-up | — |
+| `GPIO_INPUT_PULL_DOWN` | 00 input | 10 pull-down | — |
+| `GPIO_OUTPUT` | 01 output | 00 none | `OTYPER` 0 push-pull, `OSPEEDR` 00 low speed |
+
+@section driver_gpio_f1 STM32F1 register use
+
+Pins 0 to 7 are configured in `CRL` and 8 to 15 in `CRH`, four bits
+(`CNF[1:0]`, `MODE[1:0]`) per pin.
+
+| Mode | Four-bit value | Other |
+| --- | --- | --- |
+| `GPIO_INPUT` | `0x4`: floating input | — |
+| `GPIO_INPUT_PULL_UP` | `0x8`: input with pull | `BSRR` sets the `ODR` bit, selecting the pull-up |
+| `GPIO_INPUT_PULL_DOWN` | `0x8`: input with pull | `BSRR` resets the `ODR` bit, selecting the pull-down |
+| `GPIO_OUTPUT` | `0x2`: push-pull output, 2 MHz | — |
+
+@section driver_gpio_limits Limitations
+
+- No alternate functions, open-drain outputs, speeds, or pin interrupts. Boards
+  still configure their console pins directly in `board_init()`.
+- There is no GPIO driver for LM3S6965EVB: QEMU emulates its ports, but the
+  target has no physical-board support.
+- QEMU's `stm32vldiscovery` machine does not model GPIO; its build uses console
+  LEDs instead (see @ref driver_led).
+
+@section driver_gpio_tests Tests and validation
+
+`tests/gpio_contract_test.c` runs each driver against fake registers
+(`tests/fakes/stm32f4`, `tests/fakes/stm32f1`): the clock enable, every mode's
+register fields, that other pins keep their configuration, `BSRR` writes, `IDR`
+reads, and invalid pins and modes. Neither driver has been checked on hardware.
+*/

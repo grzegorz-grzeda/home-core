@@ -28,6 +28,7 @@
  * | Ramdisk | `homecore,ramdisk` | A `.bss` buffer sized by the `size` property; lost on reset |
  *
  * @see @ref storage "Files and storage" for how filesystems use block devices.
+ * @see @ref driver_block for the drivers, their configuration, and tests.
  * @{
  */
 

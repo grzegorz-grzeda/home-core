@@ -1,0 +1,183 @@
+/**
+@page drivers_guide Drivers
+@brief How device drivers are described, generated, initialized, and written.
+
+@tableofcontents
+
+HomeCore's hardware is described in YAML, not in code. A board names its SoC,
+enables the peripherals it uses, and adds board-level devices such as LEDs and
+ramdisks. At configure time a generator checks the description against each
+driver's binding and writes C code that instantiates and initializes exactly
+the enabled devices. Nothing is parsed at run time, and a driver is compiled
+only when some enabled device needs it.
+
+| Page | Contents |
+| --- | --- |
+| @subpage driver_serial | UARTs: the console, `/dev/uartN`, interrupt-driven receive |
+| @subpage driver_gpio | GPIO ports: pin modes, outputs, inputs |
+| @subpage driver_led | LEDs: `/dev/ledN`, the `led_*()` API, BASIC, and emulator stand-ins |
+| @subpage driver_block | Block devices: the ramdisk that filesystems mount |
+| @subpage bindings | Generated reference of every compatible and its properties |
+
+@section drivers_pipeline From description to code
+
+@dot
+digraph pipeline {
+    rankdir=LR;
+    node [shape=box, style="rounded,filled", fillcolor="#e6f2f0", fontname="Helvetica", fontsize=10];
+    edge [fontname="Helvetica", fontsize=9];
+    soc [label="soc.yaml\nmemory, peripherals\n(all disabled)"];
+    board [label="board.yaml\nSoC, clocks, enabled\ndevices, mounts"];
+    overlay [label="Overlays\nHOMECORE_DT_OVERLAYS"];
+    bindings [label="Bindings\nsrc/drivers/<class>/\n<compatible>.yaml", fillcolor="#f2ece6"];
+    generator [label="scripts/\ndevicetree_generate.py", shape=component, fillcolor="#ffffff"];
+    header [label="devicetree.h\nconstants"];
+    source [label="devicetree.c\ninstances, dt_init(),\ndt_irq_dispatch(),\ntables"];
+    cmake [label="devicetree.cmake\nSoC, arch, driver\nsources"];
+    memory [label="memory.ld"];
+    soc -> generator; board -> generator; overlay -> generator; bindings -> generator;
+    generator -> header; generator -> source; generator -> cmake; generator -> memory;
+}
+@enddot
+
+The layers merge in order (SoC, board, overlays), later ones winning per key.
+The Development guide's "Device description" section covers the keys each
+layer may set; this page covers what drivers see.
+
+For each enabled device node `<node>` with a binding whose driver prefix is
+`<driver>`, the generator writes:
+
+@code{.c}
+static const <driver>_config_t dt_<node>_config = { /* one field per property */ };
+static <driver>_t dt_<node> = {.config = &dt_<node>_config};
+@endcode
+
+The configuration holds the description's values and lives in flash. The
+instance holds run-time state in RAM; its first member is always the
+`config` pointer, and the driver owns everything else in it.
+
+@section drivers_bindings Bindings
+
+A binding, `src/drivers/<class>/<compatible>.yaml`, declares the driver prefix,
+its sources, what it provides, and its properties:
+
+@code{.yaml}
+compatible: homecore,gpio-led
+description: LED driven by a GPIO output pin, with a readable and writable /dev file.
+driver: gpio_led
+sources: [gpio_led.c]
+led: true
+properties:
+  gpio: {type: gpio, required: true, field: port}
+  pin: {type: int, required: true, maximum: 15, unique: true, unique-with: gpio, field: pin}
+  active-low: {type: bool, default: false, field: active_low}
+  devname: {type: devpath, field: path}
+@endcode
+
+| Property type | Description value | C field value |
+| --- | --- | --- |
+| `int` | An integer; `minimum` and `maximum` bound it | `123U`, or hexadecimal for `reg` |
+| `size` | A byte count such as `64K`; `minimum` and `multiple` bound it | Bytes; with `buffer: <field>`, also a generated `.bss` buffer |
+| `bool` | `true` or `false` | `true` or `false` |
+| `string` | A non-empty string | A string literal |
+| `clock` | A name from the board's `clocks` | The clock frequency in Hz |
+| `devpath` | A name of `a-z`, `0-9`, and `_`; defaults to the node name | `"/dev/<name>"`, unique across devices |
+| `gpio` | The node name of an enabled GPIO port | A ::gpio_port_t; the port is initialized first |
+
+| Binding flag | The driver provides | Used by |
+| --- | --- | --- |
+| `console: true` | `const console_ops_t <driver>_console_ops` | `chosen.console`, @ref console |
+| `isr: true` | `void <driver>_isr(<driver>_t *)`, with an `irq` property | `dt_irq_dispatch()` |
+| `gpio: true` | `const gpio_ops_t <driver>_gpio_ops` | `gpio` properties, @ref gpio |
+| `led: true` | `const led_ops_t <driver>_led_ops` | `dt_led_table`, @ref led |
+| `block: true` | `const block_ops_t <driver>_block_ops` | Board `mounts`, @ref block |
+
+Every driver also provides `void <driver>_init(<driver>_t *)`. The generated
+@ref bindings "binding reference" lists every compatible, its properties, and
+the boards that enable it.
+
+@section drivers_startup Initialization
+
+@dot
+digraph startup {
+    rankdir=LR;
+    node [shape=box, style="rounded,filled", fillcolor="#e6f2f0", fontname="Helvetica", fontsize=10];
+    arch [label="arch_init()"];
+    soc [label="soc_init()"];
+    board [label="board_init()\nclocks, console pins"];
+    dt [label="dt_init()\nevery <driver>_init()", fillcolor="#d6eef1"];
+    kernel [label="k_init()\nopens the console\nas fds 0-2"];
+    mounts [label="dt_mount_all()"];
+    shell [label="shell_init()\nshell_run()"];
+    arch -> soc -> board -> dt -> kernel -> mounts -> shell;
+}
+@enddot
+
+`dt_init()` calls each enabled device's init function in description order,
+except that a device referenced by another (a GPIO port named by an LED's
+`gpio` property) is initialized first. Init functions run with the clocks and
+console pins already configured by `board_init()`, and:
+
+- must not print: the console is not open until `k_init()`;
+- may call board_panic() for a description the hardware cannot honor, such as
+  a pin the port rejects;
+- register their VFS nodes, which exist from then on.
+
+@section drivers_interrupts Interrupts
+
+@dot
+digraph interrupts {
+    rankdir=LR;
+    node [shape=box, style="rounded,filled", fillcolor="#e6f2f0", fontname="Helvetica", fontsize=10];
+    vector [label="Peripheral vector\n(every entry)"];
+    entry [label="arch_irq_entry()\nreads IPSR"];
+    dispatch [label="dt_irq_dispatch(irq)\ngenerated switch", fillcolor="#d6eef1"];
+    isr [label="<driver>_isr(&dt_<node>)"];
+    panic [label="board_panic()\n\"Unexpected interrupt\"", fillcolor="#f2e6e6"];
+    vector -> entry -> dispatch;
+    dispatch -> isr [label="claimed"];
+    dispatch -> panic [label="unclaimed"];
+}
+@enddot
+
+A binding with `isr: true` and an `irq` property claims that interrupt; the
+generator rejects two devices claiming the same one. The driver enables it with
+arch_irq_enable() in its init function. Interrupt handlers must be short and
+bounded, must not allocate or print, and share data with thread code only
+through structures designed for it, such as the serial receive ring.
+
+@section drivers_catalog Driver catalog
+
+| Class | Compatible | Boards | Validation |
+| --- | --- | --- | --- |
+| Serial | @ref binding_st_stm32_usart "st,stm32-usart" | STM32F4DISCOVERY, STM32VLDISCOVERY | QEMU (STM32VLDISCOVERY), host contract test; hardware pending |
+| Serial | @ref binding_ti_stellaris_uart "ti,stellaris-uart" | LM3S6965EVB | QEMU, host contract test |
+| GPIO | @ref binding_st_stm32f4_gpio "st,stm32f4-gpio" | STM32F4DISCOVERY | Host contract test; hardware pending |
+| GPIO | @ref binding_st_stm32f1_gpio "st,stm32f1-gpio" | STM32VLDISCOVERY | Host contract test; hardware pending (QEMU models no GPIO) |
+| LED | @ref binding_homecore_gpio_led "homecore,gpio-led" | STM32F4DISCOVERY, STM32VLDISCOVERY | Host test; hardware pending |
+| LED | @ref binding_homecore_console_led "homecore,console-led" | LM3S6965EVB, STM32VLDISCOVERY in QEMU | QEMU, host test |
+| Block | @ref binding_homecore_ramdisk "homecore,ramdisk" | LM3S6965EVB, STM32F4DISCOVERY | QEMU (littlefs on LM3S), host tests |
+
+@section drivers_writing Writing a driver
+
+1. **Binding** `src/drivers/<class>/<compatible>.yaml` with `compatible`,
+   `description`, `driver`, `sources`, capability flags, and `properties`,
+   each with a type and the C `field` it fills.
+2. **Header** `<driver>.h` next to it: `<driver>_config_t` (constants, one
+   member per `field`), `<driver>_t` (state; first member
+   `const <driver>_config_t *config`), `void <driver>_init(<driver>_t *)`, and
+   the operation tables its flags promise.
+3. **Source**: access registers through the SoC's CMSIS types from
+   `soc_cmsis.h`, at the address in `config->base`. Return 0 or a count, and
+   -1 with `errno` set, from operations. Keep interrupt handlers bounded.
+4. **Description**: add SoC peripherals to `soc.yaml` with
+   `status: disabled`; boards enable them. Board-level devices go straight
+   into `board.yaml`.
+5. **Tests**: a host test against a fake `soc_cmsis.h` in `tests/fakes/`, as
+   `tests/uart_contract_test.c` and `tests/gpio_contract_test.c` do, and
+   generator cases in `tests/devicetree_generate_test.py` for new property
+   rules. Register host tests in `scripts/check_quality.py`.
+
+Public interfaces that other code uses (console, GPIO, LEDs, block devices) are
+in `include/homecore/drivers`; driver headers stay in `src/drivers`.
+*/
