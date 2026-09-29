@@ -9,20 +9,28 @@ while preserving their existing behavior.
 
 Create `src/board/<name>/` with:
 
-- `board.cmake`: set `HOMECORE_SOC`, `HOMECORE_BOARD_MEMORY`, and
-  `HOMECORE_BOARD_LINKER_SCRIPT` using `CMAKE_CURRENT_LIST_DIR`.
+- `board.cmake`: set `HOMECORE_SOC` and `HOMECORE_BOARD_LINKER_SCRIPT` using
+  `CMAKE_CURRENT_LIST_DIR`.
+- `board.yaml`: the board's clocks (`cpu` and every bus a device uses), the
+  devices it enables with their properties, and `chosen.console`. Memory comes
+  from the SoC description; override `memory` here only if the board differs.
+  See [device description](development.md#device-description).
 - `CMakeLists.txt`: add board sources and board identity definitions.
 - `board.c`: implement the interface in `include/homecore/board/board.h`.
 - `board.ld`: additional board sections, or an empty commented fragment.
 
-`board_init()` configures clocks, GPIO alternate functions, and the console.
-`board_cpu_clock_hz()` must return the actual core clock used by SysTick. If an
+`board_init()` configures clocks, peripheral clock gates, and GPIO alternate
+functions for the enabled devices; the drivers program the devices themselves
+in `dt_init()`. `board_cpu_clock_hz()` must return `DT_CPU_CLOCK_HZ`, and
+`board.yaml` must state the clock `board_init()` actually produces; a
+`_Static_assert` against `DT_CPU_CLOCK_HZ` keeps them in step, as in the STM32
+boards. If an
 emulator runs the board but does not model its clock controller, put the clock
 setup under `CONFIG_HOMECORE_BOARD_CLOCK_SETUP` and provide an emulator
 defconfig that disables it, as `stm32vldiscovery` does.
-Implement polling UART read/write/availability and a panic path that can halt
-safely before the console is ready. Define memory banks by their real addresses;
-STM32F407's CCM must not be merged into the contiguous main SRAM region.
+Implement `board_panic()`: print through `board_uart_putc()` only when
+`console_ready()`, then `console_flush()` and halt. The `board_uart_*`
+functions are provided by `src/drivers/console.c` for the chosen console.
 
 Add a configure/build preset with its own output directory and a board guide
 covering flashing, pin wiring, clock/memory choices, limitations, and validation.
@@ -35,15 +43,20 @@ uses by default; check the stack high-water mark from `mem` when sizing it.
 ## SoC integration
 
 Create `src/soc/<vendor>/<chip>/` with `soc.cmake`, `CMakeLists.txt`, `soc.c`,
-`soc_cmsis.h`, and a linker fragment. Set `HOMECORE_ARCH`, `HOMECORE_SOC_ID`, and
+`soc_cmsis.h`, `soc.yaml`, and a linker fragment. `soc.yaml` gives the flash
+and RAM banks at their real addresses (STM32F407's CCM must not be merged into
+the contiguous main SRAM region) and every supported peripheral instance with
+`status: disabled`; add a driver and binding for a new peripheral type as
+described in [extending](extending.md#device-drivers). Set `HOMECORE_ARCH`, `HOMECORE_SOC_ID`, and
 `HOMECORE_SOC_LINKER_SCRIPT`. Make `soc_cmsis.h` expose the chip's CMSIS IRQ/core
 configuration and peripheral definitions to the shared architecture sources.
 Pin vendor sources and retain their license and provenance.
 
-`main()` calls `soc_init()` before `board_init()`. Register devices without
-accessing uninitialized board hardware. The current kernel expects `/dev/uart0`
-and opens it for descriptors 0, 1, and 2. Provide VFS operations as well as board
-UART helpers; board-only output is insufficient for libc and the shell.
+`main()` calls `soc_init()` before `board_init()`, for chip-level setup that
+must precede board configuration. Devices are not registered there: `dt_init()`
+instantiates them after `board_init()`. The kernel opens the chosen console
+(`DT_CHOSEN_CONSOLE_PATH`) for descriptors 0, 1, and 2; boards keep it at
+`/dev/uart0` with the `devname` property.
 
 Provide the chip's peripheral vector entries in `.isr_vector.soc`, immediately
 after the 16 `.isr_vector.arch` entries. Preserve reserved slots and IRQ order;

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 #include "homecore/board/board.h"
 #include "homecore/autoconf.h"
+#include "homecore/devicetree.h"
+#include "homecore/drivers/console.h"
 #include "soc_cmsis.h"
 #include <stdbool.h>
 
 /* 24 MHz is the STM32F100 maximum. It is produced by the PLL below, and it is
  * also the fixed CPU clock of QEMU's stm32vldiscovery machine. */
-#define CPU_HZ       24000000U
-#define CONSOLE_BAUD 115200U
+_Static_assert(DT_CPU_CLOCK_HZ == 24000000U, "board.yaml clocks must match the PLL setup");
 /* Iteration budget: startup has no timer yet; this is not a millisecond timeout. */
 #define CLOCK_WAIT_LIMIT 1000000U
 /* GPIOA->CRH fields for PA9 (bits 4-7) and PA10 (bits 8-11). */
@@ -19,8 +20,6 @@
 /* RCC->CFGR fields set by the PLL configuration. */
 #define CFGR_PLL_AND_BUS_FIELDS                                                                    \
     (RCC_CFGR_PLLSRC | RCC_CFGR_PLLMULL | RCC_CFGR_HPRE | RCC_CFGR_PPRE1 | RCC_CFGR_PPRE2)
-static bool uart_ready;
-
 #if defined(CONFIG_HOMECORE_BOARD_CLOCK_SETUP)
 static bool wait_clock(volatile const uint32_t *reg, uint32_t mask, uint32_t value) {
     for (uint32_t attempt = 0; attempt < CLOCK_WAIT_LIMIT; ++attempt) {
@@ -67,14 +66,14 @@ static void configure_clock(void) {
 #endif
 
 uint32_t board_cpu_clock_hz(void) {
-    return CPU_HZ;
+    return DT_CPU_CLOCK_HZ;
 }
 
 void board_init(void) {
 #if defined(CONFIG_HOMECORE_BOARD_CLOCK_SETUP)
     configure_clock();
 #else
-    /* Emulator build: QEMU does not model RCC and runs the CPU at CPU_HZ. */
+    /* Emulator build: QEMU does not model RCC and runs the CPU at DT_CPU_CLOCK_HZ. */
 #endif
 
     RCC->APB2ENR |= RCC_APB2ENR_IOPAEN | RCC_APB2ENR_AFIOEN | RCC_APB2ENR_USART1EN;
@@ -82,51 +81,19 @@ void board_init(void) {
     RCC->APB2RSTR |= RCC_APB2RSTR_USART1RST;
     RCC->APB2RSTR &= ~RCC_APB2RSTR_USART1RST;
 
-    /* PA9 = USART1_TX (alternate push-pull), PA10 = USART1_RX (input, pull-up). */
+    /* Console USART1 (board.yaml): PA9 = TX (alternate push-pull), PA10 = RX
+     * (input, pull-up). The serial driver programs the USART in dt_init(). */
     GPIOA->CRH = (GPIOA->CRH & ~(PA9_CRH_MASK | PA10_CRH_MASK)) | PA9_TX_AF_PP | PA10_RX_PULLED;
     GPIOA->ODR |= PA10_PULL_UP;
-
-    /* 115200 baud, 8 data bits, no parity, 1 stop bit; USART1 runs on APB2. */
-    USART1->BRR = (CPU_HZ + CONSOLE_BAUD / 2U) / CONSOLE_BAUD;
-    USART1->CR2 = 0;
-    USART1->CR3 = 0;
-    USART1->CR1 = USART_CR1_UE | USART_CR1_TE | USART_CR1_RE;
-    uart_ready = true;
-}
-
-void board_uart_putc(char c) {
-    while (!(USART1->SR & USART_SR_TXE)) {
-        /* Poll until the transmit register can accept a byte. */
-    }
-    USART1->DR = (uint8_t)c;
-}
-
-int board_uart_has_data(void) {
-    return (USART1->SR & USART_SR_RXNE) != 0;
-}
-
-int board_uart_getc(void) {
-    for (;;) {
-        uint32_t status = USART1->SR;
-        if (status & (USART_SR_RXNE | USART_SR_ORE | USART_SR_NE | USART_SR_FE | USART_SR_PE)) {
-            /* Reading SR then DR clears receive errors, including overrun. */
-            uint32_t data = USART1->DR;
-            if ((status & USART_SR_RXNE) && !(status & (USART_SR_NE | USART_SR_FE | USART_SR_PE))) {
-                return (int)(data & 0xffU);
-            }
-        }
-    }
 }
 
 void board_panic(const char *msg) {
     __disable_irq();
-    if (uart_ready) {
+    if (console_ready()) {
         while (*msg) {
             board_uart_putc(*msg++);
         }
-        while (!(USART1->SR & USART_SR_TC)) {
-            /* Drain panic output before the permanent halt. */
-        }
+        console_flush(); /* Drain panic output before the permanent halt. */
     }
     /* Fatal halt; normal execution cannot resume. */
     for (;;) {

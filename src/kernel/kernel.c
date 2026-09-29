@@ -26,6 +26,7 @@
 #include "homecore/vfs/vfs.h"
 #include "homecore/board/board.h"
 #include "homecore/autoconf.h"
+#include "homecore/devicetree.h"
 #include <fcntl.h>
 #include <stdio.h>
 /*---------------------------------------------------------------------------*/
@@ -34,7 +35,7 @@ void k_init(void) {
     k_uptime_init();
     const int modes[] = {O_RDONLY, O_WRONLY, O_WRONLY};
     for (int expected = 0; expected < 3; ++expected) {
-        int fd = vfs_open("/dev/uart0", modes[expected]);
+        int fd = vfs_open(DT_CHOSEN_CONSOLE_PATH, modes[expected]);
         if (fd != expected) {
             /* Best-effort cleanup before a fatal halt; preserve unrelated fds. */
             if (fd >= 0) {

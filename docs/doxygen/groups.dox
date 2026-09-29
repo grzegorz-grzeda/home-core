@@ -35,6 +35,7 @@ The API is grouped by layer. Each header defines one module group.
 | Layer | Modules | Header location |
 | --- | --- | --- |
 | @ref hal | @ref arch, @ref soc, @ref board | `homecore/arch`, `homecore/soc`, `homecore/board` |
+| @ref drivers | @ref console | `homecore/drivers` |
 | @ref kernel_services | @ref kernel, @ref user, @ref session | `homecore/kernel`, `homecore/user`, `homecore/session` |
 | @ref subsystems | @ref vfs, @ref shell | `homecore/vfs`, `homecore/shell` |
 
@@ -83,6 +84,16 @@ SVC and PendSV handlers they depend on currently panic.
 Portable kernel and subsystem code uses these interfaces instead of register
 addresses or pin assignments. Each target selects one implementation of each
 interface at configure time through `HOMECORE_BOARD`.
+*/
+
+/**
+@defgroup drivers Drivers
+@brief Device drivers instantiated from the compile-time device description.
+
+`soc.yaml` and `board.yaml` describe the hardware; the generator creates each
+enabled device's configuration and calls its driver from `dt_init()`. Driver
+headers are internal to `src/drivers/`; the public part is the console used by
+the board interface. See the Development guide's "Device description" section.
 */
 
 /**

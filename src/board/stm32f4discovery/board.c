@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 #include "homecore/board/board.h"
+#include "homecore/devicetree.h"
+#include "homecore/drivers/console.h"
 #include "soc_cmsis.h"
 #include <stdbool.h>
 
-#define CPU_HZ       16000000U
-#define CONSOLE_BAUD 115200U
+/* board_init() selects the 16 MHz HSI with undivided buses; board.yaml must agree. */
+_Static_assert(DT_CPU_CLOCK_HZ == 16000000U, "board.yaml clocks must match the HSI setup");
 /* Iteration budget: startup has no timer yet; this is not a millisecond timeout. */
 #define CLOCK_WAIT_LIMIT 1000000U
-static bool uart_ready;
 
 static bool wait_clock(volatile const uint32_t *reg, uint32_t mask, uint32_t value) {
     for (uint32_t attempt = 0; attempt < CLOCK_WAIT_LIMIT; ++attempt) {
@@ -19,7 +20,7 @@ static bool wait_clock(volatile const uint32_t *reg, uint32_t mask, uint32_t val
 }
 
 uint32_t board_cpu_clock_hz(void) {
-    return CPU_HZ;
+    return DT_CPU_CLOCK_HZ;
 }
 
 void board_init(void) {
@@ -43,54 +44,22 @@ void board_init(void) {
     RCC->APB1RSTR |= RCC_APB1RSTR_USART2RST;
     RCC->APB1RSTR &= ~RCC_APB1RSTR_USART2RST;
 
-    /* PA2 = USART2_TX, PA3 = USART2_RX, alternate function 7. */
+    /* Console USART2 (board.yaml): PA2 = TX, PA3 = RX, alternate function 7.
+     * The serial driver programs the USART itself in dt_init(). */
     GPIOA->MODER = (GPIOA->MODER & ~((3U << 4) | (3U << 6))) | (2U << 4) | (2U << 6);
     GPIOA->OTYPER &= ~((1U << 2) | (1U << 3));
     GPIOA->OSPEEDR = (GPIOA->OSPEEDR & ~((3U << 4) | (3U << 6))) | (2U << 4) | (2U << 6);
     GPIOA->PUPDR = (GPIOA->PUPDR & ~((3U << 4) | (3U << 6))) | (1U << 6);
     GPIOA->AFR[0] = (GPIOA->AFR[0] & ~((15U << 8) | (15U << 12))) | (7U << 8) | (7U << 12);
-
-    /* 115200 baud, 8 data bits, no parity, 1 stop bit, oversampling by 16. */
-    USART2->BRR = (CPU_HZ + CONSOLE_BAUD / 2U) / CONSOLE_BAUD;
-    USART2->CR2 = 0;
-    USART2->CR3 = 0;
-    USART2->CR1 = USART_CR1_UE | USART_CR1_TE | USART_CR1_RE;
-    uart_ready = true;
-}
-
-void board_uart_putc(char c) {
-    while (!(USART2->SR & USART_SR_TXE)) {
-        /* Poll until the transmit register can accept a byte. */
-    }
-    USART2->DR = (uint8_t)c;
-}
-
-int board_uart_has_data(void) {
-    return (USART2->SR & USART_SR_RXNE) != 0;
-}
-
-int board_uart_getc(void) {
-    for (;;) {
-        uint32_t status = USART2->SR;
-        if (status & (USART_SR_RXNE | USART_SR_ORE | USART_SR_NE | USART_SR_FE | USART_SR_PE)) {
-            /* Reading SR then DR clears receive errors, including overrun. */
-            uint32_t data = USART2->DR;
-            if ((status & USART_SR_RXNE) && !(status & (USART_SR_NE | USART_SR_FE | USART_SR_PE))) {
-                return (int)(data & 0xffU);
-            }
-        }
-    }
 }
 
 void board_panic(const char *msg) {
     __disable_irq();
-    if (uart_ready) {
+    if (console_ready()) {
         while (*msg) {
             board_uart_putc(*msg++);
         }
-        while (!(USART2->SR & USART_SR_TC)) {
-            /* Drain panic output before the permanent halt. */
-        }
+        console_flush(); /* Drain panic output before the permanent halt. */
     }
     /* Fatal halt; normal execution cannot resume. */
     for (;;) {

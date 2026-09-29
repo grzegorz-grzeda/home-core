@@ -82,9 +82,9 @@ Registration rules:
 - A second registration with an existing name is silently ignored.
 - The node and its name are linked into the VFS list by pointer. They must remain
   valid for the rest of the program; there is no unregister operation.
-- Register during startup: SoC devices in `soc_init()`, kernel devices in
-  `k_init()`. Registration must not depend on the console, because `soc_init()`
-  runs before `board_init()`. Do not call `vfs_init()` after registration; see
+- Register during startup: hardware devices through a driver from `dt_init()`
+  (see [device drivers](#device-drivers)), kernel devices such as `/dev/uptime`
+  in `k_init()`. Do not call `vfs_init()` after registration; see
   [architecture](architecture.md#startup).
 
 ### Stream devices
@@ -139,3 +139,28 @@ Portable VFS logic is covered by host tests in `tests/` that compile
 behavior, and use `tests/uart_contract_test.c` as a model for driver callbacks
 with mocked registers. Commands are listed in
 [development](development.md#validation).
+
+## Device drivers
+
+Hardware devices come from the [device description](development.md#device-description).
+A driver serves one compatible and lives in `src/drivers/<class>/`, for example
+`src/drivers/serial/stm32_usart.c`. The serial drivers are the reference.
+
+1. **Binding** `<compatible>.yaml`: `compatible`, `driver` (the C prefix),
+   `sources`, `console: true` if it can be `chosen.console`, and `properties`
+   with types and the configuration `field` each one fills.
+2. **Header** `<driver>.h`: `<driver>_config_t` (constants from the
+   description, placed in flash), `<driver>_t` (per-instance state whose first
+   field is `const <driver>_config_t *config`), `void <driver>_init(<driver>_t *)`,
+   and `extern const console_ops_t <driver>_console_ops` for console-capable
+   drivers.
+3. **Source**: `<driver>_init()` programs the hardware and registers a VFS node
+   named by the `devpath` property. It runs from `dt_init()`, after
+   `board_init()` has enabled clocks and configured pins, and must not print.
+4. **SoC description**: add the instances to `soc.yaml` with `status: disabled`;
+   boards enable them in `board.yaml`.
+
+A driver is compiled only when a board enables one of its devices. Access
+registers through the SoC's CMSIS types (`soc_cmsis.h`); host tests substitute
+a stand-in header from `tests/fakes/`, as `tests/uart_contract_test.c` does.
+Add generator cases for new property rules to `tests/devicetree_generate_test.py`.

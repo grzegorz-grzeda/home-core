@@ -21,7 +21,7 @@
 # SOFTWARE.
 #
 cmake_minimum_required(VERSION 3.25)
-project(homecore VERSION 0.0.5 LANGUAGES C ASM)
+project(homecore VERSION 0.0.6 LANGUAGES C ASM)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -75,6 +75,7 @@ add_executable(${PROJECT_NAME})
 include(${HOMECORE_ROOT}/cmake/board.cmake)
 include(${HOMECORE_ROOT}/cmake/soc.cmake)
 include(${HOMECORE_ROOT}/cmake/arch.cmake)
+include(${HOMECORE_ROOT}/cmake/devicetree.cmake)
 include(${HOMECORE_ROOT}/cmake/linker.cmake)
 include(${HOMECORE_ROOT}/cmake/version.cmake)
 

@@ -25,6 +25,7 @@
 #include "homecore/arch/arch.h"
 #include "homecore/soc/soc.h"
 #include "homecore/board/board.h"
+#include "homecore/devicetree.h"
 #include "homecore/vfs/vfs.h"
 #include "homecore/kernel/kernel.h"
 #include "homecore/shell/shell.h"
@@ -37,6 +38,7 @@ int main(void) {
     arch_init();
     soc_init();
     board_init();
+    dt_init();
     k_init();
     shell_init();
 

@@ -1,0 +1,6 @@
+# STM32F4DISCOVERY: 16 MHz HSI with undivided AHB/APB clocks (see board.c).
+clocks: {cpu: 16000000, apb1: 16000000, apb2: 16000000}
+devices:
+  # PA2/PA3; board.c enables the clock and pins. Keeps the /dev/uart0 name.
+  usart2: {status: okay, baud: 115200, devname: uart0}
+chosen: {console: usart2}

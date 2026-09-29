@@ -1,0 +1,22 @@
+# Binding for Stellaris (LM3S) UARTs in polling mode.
+compatible: ti,stellaris-uart
+description: Stellaris UART, polling, reset line configuration (QEMU).
+driver: stellaris_uart
+sources: [stellaris_uart.c]
+console: true
+properties:
+  reg:
+    type: int
+    required: true
+    field: base
+    unique: true
+    description: Register block address.
+  irq:
+    type: int
+    required: true
+    unique: true
+    description: NVIC interrupt number; checked but unused while the driver polls.
+  devname:
+    type: devpath
+    field: path
+    description: VFS name under /dev; defaults to the node name.

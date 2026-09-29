@@ -195,6 +195,9 @@ class QualityRunner:
         self.command("quality runner self-tests",
                      [self.args.python, "-B", "-m", "unittest", "discover", "-s", "tests",
                       "-p", "quality_runner_test.py"])
+        self.command("device description generator tests",
+                     [self.args.python, "-B", "-m", "unittest", "discover", "-s", "tests",
+                      "-p", "devicetree_generate_test.py"])
         if not self.configure("lm3s6965evb", "Debug"):
             return
         tests = [
@@ -210,8 +213,10 @@ class QualityRunner:
                 "src/subsystems/shell/builtin/builtin_session.c",
                 "src/subsystems/shell/builtin/builtin_system.c",
             ], ["-Isrc/subsystems/shell/builtin"]),
-            ("uart-lm3s", ["tests/uart_contract_test.c"], []),
-            ("uart-stm32", ["tests/uart_contract_test.c"], ["-DTEST_STM32"]),
+            ("uart-lm3s", ["tests/uart_contract_test.c"],
+             ["-Itests/fakes/stellaris", "-Isrc/drivers/serial"]),
+            ("uart-stm32", ["tests/uart_contract_test.c"],
+             ["-DTEST_STM32", "-Itests/fakes/stm32", "-Isrc/drivers/serial"]),
             # Documented host-only exception: newlib uses mallinfo; glibc deprecates it.
             ("console-io", ["tests/console_io_test.c"], [
                 "-Wno-deprecated-declarations", "-ffunction-sections", "-fdata-sections",

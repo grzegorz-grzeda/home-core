@@ -1,0 +1,33 @@
+# Binding for STM32F1/F4 USARTs in polling mode.
+compatible: st,stm32-usart
+description: STM32 USART, 8N1, polling. Board code enables its clock and pins.
+driver: stm32_usart
+sources: [stm32_usart.c]
+console: true
+properties:
+  reg:
+    type: int
+    required: true
+    field: base
+    unique: true
+    description: Register block address.
+  irq:
+    type: int
+    required: true
+    unique: true
+    description: NVIC interrupt number; checked but unused while the driver polls.
+  bus:
+    type: clock
+    required: true
+    field: clock_hz
+    description: Bus clock name, resolved through the board's clocks map.
+  baud:
+    type: int
+    default: 115200
+    minimum: 1
+    field: baud
+    description: Line rate in bits per second.
+  devname:
+    type: devpath
+    field: path
+    description: VFS name under /dev; defaults to the node name.

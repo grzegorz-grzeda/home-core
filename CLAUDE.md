@@ -20,6 +20,7 @@ these as implemented.
 | Shell commands and system services | [docs/shell.md](docs/shell.md) |
 | New shell commands and VFS device nodes | [docs/extending.md](docs/extending.md) |
 | New boards, SoCs, CPUs | [docs/porting.md](docs/porting.md) |
+| Hardware descriptions, drivers | [docs/development.md#device-description](docs/development.md#device-description) |
 | Version bumps and changelog | [docs/versioning.md](docs/versioning.md) |
 | Board specifics | [docs/boards/](docs/boards/) |
 

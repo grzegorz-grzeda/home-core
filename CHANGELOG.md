@@ -5,6 +5,27 @@ All notable changes to HomeCore are recorded here. The format is based on
 follow [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html) as
 described in [versioning](docs/versioning.md).
 
+## [0.0.6] - 2026-09-29
+
+### Added
+- Compile-time device description: `soc.yaml` and `board.yaml` per target,
+  merged with optional overlays (`HOMECORE_DT_OVERLAYS`) and validated against
+  driver bindings at configure time. It generates `homecore/devicetree.h`
+  (`DT_CPU_CLOCK_HZ`, `DT_CHOSEN_CONSOLE_PATH`), driver instances with
+  `dt_init()`, and the linker memory map. Only drivers of enabled devices are
+  compiled. Requires PyYAML (now in `requirements.txt`).
+- Serial drivers `st,stm32-usart` (STM32F1 and STM32F4) and
+  `ti,stellaris-uart` (LM3S), and `homecore/drivers/console.h`.
+
+### Changed
+- UARTs are instantiated from the description by `dt_init()`, called after
+  `board_init()`. The two STM32 boards no longer contain USART code, and the
+  `board_uart_*` functions are implemented once on the chosen console.
+- Device names are unchanged: `/dev/uart0` on every board, plus `/dev/uart1`
+  and `/dev/uart2` on LM3S6965EVB.
+- `board_panic()` prints only once the console is initialized; an earlier panic
+  on LM3S6965EVB now halts silently.
+
 ## [0.0.5] - 2026-09-29
 
 ### Fixed

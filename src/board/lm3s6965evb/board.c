@@ -23,44 +23,25 @@
  */
 /*---------------------------------------------------------------------------*/
 #include "homecore/board/board.h"
+#include "homecore/devicetree.h"
+#include "homecore/drivers/console.h"
 #include <stdint.h>
 /*---------------------------------------------------------------------------*/
-#include "soc_cmsis.h"
-/*---------------------------------------------------------------------------*/
-#define UART_FR_TXFF (1u << 5)
-#define UART_FR_RXFE (1u << 4)
-/*---------------------------------------------------------------------------*/
-/* QEMU lm3s6965evb reset clock: 200 MHz / 16. No clock changes yet. */
+/* QEMU lm3s6965evb reset clock: 200 MHz / 16, from the board description.
+ * No clock changes yet; the UARTs are devices in board.yaml. */
 uint32_t board_cpu_clock_hz(void) {
-    return 12500000U;
+    return DT_CPU_CLOCK_HZ;
 }
 
 void board_init(void) {
 }
 /*---------------------------------------------------------------------------*/
-void board_uart_putc(char c) {
-    while (UART0->FR & UART_FR_TXFF) {
-        /* Poll until the transmit FIFO has space. */
-    }
-
-    UART0->DR = (uint32_t)c;
-}
-/*---------------------------------------------------------------------------*/
-int board_uart_has_data(void) {
-    return (UART0->FR & UART_FR_RXFE) == 0;
-}
-/*---------------------------------------------------------------------------*/
-int board_uart_getc(void) {
-    while (!board_uart_has_data()) {
-        /* Blocking console read: wait for a received byte. */
-    }
-
-    return (int)(UART0->DR & 0xff);
-}
-/*---------------------------------------------------------------------------*/
 void board_panic(const char *msg) {
-    while (*msg) {
-        board_uart_putc(*msg++);
+    if (console_ready()) {
+        while (*msg) {
+            board_uart_putc(*msg++);
+        }
+        console_flush();
     }
 
     while (1) {

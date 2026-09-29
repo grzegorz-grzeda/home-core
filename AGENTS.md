@@ -15,8 +15,12 @@ commands and VFS device nodes follow [extending](docs/extending.md).
 ## Working conventions
 
 - Keep architecture mechanisms in `src/arch`, chip-specific code in `src/soc`,
-  and board wiring/clock policy in `src/board`. Keep public interfaces in
-  `include/homecore` and portable shell/VFS code in `src/subsystems`.
+  board wiring/clock policy in `src/board`, and device drivers with their
+  bindings in `src/drivers`. Keep public interfaces in `include/homecore` and
+  portable shell/VFS code in `src/subsystems`.
+- Describe hardware facts (memory, peripheral instances, clocks, the console)
+  in `soc.yaml` and `board.yaml`, not in code; see
+  [device description](docs/development.md#device-description).
 - Follow the [C coding standard](docs/coding-standard.md) for new and changed
   first-party code, including mandatory control-statement braces. Use
   `.clang-format` for layout and keep formatting changes scoped to edited code.
@@ -24,8 +28,9 @@ commands and VFS device nodes follow [extending](docs/extending.md).
   `external/doxygen-awesome-css` as submodules; make dependency updates
   explicit. Preserve the source version and license when updating vendored
   `external/stm32f4` headers.
-- Edit Kconfig definitions or defconfig inputs, then rerun CMake configuration.
-  Do not hand-edit generated headers, `.config`, linker scripts, or build output.
+- Edit Kconfig definitions, defconfig inputs, or device descriptions, then
+  rerun CMake configuration. Do not hand-edit generated headers (`autoconf.h`,
+  `devicetree.h`), generated sources, `.config`, linker scripts, or build output.
 - Keep CPU/ABI flags consistent across firmware, assembly, libraries, and linking.
   The current ports use software floating point.
 - Do not describe scheduling, authentication, persistence, or hardware validation

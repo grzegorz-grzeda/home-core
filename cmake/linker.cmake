@@ -1,5 +1,5 @@
 if(NOT DEFINED HOMECORE_BOARD_MEMORY)
-    message(FATAL_ERROR "HOMECORE_BOARD_MEMORY is not defined by board")
+    message(FATAL_ERROR "HOMECORE_BOARD_MEMORY is not defined by the device description")
 endif()
 
 if(NOT DEFINED HOMECORE_BOARD_LINKER_SCRIPT)

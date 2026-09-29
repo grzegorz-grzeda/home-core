@@ -63,6 +63,56 @@ is not a validated minimal-system configuration: startup references them directl
 G2BASIC options such as `G2BASIC_ENABLE_MATH_FUNCTIONS` and `G2BASIC_ENABLE_MATH`
 are CMake options, separate from HomeCore Kconfig.
 
+## Device description
+
+Hardware is described in YAML and turned into C at configure time; nothing is
+parsed at run time. Three layers are merged in order, later ones winning per
+key:
+
+| Layer | File | Contents |
+| --- | --- | --- |
+| SoC | `src/soc/<vendor>/<chip>/soc.yaml` | `memory` (flash and RAM base and size) and every peripheral instance, `status: disabled` |
+| Board | `src/board/<board>/board.yaml` | `clocks` (`cpu` plus named buses), enabled devices and their properties, `chosen.console` |
+| Overlays | files in `HOMECORE_DT_OVERLAYS` | build-specific changes, for example `-DHOMECORE_DT_OVERLAYS=path/to/debug.yaml` |
+
+```yaml
+# soc.yaml
+devices:
+  usart1: {compatible: "st,stm32-usart", reg: 0x40013800, irq: 37, bus: apb2, status: disabled}
+# board.yaml
+clocks: {cpu: 24000000, apb1: 24000000, apb2: 24000000}
+devices:
+  usart1: {status: okay, baud: 115200, devname: uart0}
+chosen: {console: usart1}
+```
+
+Quote `compatible` strings inside `{...}`: YAML reads the comma as a separator.
+
+Each compatible has a binding next to its driver,
+`src/drivers/<class>/<compatible>.yaml`. It names the driver prefix and sources
+and declares every property: its type (`int`, `string`, `bool`, `clock` for a
+bus name resolved through `clocks`, or `devpath` for a `/dev` name that
+defaults to the node name), whether it is required, its default and minimum,
+whether it must be unique among enabled devices, and the C configuration field
+it fills. Configuration fails, naming the device and property, for an unknown
+compatible or property, a missing required property, a wrong type, a duplicate
+unique value or `/dev` name, an unknown clock, and a console that is disabled
+or not console-capable.
+
+`scripts/devicetree_generate.py` writes into the build directory:
+
+| Output | Contents |
+| --- | --- |
+| `include/homecore/devicetree.h` | `DT_CPU_CLOCK_HZ`, `DT_CHOSEN_CONSOLE_PATH`, `DT_DEVICE_COUNT`, `dt_init()` |
+| `generated/devicetree.c` | per device a `static const <driver>_config_t` (flash) and a `<driver>_t` instance (RAM), `dt_console`, and `dt_init()` |
+| `generated/memory.ld` | the linker `MEMORY` block |
+| `generated/devicetree.cmake` | driver sources and include directories to compile |
+
+Only drivers with an enabled device are compiled. Editing a description,
+binding, or the generator reruns configuration on the next build. Driver
+conventions are in [extending](extending.md#device-drivers); the generator's
+tests are `tests/devicetree_generate_test.py`.
+
 ## Automated quality check
 
 Install the pinned quality tools in the existing project venv, then run:
@@ -224,13 +274,16 @@ review remain manual.
 
 ## UART and console regression tests
 
-These host tests exercise actual UART callbacks with mocked hardware and board
-I/O, plus libc length validation and console startup failure cleanup:
+These host tests run the real serial drivers (`src/drivers/serial/`) against
+register blocks in plain memory, supplied by the stand-in device headers in
+`tests/fakes/`, plus libc length validation and console startup failure cleanup:
 
 ```bash
-cc -Wall -Wextra -Werror -Iinclude tests/uart_contract_test.c -o /tmp/hc-uart-lm3s
+cc -Wall -Wextra -Werror -Iinclude -Itests/fakes/stellaris -Isrc/drivers/serial \
+  tests/uart_contract_test.c -o /tmp/hc-uart-lm3s
 timeout 5 /tmp/hc-uart-lm3s
-cc -Wall -Wextra -Werror -Iinclude -DTEST_STM32 tests/uart_contract_test.c -o /tmp/hc-uart-stm32
+cc -Wall -Wextra -Werror -Iinclude -DTEST_STM32 -Itests/fakes/stm32 -Isrc/drivers/serial \
+  tests/uart_contract_test.c -o /tmp/hc-uart-stm32
 timeout 5 /tmp/hc-uart-stm32
 cc -Wall -Wextra -Werror -Wno-deprecated-declarations -ffunction-sections -fdata-sections -Iinclude \
   -Ibuild/lm3s6965evb/include tests/console_io_test.c -Wl,--gc-sections -o /tmp/hc-console
