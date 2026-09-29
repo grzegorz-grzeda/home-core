@@ -257,10 +257,16 @@ class QualityRunner:
         for target, board in QEMU_TARGETS.items():
             for configuration in CONFIGURATIONS:
                 if self.build(target, configuration):
+                    firmware = self.build_dir(target, configuration) / "homecore"
                     self.command(
                         f"QEMU regression {target} {configuration}",
                         [self.args.python, "tests/qemu_files_test.py", "--board", board,
-                         "--firmware", self.build_dir(target, configuration) / "homecore"],
+                         "--firmware", firmware],
+                    )
+                    self.command(
+                        f"QEMU documented examples {target} {configuration}",
+                        [self.args.python, "tests/qemu_docs_test.py", "--board", board,
+                         "--firmware", firmware],
                     )
 
     def run(self):

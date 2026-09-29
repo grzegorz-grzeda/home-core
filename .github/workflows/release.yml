@@ -1,0 +1,149 @@
+name: HomeCore release
+
+# Publishing a tag such as v0.1.3 builds every target in Release, runs the
+# QEMU regression on the emulated ones, and creates a GitHub Release with the
+# firmware images and that version's CHANGELOG.md section as notes. The tag
+# must match project(homecore VERSION ...) in CMakeLists.txt.
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - target: lm3s6965evb
+            board: lm3s6965evb
+            qemu_board: lm3s6965evb
+          - target: stm32f4discovery
+            board: stm32f4discovery
+          - target: stm32vldiscovery
+            board: stm32vldiscovery
+          - target: stm32vldiscovery-qemu
+            board: stm32vldiscovery
+            overlay: src/board/stm32vldiscovery/qemu.yaml
+            qemu_board: stm32vldiscovery
+    env:
+      TARGET_BOARD: ${{ matrix.board }}
+      TARGET_OVERLAY: ${{ matrix.overlay }}
+      BUILD_DIR: build/release/${{ matrix.target }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Check that the tag matches the project version
+        run: |
+          version="$(sed -n 's/^project(homecore VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)"
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match CMakeLists.txt version $version" >&2
+            exit 1
+          fi
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake ninja-build gcc-arm-none-eabi binutils-arm-none-eabi \
+            libnewlib-arm-none-eabi qemu-system-arm python3 python3-venv python3-pip
+
+      - name: Set up build tools
+        run: |
+          python3 -m venv .venv
+          .venv/bin/python -m pip install -r requirements.txt
+
+      - name: Configure and build firmware
+        run: |
+          cmake -S . -B "$BUILD_DIR" -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$PWD/cmake/toolchains/arm-none-eabi.cmake" \
+            -DHOMECORE_BOARD="$TARGET_BOARD" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DPython3_EXECUTABLE="$PWD/.venv/bin/python" \
+            ${TARGET_OVERLAY:+-DHOMECORE_DT_OVERLAYS="$PWD/$TARGET_OVERLAY"} \
+            -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+          cmake --build "$BUILD_DIR"
+          arm-none-eabi-size "$BUILD_DIR/homecore"
+
+      - name: Test firmware in QEMU
+        if: matrix.qemu_board != ''
+        timeout-minutes: 3
+        run: |
+          .venv/bin/python tests/qemu_files_test.py \
+            --board "${{ matrix.qemu_board }}" --firmware "$BUILD_DIR/homecore"
+          .venv/bin/python tests/qemu_docs_test.py \
+            --board "${{ matrix.qemu_board }}" --firmware "$BUILD_DIR/homecore"
+
+      - name: Name the images
+        run: |
+          mkdir -p dist
+          name="homecore-${GITHUB_REF_NAME}-${{ matrix.target }}"
+          cp "$BUILD_DIR/homecore" "dist/$name.elf"
+          cp "$BUILD_DIR/homecore.bin" "dist/$name.bin"
+
+      - name: Upload images
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download images
+        uses: actions/download-artifact@v4
+        with:
+          pattern: firmware-*
+          path: dist
+          merge-multiple: true
+
+      - name: Extract release notes from the changelog
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v heading="## [$version]" '
+            index($0, heading) == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then
+            echo "CHANGELOG.md has no section for $version" >&2
+            exit 1
+          fi
+          {
+            echo
+            echo "## Try it"
+            echo
+            echo "Download \`homecore-${GITHUB_REF_NAME}-lm3s6965evb.elf\` and run it in QEMU:"
+            echo
+            echo '```bash'
+            echo "qemu-system-arm -M lm3s6965evb -nographic -kernel homecore-${GITHUB_REF_NAME}-lm3s6965evb.elf"
+            echo '```'
+            echo
+            echo "Exit QEMU with Ctrl-A, then X. The STM32 images have not been validated on hardware."
+          } >> notes.md
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --title "HomeCore ${GITHUB_REF_NAME}" --notes-file notes.md --verify-tag

@@ -164,7 +164,9 @@ jobs:
 
       - name: Test firmware in QEMU
         if: matrix.qemu_board != ''
-        timeout-minutes: 2
-        run: >-
-          .venv/bin/python tests/qemu_files_test.py
-          --board "${{ matrix.qemu_board }}" --firmware "$BUILD_DIR/homecore"
+        timeout-minutes: 3
+        run: |
+          .venv/bin/python tests/qemu_files_test.py \
+            --board "${{ matrix.qemu_board }}" --firmware "$BUILD_DIR/homecore"
+          .venv/bin/python tests/qemu_docs_test.py \
+            --board "${{ matrix.qemu_board }}" --firmware "$BUILD_DIR/homecore"

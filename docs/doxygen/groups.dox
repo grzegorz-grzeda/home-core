@@ -10,6 +10,8 @@ The source is on [GitHub](https://github.com/grzegorz-grzeda/home-core).
 
 | Guide | Contents |
 | --- | --- |
+| [A first session](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/tour.md) | A guided ten-minute tour in QEMU |
+| [BASIC guide](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/basic.md) | Programming HomeCore in BASIC, with examples |
 | [Architecture](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/architecture.md) | Layers, startup, memory, and runtime contracts |
 | [Development](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/development.md) | Setup, builds, configuration, tests, and debugging |
 | [C coding standard](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/coding-standard.md) | Language, style, memory, and interrupt rules |

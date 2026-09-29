@@ -276,6 +276,23 @@ python3 tests/qemu_files_test.py
 python3 tests/qemu_files_test.py --board stm32vldiscovery
 ```
 
+Then check the examples in the user guides, [the tour](tour.md) and
+[the BASIC guide](basic.md), on each emulated board:
+
+```bash
+python3 tests/qemu_docs_test.py
+python3 tests/qemu_docs_test.py --board stm32vldiscovery
+```
+
+It runs every fenced block tagged `homecore` (shell commands) or `basic`
+(BASIC lines, entered after `NEW`) in one QEMU session per guide, in order.
+When a `text` block follows with only blank lines between, the output must
+match it exactly; `text <board>` blocks apply only to that board, so one
+example can document different output per board. Plain `text` blocks that do
+not follow a command block, such as `mem` output, are not checked. Keep guide
+examples deterministic and terminating, and add a matching output block to
+every new example.
+
 It uses `build/lm3s6965evb/homecore` or `build/stm32vldiscovery-qemu/homecore`
 unless `--firmware` names another ELF. It checks shell/system/file commands,
 sessions, repeated create/remove cycles, BASIC at and just past the board's
@@ -331,7 +348,7 @@ for `lm3s6965evb`, `stm32f4discovery`, `stm32vldiscovery`, and
 `stm32vldiscovery-qemu`.
 
 Each build treats compiler warnings as errors and reports firmware size. The `lm3s6965evb` and `stm32vldiscovery-qemu`
-jobs also run QEMU against their own freshly built ELF. Jobs run independently
+jobs also run the QEMU regression and the documented examples against their own freshly built ELF. Jobs run independently
 so a quality failure does not hide build results. CI build output is under
 `build/ci/<target>/<configuration>`.
 
@@ -345,8 +362,21 @@ It requires Pages to be enabled once under repository **Settings → Pages →
 Build and deployment → Source: GitHub Actions**. Pull requests and other
 branches never deploy.
 
-A failed check fails the job. Firmware is validated but never uploaded or
-deployed; only the API documentation is published. GitHub branch protection/rulesets must require
+A failed check fails the job. These workflow runs validate firmware but never
+upload or deploy it; only the API documentation is published.
+
+The [release workflow](../.github/workflows/release.yml) runs when a tag such as
+`v0.1.3` is pushed. It fails unless the tag matches `project(homecore VERSION
+...)` and `CHANGELOG.md` has a section for that version. It builds all four
+targets in Release, runs both QEMU tests on the emulated ones, and creates a
+GitHub Release named "HomeCore v0.1.3" with `homecore-v0.1.3-<target>.elf`
+and `.bin` for each target, using the changelog section plus a "Try it"
+snippet as notes. To publish a release from `main`:
+
+```bash
+git tag v0.1.3
+git push origin v0.1.3
+``` GitHub branch protection/rulesets must require
 `Quality checks`, `API documentation`, and all eight build checks if merging should be blocked by any
 failure; that repository setting is separate from the workflow. Physical STM32 validation and semantic
 review remain manual.

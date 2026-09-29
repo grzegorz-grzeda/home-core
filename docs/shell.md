@@ -2,9 +2,11 @@
 
 ## Shell and BASIC
 
+New to HomeCore? Start with [the tour](tour.md); this page is the reference.
+
 Use `help` to list available commands. Enter `basic`
 to start G2BASIC; at its input prompt, Ctrl-C, Ctrl-D, or Ctrl-Z returns to the
-shell. For interpreter syntax, see the [G2BASIC documentation](../external/g2basic/README.md).
+shell. The [BASIC guide](basic.md) teaches the language with examples. For interpreter syntax, see the [G2BASIC documentation](../external/g2basic/README.md).
 One line may nest parentheses, unary signs, function calls, and `IF ... THEN`
 up to `CONFIG_HOMECORE_SHELL_BASIC_MAX_NESTING` levels (8 by default); deeper
 lines fail with "expression too deeply nested", which keeps BASIC within the
@@ -71,7 +73,7 @@ if (file) {
 
 Uptime begins when the timer starts during kernel initialization, not at reset entry.
 Interrupt masking across multiple ticks can lose elapsed time. Clock accuracy and
-emulation behavior are described in the [board guides](../README.md#supported-targets).
+emulation behavior are described in the [board guides](../README.md#boards).
 
 ## File commands
 
