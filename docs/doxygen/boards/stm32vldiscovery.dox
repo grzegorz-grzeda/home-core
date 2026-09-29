@@ -13,6 +13,10 @@ covered by the CI regression. The physical-board build, which adds PLL clock
 setup, has not been validated on hardware.
 </div>
 <div class="hc-spec-panel">
+<div class="hc-board-photo">
+@image html stm32vldiscovery-photo.jpg "STM32VLDISCOVERY board (MB913C), top side"
+<span class="hc-photo-credit">Photo: <a href="https://commons.wikimedia.org/wiki/File:STM32_LV_Discovery_board.jpg">Viswesr</a>, <a href="https://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a>, resized</span>
+</div>
 <span class="hc-card-title">At a glance</span>
 <table class="hc-specs">
 <tr><th>SoC</th><td>ST STM32F100RB (`st/stm32f100`)</td></tr>

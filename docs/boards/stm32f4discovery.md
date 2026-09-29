@@ -1,5 +1,7 @@
 # STM32F4DISCOVERY
 
+<img src="../assets/boards/stm32f4discovery-photo.jpg" alt="STM32F4DISCOVERY board (MB997B), top side" width="240" align="right">
+
 The `stm32f4discovery` target supports the STM32F407VGT6 board with a
 USART2 console (interrupt-driven receive, polled transmit), shell/VFS, and 1 kHz SysTick. It uses the 16 MHz internal HSI
 clock, software floating point, 1 MB flash, and 128 KB main SRAM. The separate
@@ -58,3 +60,5 @@ See [development](../development.md) for prerequisites and validation commands.
 Clock startup waits use a finite iteration budget because SysTick is not running
 yet. HSI readiness or clock-switch failure enters the fatal halt path before UART
 initialization; diagnose that silent failure with a debugger.
+
+Photo: [Teardown Central](https://commons.wikimedia.org/wiki/File:STM32F4_Discovery_(9067300323).jpg), [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/), resized; see [photo credits](../assets/boards/PHOTOS.md).

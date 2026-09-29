@@ -196,3 +196,29 @@ svg.hc-diagram .hc-on-bar { fill: var(--on-primary-color); }
     color: var(--page-secondary-foreground-color);
     font-size: 0.9em;
 }
+
+/* Board photos in the "At a glance" panel; credits in docs/assets/boards/PHOTOS.md. */
+.hc-board-photo {
+    margin: var(--spacing-small) 0 var(--spacing-medium);
+    text-align: center;
+}
+.hc-board-photo .image {
+    margin: 0;
+}
+.hc-board-photo img {
+    max-width: 100%;
+    max-height: 360px;
+    height: auto;
+    border-radius: var(--border-radius-small);
+}
+/* Doxygen 1.9.8 leaves the image alt text empty, so the caption stays visible
+ * as the photo's description. */
+.hc-board-photo .caption {
+    margin: var(--spacing-small) 0 0;
+    font-size: 0.8em;
+}
+.hc-photo-credit {
+    display: block;
+    font-size: 0.75em;
+    color: var(--page-secondary-foreground-color);
+}

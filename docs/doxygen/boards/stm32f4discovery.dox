@@ -13,6 +13,10 @@ has no model for this board, so nothing executes this port automatically.
 Physical hardware validation is still required.
 </div>
 <div class="hc-spec-panel">
+<div class="hc-board-photo">
+@image html stm32f4discovery-photo.jpg "STM32F4DISCOVERY board (MB997B), top side"
+<span class="hc-photo-credit">Photo: <a href="https://commons.wikimedia.org/wiki/File:STM32F4_Discovery_(9067300323).jpg">Teardown Central</a>, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC BY-SA 2.0</a>, resized</span>
+</div>
 <span class="hc-card-title">At a glance</span>
 <table class="hc-specs">
 <tr><th>SoC</th><td>ST STM32F407VGT6 (`st/stm32f407`)</td></tr>

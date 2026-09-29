@@ -63,5 +63,7 @@ RAM files and session state are lost on reset.
 ## License
 
 HomeCore is MIT licensed; see [LICENSE](LICENSE). Created by Grzegorz Grzęda.
+Board photos in `docs/assets/boards` are CC BY-SA; see
+[photo credits](docs/assets/boards/PHOTOS.md).
 External dependencies retain their own licenses, including the vendored
 [STM32 device headers](external/stm32f4/README.md).

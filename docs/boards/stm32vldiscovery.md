@@ -1,5 +1,7 @@
 # STM32VLDISCOVERY
 
+<img src="../assets/boards/stm32vldiscovery-photo.jpg" alt="STM32VLDISCOVERY board (MB913C), top side" width="240" align="right">
+
 The `stm32vldiscovery` target supports ST's STM32VLDISCOVERY board with an
 STM32F100RB: Cortex-M3, 128 KB flash at `0x08000000`, and **8 KB RAM** at
 `0x20000000`. It has a USART1 console (interrupt-driven receive), the shell and VFS, and a 1 kHz
@@ -89,3 +91,5 @@ time (which checks the 24 MHz PLL), `mem`, file commands, `basic`, and
 `reboot`, as described in [porting](../porting.md#validation).
 
 See [development](../development.md) for prerequisites and validation commands.
+
+Photo: [Viswesr](https://commons.wikimedia.org/wiki/File:STM32_LV_Discovery_board.jpg), [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/), resized; see [photo credits](../assets/boards/PHOTOS.md).

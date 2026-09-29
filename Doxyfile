@@ -64,6 +64,8 @@ EXCLUDE_PATTERNS       = */autoconf.h \
                          */version.h
 # Board diagrams, inlined with @htmlinclude so they follow the site theme.
 EXAMPLE_PATH           = docs/assets/boards
+# Board photos for @image; credits in docs/assets/boards/PHOTOS.md.
+IMAGE_PATH             = docs/assets/boards
 
 #---------------------------------------------------------------------------
 # Preprocessor
