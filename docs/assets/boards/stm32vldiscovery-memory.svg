@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="hc-diagram" viewBox="0 0 760 316" width="760" height="316" role="img" aria-labelledby="stm32vldiscovery-memory-title stm32vldiscovery-memory-desc" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+<title id="stm32vldiscovery-memory-title">STM32VLDISCOVERY memory map</title>
+<desc id="stm32vldiscovery-memory-desc">Flash holds the vector table, code, and the .data load image. The 8 KB of RAM holds about 1.9 KB of static data, about 4.2 KB of heap, and a 2 KB main stack.</desc>
+<rect width="760" height="316" class="hc-bg" fill="#ffffff"/>
+<text x="250" y="36" class="hc-text" fill="#2f4153" font-size="14" text-anchor="middle" font-weight="600">Flash · 128 KB</text>
+<text x="140" y="65" class="hc-muted" fill="#6f7e8e" font-size="11" text-anchor="end" font-family="ui-monospace, Menlo, Consolas, monospace">0x0802 0000</text>
+<text x="140" y="284" class="hc-muted" fill="#6f7e8e" font-size="11" text-anchor="end" font-family="ui-monospace, Menlo, Consolas, monospace">0x0800 0000</text>
+<rect x="150" y="60" width="200" height="118" rx="0" class="hc-panel" fill="#f4f7f8" stroke="#b8c4c8" stroke-width="1.5"/>
+<text x="250" y="123.0" class="hc-text" fill="#2f4153" font-size="12" text-anchor="middle">free</text>
+<rect x="150" y="178" width="200" height="26" rx="0" class="hc-panel" fill="#f4f7f8" stroke="#b8c4c8" stroke-width="1.5"/>
+<text x="250" y="195.0" class="hc-text" fill="#2f4153" font-size="12" text-anchor="middle">.data load image</text>
+<rect x="150" y="204" width="200" height="56" rx="0" class="hc-accent" fill="#d6eef1" stroke="#0e7c8a" stroke-width="1.5"/>
+<text x="250" y="236.0" class="hc-text" fill="#2f4153" font-size="12" text-anchor="middle">.text, .rodata</text>
+<rect x="150" y="260" width="200" height="20" rx="0" class="hc-accent" fill="#d6eef1" stroke="#0e7c8a" stroke-width="1.5"/>
+<text x="250" y="274.0" class="hc-text" fill="#2f4153" font-size="12" text-anchor="middle">vector table</text>
+<text x="580" y="36" class="hc-text" fill="#2f4153" font-size="14" text-anchor="middle" font-weight="600">RAM · 8 KB</text>
+<text x="470" y="65" class="hc-muted" fill="#6f7e8e" font-size="11" text-anchor="end" font-family="ui-monospace, Menlo, Consolas, monospace">0x2000 2000</text>
+<text x="470" y="284" class="hc-muted" fill="#6f7e8e" font-size="11" text-anchor="end" font-family="ui-monospace, Menlo, Consolas, monospace">0x2000 0000</text>
+<rect x="480" y="60" width="200" height="55" rx="0" class="hc-accent" fill="#d6eef1" stroke="#0e7c8a" stroke-width="1.5"/>
+<text x="580" y="91.5" class="hc-text" fill="#2f4153" font-size="12" text-anchor="middle">main stack, 2 KB</text>
+<rect x="480" y="115" width="200" height="114" rx="0" class="hc-frame" fill="none" stroke="#6f7e8e" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="580" y="176.0" class="hc-muted" fill="#6f7e8e" font-size="12" text-anchor="middle">heap, about 4.2 KB</text>
+<rect x="480" y="229" width="200" height="51" rx="0" class="hc-accent" fill="#d6eef1" stroke="#0e7c8a" stroke-width="1.5"/>
+<text x="580" y="258.5" class="hc-text" fill="#2f4153" font-size="12" text-anchor="middle">.data, .bss, about 1.9 KB</text>
+<text x="20" y="306" class="hc-muted" fill="#6f7e8e" font-size="12">RAM drawn to scale; flash not to scale. Sizes are approximate QEMU measurements.</text>
+</svg>

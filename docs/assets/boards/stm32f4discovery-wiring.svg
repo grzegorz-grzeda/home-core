@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="hc-diagram" viewBox="0 0 760 322" width="760" height="322" role="img" aria-labelledby="stm32f4discovery-wiring-title stm32f4discovery-wiring-desc" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+<title id="stm32f4discovery-wiring-title">STM32F4DISCOVERY console wiring</title>
+<desc id="stm32f4discovery-wiring-desc">USART2 on PA2 and PA3 crosses to a 3.3 V USB-UART adapter; ground is shared and the adapter's VCC is left unconnected. The ST-LINK USB port powers the board and is used for flashing.</desc>
+<rect width="760" height="322" class="hc-bg" fill="#ffffff"/>
+<path d="M105 84 V24 H690 V120" class="hc-wire-muted" fill="none" stroke="#6f7e8e" stroke-width="1.5" stroke-dasharray="4 4"/>
+<text x="398" y="18" class="hc-muted" fill="#6f7e8e" font-size="12" text-anchor="middle">ST-LINK USB: power and flashing</text>
+<rect x="20" y="40" width="300" height="250" rx="12" class="hc-board" fill="#eef3f4" stroke="#6f7e8e" stroke-width="2"/>
+<text x="36" y="66" class="hc-text" fill="#2f4153" font-size="14" font-weight="600">STM32F4DISCOVERY</text>
+<rect x="40" y="84" width="150" height="50" rx="6" class="hc-panel" fill="#f4f7f8" stroke="#b8c4c8" stroke-width="1.5"/>
+<text x="54" y="105" class="hc-text" fill="#2f4153" font-size="13" font-weight="600">ST-LINK/V2</text>
+<text x="54" y="123" class="hc-muted" fill="#6f7e8e" font-size="11">USB · SWD</text>
+<rect x="50" y="160" width="140" height="110" rx="6" class="hc-accent" fill="#d6eef1" stroke="#0e7c8a" stroke-width="1.5"/>
+<text x="120" y="212" class="hc-text" fill="#2f4153" font-size="12" text-anchor="middle" font-weight="600">STM32F407VGT6</text>
+<text x="120" y="230" class="hc-muted" fill="#6f7e8e" font-size="11" text-anchor="middle">Cortex-M4F</text>
+<rect x="220" y="84" width="86" height="186" rx="6" class="hc-panel" fill="#f4f7f8" stroke="#b8c4c8" stroke-width="1.5"/>
+<text x="263" y="104" class="hc-muted" fill="#6f7e8e" font-size="11" text-anchor="middle">P1</text>
+<rect x="420" y="70" width="170" height="200" rx="6" class="hc-panel" fill="#f4f7f8" stroke="#b8c4c8" stroke-width="1.5"/>
+<text x="505" y="94" class="hc-text" fill="#2f4153" font-size="13" text-anchor="middle" font-weight="600">USB–UART adapter</text>
+<text x="505" y="112" class="hc-muted" fill="#6f7e8e" font-size="11" text-anchor="middle">3.3 V logic</text>
+<rect x="640" y="120" width="100" height="100" rx="6" class="hc-panel" fill="#f4f7f8" stroke="#b8c4c8" stroke-width="1.5"/>
+<text x="690" y="150" class="hc-text" fill="#2f4153" font-size="13" text-anchor="middle" font-weight="600">Host PC</text>
+<text x="690" y="170" class="hc-muted" fill="#6f7e8e" font-size="12" text-anchor="middle">terminal</text>
+<text x="690" y="196" class="hc-text" fill="#2f4153" font-size="11" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">115200 8N1</text>
+<path d="M590 170 H640" class="hc-wire" fill="none" stroke="#0e7c8a" stroke-width="2.5"/>
+<text x="615" y="162" class="hc-muted" fill="#6f7e8e" font-size="11" text-anchor="middle">USB</text>
+<text x="228" y="134" class="hc-text" fill="#2f4153" font-size="11" font-family="ui-monospace, Menlo, Consolas, monospace">PA2 TX</text>
+<circle cx="296" cy="130" r="6" class="hc-pin" fill="#0e7c8a"/>
+<path d="M302 130 H426" class="hc-wire" fill="none" stroke="#0e7c8a" stroke-width="2.5"/>
+<circle cx="432" cy="130" r="6" class="hc-pin" fill="#0e7c8a"/>
+<text x="446" y="134" class="hc-text" fill="#2f4153" font-size="11" font-family="ui-monospace, Menlo, Consolas, monospace">RX</text>
+<text x="228" y="179" class="hc-text" fill="#2f4153" font-size="11" font-family="ui-monospace, Menlo, Consolas, monospace">PA3 RX</text>
+<circle cx="296" cy="175" r="6" class="hc-pin" fill="#0e7c8a"/>
+<path d="M302 175 H426" class="hc-wire" fill="none" stroke="#0e7c8a" stroke-width="2.5"/>
+<circle cx="432" cy="175" r="6" class="hc-pin" fill="#0e7c8a"/>
+<text x="446" y="179" class="hc-text" fill="#2f4153" font-size="11" font-family="ui-monospace, Menlo, Consolas, monospace">TX</text>
+<text x="228" y="224" class="hc-text" fill="#2f4153" font-size="11" font-family="ui-monospace, Menlo, Consolas, monospace">GND</text>
+<circle cx="296" cy="220" r="6" class="hc-pin" fill="#0e7c8a"/>
+<path d="M302 220 H426" class="hc-wire" fill="none" stroke="#0e7c8a" stroke-width="2.5"/>
+<circle cx="432" cy="220" r="6" class="hc-pin" fill="#0e7c8a"/>
+<text x="446" y="224" class="hc-text" fill="#2f4153" font-size="11" font-family="ui-monospace, Menlo, Consolas, monospace">GND</text>
+<circle cx="432" cy="250" r="6" class="hc-pin-open" fill="none" stroke="#6f7e8e" stroke-width="1.5"/>
+<text x="446" y="254" class="hc-text" fill="#2f4153" font-size="11" font-family="ui-monospace, Menlo, Consolas, monospace">VCC</text>
+<text x="476" y="254" class="hc-muted" fill="#6f7e8e" font-size="11">not connected</text>
+<text x="20" y="312" class="hc-muted" fill="#6f7e8e" font-size="12">Schematic, not to scale. Keep BOOT0 low for flash boot.</text>
+</svg>

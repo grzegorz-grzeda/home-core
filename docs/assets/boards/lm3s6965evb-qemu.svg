@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="hc-diagram" viewBox="0 0 760 252" width="760" height="252" role="img" aria-labelledby="lm3s6965evb-qemu-title lm3s6965evb-qemu-desc" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+<title id="lm3s6965evb-qemu-title">lm3s6965evb QEMU setup</title>
+<desc id="lm3s6965evb-qemu-desc">QEMU's first serial port connects the host terminal to UART0, which is the HomeCore shell console. UART1 and UART2 are registered as VFS device nodes but do not run shell sessions.</desc>
+<rect width="760" height="252" class="hc-bg" fill="#ffffff"/>
+<rect x="20" y="80" width="160" height="100" rx="6" class="hc-panel" fill="#f4f7f8" stroke="#b8c4c8" stroke-width="1.5"/>
+<text x="100" y="110" class="hc-text" fill="#2f4153" font-size="13" text-anchor="middle" font-weight="600">Host terminal</text>
+<text x="100" y="132" class="hc-muted" fill="#6f7e8e" font-size="12" text-anchor="middle">QEMU -nographic</text>
+<text x="100" y="152" class="hc-muted" fill="#6f7e8e" font-size="12" text-anchor="middle">Ctrl-A X exits</text>
+<rect x="230" y="20" width="510" height="212" rx="10" class="hc-frame" fill="none" stroke="#6f7e8e" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="246" y="44" class="hc-text" fill="#2f4153" font-size="13" font-weight="600">QEMU machine lm3s6965evb</text>
+<rect x="450" y="62" width="270" height="152" rx="6" class="hc-panel" fill="#f4f7f8" stroke="#b8c4c8" stroke-width="1.5"/>
+<text x="466" y="86" class="hc-text" fill="#2f4153" font-size="13" font-weight="600">HomeCore firmware</text>
+<text x="466" y="110" class="hc-text" fill="#2f4153" font-size="12" font-family="ui-monospace, Menlo, Consolas, monospace">/dev/uart0: shell console</text>
+<text x="466" y="132" class="hc-text" fill="#2f4153" font-size="12" font-family="ui-monospace, Menlo, Consolas, monospace">/dev/uart1, /dev/uart2</text>
+<text x="466" y="150" class="hc-muted" fill="#6f7e8e" font-size="12">registered VFS nodes only</text>
+<text x="466" y="176" class="hc-muted" fill="#6f7e8e" font-size="12">reports 12.5 MHz (QEMU reset clock)</text>
+<text x="466" y="196" class="hc-muted" fill="#6f7e8e" font-size="12">uptime follows guest virtual time</text>
+<rect x="262" y="62" width="128" height="40" rx="6" class="hc-accent" fill="#d6eef1" stroke="#0e7c8a" stroke-width="1.5"/>
+<text x="326" y="87" class="hc-text" fill="#2f4153" font-size="13" text-anchor="middle" font-weight="600">UART0</text>
+<path d="M390 82 H450" class="hc-wire" fill="none" stroke="#0e7c8a" stroke-width="2.5"/>
+<rect x="262" y="118" width="128" height="40" rx="6" class="hc-panel" fill="#f4f7f8" stroke="#b8c4c8" stroke-width="1.5"/>
+<text x="326" y="143" class="hc-text" fill="#2f4153" font-size="13" text-anchor="middle" font-weight="600">UART1</text>
+<path d="M390 138 H450" class="hc-wire-muted" fill="none" stroke="#6f7e8e" stroke-width="1.5" stroke-dasharray="4 4"/>
+<rect x="262" y="174" width="128" height="40" rx="6" class="hc-panel" fill="#f4f7f8" stroke="#b8c4c8" stroke-width="1.5"/>
+<text x="326" y="199" class="hc-text" fill="#2f4153" font-size="13" text-anchor="middle" font-weight="600">UART2</text>
+<path d="M390 194 H450" class="hc-wire-muted" fill="none" stroke="#6f7e8e" stroke-width="1.5" stroke-dasharray="4 4"/>
+<path d="M180 130 H221 V82 H262" class="hc-wire" fill="none" stroke="#0e7c8a" stroke-width="2.5"/>
+</svg>

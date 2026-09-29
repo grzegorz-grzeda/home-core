@@ -17,3 +17,172 @@ html.dark-mode {
     --primary-light-color: #2b7f89;
     --on-primary-color: #0b1416;
 }
+
+/* Board pages (docs/doxygen/boards). Status badges reuse the theme's admonition
+ * colours, which doxygen-awesome already redefines for dark mode. */
+html {
+    --hc-fig-panel: #f4f7f8;
+    --hc-fig-board: #eef3f4;
+    --hc-fig-stroke: #b8c4c8;
+    --hc-fig-accent: #d6eef1;
+}
+
+html.dark-mode {
+    --hc-fig-panel: #25292c;
+    --hc-fig-board: #202427;
+    --hc-fig-stroke: #4a5357;
+    --hc-fig-accent: #173c42;
+}
+
+.hc-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-small);
+    margin: var(--spacing-medium) 0;
+}
+
+.hc-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.85em;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.hc-badge.hc-ok {
+    background: var(--invariant-color);
+    color: var(--invariant-color-darker);
+}
+
+.hc-badge.hc-pending {
+    background: var(--warning-color);
+    color: var(--warning-color-darker);
+}
+
+.hc-badge.hc-info {
+    background: var(--note-color);
+    color: var(--note-color-darker);
+}
+
+.hc-board-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--spacing-large);
+    margin: var(--spacing-large) 0;
+}
+
+.hc-card {
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-large);
+    border: 1px solid var(--separator-color);
+    border-top: 4px solid var(--primary-color);
+    border-radius: var(--border-radius-medium);
+    background: var(--page-background-color);
+}
+
+.hc-card-title {
+    font-size: 1.15em;
+    font-weight: 600;
+}
+
+.hc-card-subtitle {
+    color: var(--page-secondary-foreground-color);
+    font-size: 0.9em;
+}
+
+.hc-card .hc-badges {
+    margin-top: auto;
+    padding-top: var(--spacing-medium);
+}
+
+/* Key/value tables in cards and board page headers. */
+.contents table.hc-specs {
+    width: 100%;
+    margin: var(--spacing-medium) 0;
+    border: none;
+    box-shadow: none;
+    border-collapse: collapse;
+    font-size: 0.92em;
+}
+
+.contents table.hc-specs th,
+.contents table.hc-specs td {
+    padding: 4px 0;
+    border: none;
+    border-bottom: 1px solid var(--separator-color);
+    background: transparent;
+    color: var(--page-foreground-color);
+    text-align: left;
+    vertical-align: top;
+}
+
+.contents table.hc-specs th {
+    width: 38%;
+    padding-right: var(--spacing-medium);
+    color: var(--page-secondary-foreground-color);
+    font-weight: normal;
+}
+
+.contents table.hc-specs tr:last-child th,
+.contents table.hc-specs tr:last-child td {
+    border-bottom: none;
+}
+
+/* Board page header: specification panel beside the summary. */
+.hc-board-header {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(240px, 2fr);
+    gap: var(--spacing-xlarge);
+    align-items: start;
+}
+
+.hc-spec-panel {
+    padding: var(--spacing-medium) var(--spacing-large);
+    border: 1px solid var(--separator-color);
+    border-radius: var(--border-radius-medium);
+    background: var(--side-nav-background);
+}
+
+.hc-spec-panel .hc-card-title {
+    display: block;
+    padding-top: var(--spacing-small);
+}
+
+@media screen and (max-width: 767px) {
+    .hc-board-header {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* Inline SVG diagrams from docs/assets/boards. The files carry light fallback
+ * colours for standalone viewing; these rules theme them in the site. */
+svg.hc-diagram {
+    display: block;
+    width: 100%;
+    max-width: 760px;
+    height: auto;
+    margin: var(--spacing-large) 0 var(--spacing-small);
+    font-family: var(--font-family-normal, sans-serif);
+}
+
+svg.hc-diagram .hc-bg { fill: transparent; }
+svg.hc-diagram .hc-panel { fill: var(--hc-fig-panel); stroke: var(--hc-fig-stroke); }
+svg.hc-diagram .hc-board { fill: var(--hc-fig-board); stroke: var(--page-secondary-foreground-color); }
+svg.hc-diagram .hc-accent { fill: var(--hc-fig-accent); stroke: var(--primary-color); }
+svg.hc-diagram .hc-frame { stroke: var(--page-secondary-foreground-color); }
+svg.hc-diagram .hc-wire { stroke: var(--primary-color); }
+svg.hc-diagram .hc-wire-muted { stroke: var(--page-secondary-foreground-color); }
+svg.hc-diagram .hc-pin,
+svg.hc-diagram .hc-bar { fill: var(--primary-color); }
+svg.hc-diagram .hc-pin-open { stroke: var(--page-secondary-foreground-color); }
+svg.hc-diagram .hc-text { fill: var(--page-foreground-color); }
+svg.hc-diagram .hc-muted { fill: var(--page-secondary-foreground-color); }
+svg.hc-diagram .hc-on-bar { fill: var(--on-primary-color); }
+
+.hc-caption {
+    margin-top: 0;
+    color: var(--page-secondary-foreground-color);
+    font-size: 0.9em;
+}

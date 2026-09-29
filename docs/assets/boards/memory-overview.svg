@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="hc-diagram" viewBox="0 0 720 190" width="720" height="190" role="img" aria-labelledby="memory-overview-title memory-overview-desc" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+<title id="memory-overview-title">Flash and RAM by board</title>
+<desc id="memory-overview-desc">Bar chart. Flash: lm3s6965evb 256 KB, stm32f4discovery 1 MB, stm32vldiscovery 128 KB. RAM: lm3s6965evb 64 KB, stm32f4discovery 128 KB, stm32vldiscovery 8 KB.</desc>
+<rect width="720" height="190" class="hc-bg" fill="#ffffff"/>
+<text x="170" y="30" class="hc-text" fill="#2f4153" font-size="13" font-weight="600">Flash (scale: 1 MB)</text>
+<text x="480" y="30" class="hc-text" fill="#2f4153" font-size="13" font-weight="600">RAM (scale: 128 KB)</text>
+<text x="20" y="67" class="hc-text" fill="#2f4153" font-size="12" font-family="ui-monospace, Menlo, Consolas, monospace">lm3s6965evb</text>
+<rect x="170" y="52" width="220" height="22" rx="4" class="hc-panel" fill="#f4f7f8" stroke="#b8c4c8" stroke-width="1.5"/>
+<rect x="170" y="52" width="55.0" height="22" rx="4" class="hc-bar" fill="#0e7c8a"/>
+<text x="233.0" y="67" class="hc-text" fill="#2f4153" font-size="12">256 KB</text>
+<rect x="480" y="52" width="220" height="22" rx="4" class="hc-panel" fill="#f4f7f8" stroke="#b8c4c8" stroke-width="1.5"/>
+<rect x="480" y="52" width="110.0" height="22" rx="4" class="hc-bar" fill="#0e7c8a"/>
+<text x="598.0" y="67" class="hc-text" fill="#2f4153" font-size="12">64 KB</text>
+<text x="20" y="111" class="hc-text" fill="#2f4153" font-size="12" font-family="ui-monospace, Menlo, Consolas, monospace">stm32f4discovery</text>
+<rect x="170" y="96" width="220" height="22" rx="4" class="hc-panel" fill="#f4f7f8" stroke="#b8c4c8" stroke-width="1.5"/>
+<rect x="170" y="96" width="220.0" height="22" rx="4" class="hc-bar" fill="#0e7c8a"/>
+<text x="382.0" y="111" class="hc-on-bar" fill="#ffffff" font-size="12" text-anchor="end">1 MB</text>
+<rect x="480" y="96" width="220" height="22" rx="4" class="hc-panel" fill="#f4f7f8" stroke="#b8c4c8" stroke-width="1.5"/>
+<rect x="480" y="96" width="220.0" height="22" rx="4" class="hc-bar" fill="#0e7c8a"/>
+<text x="692.0" y="111" class="hc-on-bar" fill="#ffffff" font-size="12" text-anchor="end">128 KB</text>
+<text x="20" y="155" class="hc-text" fill="#2f4153" font-size="12" font-family="ui-monospace, Menlo, Consolas, monospace">stm32vldiscovery</text>
+<rect x="170" y="140" width="220" height="22" rx="4" class="hc-panel" fill="#f4f7f8" stroke="#b8c4c8" stroke-width="1.5"/>
+<rect x="170" y="140" width="27.5" height="22" rx="4" class="hc-bar" fill="#0e7c8a"/>
+<text x="205.5" y="155" class="hc-text" fill="#2f4153" font-size="12">128 KB</text>
+<rect x="480" y="140" width="220" height="22" rx="4" class="hc-panel" fill="#f4f7f8" stroke="#b8c4c8" stroke-width="1.5"/>
+<rect x="480" y="140" width="13.75" height="22" rx="4" class="hc-bar" fill="#0e7c8a"/>
+<text x="501.75" y="155" class="hc-text" fill="#2f4153" font-size="12">8 KB</text>
+</svg>

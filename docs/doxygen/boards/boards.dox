@@ -1,0 +1,119 @@
+/**
+@page boards Supported boards
+@tableofcontents
+
+HomeCore builds for three boards. Each one selects an architecture, SoC, and
+board port at configure time through `HOMECORE_BOARD`; the portable kernel,
+shell, VFS, and G2BASIC code is the same on all of them. Only QEMU runs are
+validated. No board has been validated on physical hardware yet.
+
+<div class="hc-board-grid">
+<div class="hc-card">
+<span class="hc-card-title">@ref board_lm3s6965evb "LM3S6965EVB"</span>
+<span class="hc-card-subtitle">TI Stellaris LM3S6965 in QEMU</span>
+<table class="hc-specs">
+<tr><th>Core</th><td>Cortex-M3</td></tr>
+<tr><th>Flash / RAM</th><td>256 KB / 64 KB</td></tr>
+<tr><th>Clock</th><td>12.5 MHz (QEMU reset clock)</td></tr>
+<tr><th>Console</th><td>UART0, QEMU serial</td></tr>
+<tr><th>Role</th><td>Development and regression target</td></tr>
+</table>
+<div class="hc-badges"><span class="hc-badge hc-ok">QEMU tested in CI</span><span class="hc-badge hc-info">Emulator only</span></div>
+</div>
+<div class="hc-card">
+<span class="hc-card-title">@ref board_stm32f4discovery "STM32F4DISCOVERY"</span>
+<span class="hc-card-subtitle">ST STM32F407VGT6</span>
+<table class="hc-specs">
+<tr><th>Core</th><td>Cortex-M4F (soft float)</td></tr>
+<tr><th>Flash / RAM</th><td>1 MB / 128 KB</td></tr>
+<tr><th>Clock</th><td>16 MHz HSI</td></tr>
+<tr><th>Console</th><td>USART2, PA2/PA3</td></tr>
+<tr><th>Role</th><td>Largest target</td></tr>
+</table>
+<div class="hc-badges"><span class="hc-badge hc-ok">Builds in CI</span><span class="hc-badge hc-pending">Hardware pending</span></div>
+</div>
+<div class="hc-card">
+<span class="hc-card-title">@ref board_stm32vldiscovery "STM32VLDISCOVERY"</span>
+<span class="hc-card-subtitle">ST STM32F100RB</span>
+<table class="hc-specs">
+<tr><th>Core</th><td>Cortex-M3</td></tr>
+<tr><th>Flash / RAM</th><td>128 KB / 8 KB</td></tr>
+<tr><th>Clock</th><td>24 MHz PLL</td></tr>
+<tr><th>Console</th><td>USART1, PA9/PA10</td></tr>
+<tr><th>Role</th><td>Smallest target; STM32 code in QEMU</td></tr>
+</table>
+<div class="hc-badges"><span class="hc-badge hc-ok">QEMU tested in CI</span><span class="hc-badge hc-pending">Hardware pending</span></div>
+</div>
+</div>
+
+@section boards_status Validation status
+
+| Status | Meaning |
+| --- | --- |
+| <span class="hc-badge hc-ok">QEMU tested in CI</span> | CI builds Debug and Release, then runs `tests/qemu_files_test.py` against the emulated board: system and file commands, sessions, create/remove cycles, and BASIC at the nesting limit. |
+| <span class="hc-badge hc-ok">Builds in CI</span> | CI cross-compiles Debug and Release. Nothing executes the firmware. |
+| <span class="hc-badge hc-pending">Hardware pending</span> | The port targets a physical board but has not been run on one. A successful build does not show that clocks, pins, or the UART work. |
+| <span class="hc-badge hc-info">Emulator only</span> | The port relies on QEMU's reset state and does not configure real hardware. |
+
+@section boards_matrix Feature support
+
+Every board runs the same firmware features. The differences are in clocking,
+console wiring, memory limits, and how each board is validated.
+
+| Feature | LM3S6965EVB | STM32F4DISCOVERY | STM32VLDISCOVERY |
+| --- | --- | --- | --- |
+| Shell, sessions, RAM files, G2BASIC | Yes | Yes | Yes (BASIC nesting 4, files up to 1 KB) |
+| 1 kHz SysTick uptime | Yes, guest time | Yes, HSI accuracy | Yes |
+| Console | UART0 (polling) | USART2 (polling) | USART1 (polling) |
+| VFS device nodes | `/dev/uart0` to `/dev/uart2` | `/dev/uart0` | `/dev/uart0` |
+| Clock setup | None (QEMU reset state) | HSI, 16 MHz | PLL to 24 MHz (skipped in the QEMU build) |
+| Main stack | 3 KB | 3 KB | 2 KB |
+| Buffered stdio | Yes | Yes | No (saves about 2 KB of heap) |
+| QEMU machine | `lm3s6965evb` | None | `stm32vldiscovery` |
+| CI | Build + QEMU regression | Build | Build both presets + QEMU regression |
+| Physical hardware | Not covered | Pending | Pending |
+
+No board has a scheduler, privilege separation, authentication, persistent
+storage, or interrupt-driven UART I/O. The SVC and PendSV handlers panic on all
+targets.
+
+@section boards_memory Memory
+
+@htmlinclude[block] memory-overview.svg
+
+The 8 KB STM32VLDISCOVERY sets the lower bound for shell and VFS memory use.
+Its defconfig reduces the stack, file size, and BASIC nesting limits; see
+@ref board_stm32vldiscovery_memory "its memory budget".
+
+@section boards_presets Build presets
+
+Configure and build a preset from the repository root with the project venv, as
+described in the [development guide](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/development.md):
+
+```bash
+cmake --preset <preset> -DPython3_EXECUTABLE="$PWD/.venv/bin/python"
+cmake --build --preset <preset>
+```
+
+| Preset | Board | Defconfig | Build directory |
+| --- | --- | --- | --- |
+| `lm3s6965evb` | LM3S6965EVB | `configs/homecore_defconfig` | `build/lm3s6965evb` |
+| `lm3s6965evb-release` | LM3S6965EVB, Release | `configs/homecore_defconfig` | `build/lm3s6965evb-release` |
+| `stm32f4discovery` | STM32F4DISCOVERY | `configs/homecore_defconfig` | `build/stm32f4discovery` |
+| `stm32vldiscovery` | STM32VLDISCOVERY | `configs/stm32vldiscovery_defconfig` | `build/stm32vldiscovery` |
+| `stm32vldiscovery-qemu` | STM32VLDISCOVERY in QEMU | `configs/stm32vldiscovery_qemu_defconfig` | `build/stm32vldiscovery-qemu` |
+
+Each build writes the ELF `homecore` and the raw image `homecore.bin`. A board
+uses `configs/<board>_defconfig` when that file exists and
+`configs/homecore_defconfig` otherwise.
+
+@section boards_adding Adding a board
+
+New boards, SoCs, and CPUs follow the
+[porting guide](https://github.com/grzegorz-grzeda/home-core/blob/main/docs/porting.md).
+Add a page for the new board here, alongside its Markdown guide in `docs/boards/`.
+
+@subpage board_lm3s6965evb <br>
+@subpage board_stm32f4discovery <br>
+@subpage board_stm32vldiscovery
+*/

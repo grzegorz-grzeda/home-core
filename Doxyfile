@@ -53,7 +53,7 @@ WARN_NO_PARAMDOC       = YES
 WARN_AS_ERROR          = FAIL_ON_WARNINGS
 
 #---------------------------------------------------------------------------
-# Input: public headers plus the group hierarchy and main page.
+# Input: public headers plus the group hierarchy, main page, and board pages.
 #---------------------------------------------------------------------------
 INPUT                  = docs/doxygen \
                          include/homecore
@@ -62,6 +62,8 @@ FILE_PATTERNS          = *.h \
 RECURSIVE              = YES
 EXCLUDE_PATTERNS       = */autoconf.h \
                          */version.h
+# Board diagrams, inlined with @htmlinclude so they follow the site theme.
+EXAMPLE_PATH           = docs/assets/boards
 
 #---------------------------------------------------------------------------
 # Preprocessor
